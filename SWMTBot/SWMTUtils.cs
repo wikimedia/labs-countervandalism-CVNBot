@@ -4,6 +4,7 @@ using System.Text;
 using System.Net;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Web;
 
 namespace SWMTBot
 {
@@ -153,6 +154,16 @@ namespace SWMTBot
                 input = input.Substring(0, place) + newChar + input.Substring(place + 1); //Replace first oldChar with newChar
             }
             return input;
+        }
+
+        /// <summary>
+        /// Encodes a string for use with wiki URLs
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static string wikiEncode(string input)
+        {
+            return HttpUtility.UrlEncode(input.Replace(' ', '_')).Replace("(","%28").Replace(")","%29");
         }
     }
 }

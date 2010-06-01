@@ -5,7 +5,6 @@ using System.Threading;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Data;
-using System.Web;
 using Mono.Data.SqliteClient;
 using log4net;
 
@@ -16,7 +15,7 @@ namespace SWMTBot
 {
     class Program
     {
-        const string version = "1.14.3";
+        const string version = "1.14.4";
         
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -350,7 +349,7 @@ namespace SWMTBot
                         if (!hasPrivileges('@', ref e))
                             return;
                         logger.Info(e.Data.Nick + " ordered a restart");
-                        PartIRC("Rebooting...");
+                        PartIRC("Rebooting by order of " + e.Data.Nick + " ...");
                         Restart();
                         break;
                     case "status":
@@ -765,18 +764,6 @@ namespace SWMTBot
                         if ((userOffset == 1) || (userOffset == 3) || (userOffset == 6))
                             editNothingSpecial = false;
 
-                        // Now check if the edit summary matches BES
-                        listMatch elm = listman.matchesList(r.comment, 20);
-                        if (elm.Success)
-                        {
-                            //Matches BES
-                            attribs.Add("watchword", elm.matchedItem);
-                            //attribs.Add("reason", elm.matchedReason);
-                            message = getMessage(95130 + userOffset, ref attribs);
-                            editNothingSpecial = false;
-                            AddToGreylist(userOffset, r.user, Program.getFormatMessage(16310, r.comment, (String)attribs["article"]));
-                        }
-
                         // Now check if user has edited a watched page
                         listMatch welm = listman.isWatchedArticle(r.title, r.project);
                         if (welm.Success)
@@ -814,6 +801,18 @@ namespace SWMTBot
                             }
                         }
 
+                        // Now check if the edit summary matches BES
+                        listMatch elm = listman.matchesList(r.comment, 20);
+                        if (elm.Success)
+                        {
+                            //Matches BES
+                            attribs.Add("watchword", elm.matchedItem);
+                            //attribs.Add("reason", elm.matchedReason);
+                            message = getMessage(95130 + userOffset, ref attribs);
+                            editNothingSpecial = false;
+                            AddToGreylist(userOffset, r.user, Program.getFormatMessage(16310, r.comment, (String)attribs["article"]));
+                        }
+
                         // If nothing special about the edit (i.e., it's normal-sized, it's not on a watched page), return
                         if (editNothingSpecial)
                             return;
@@ -823,7 +822,7 @@ namespace SWMTBot
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("fromname", ((Project)prjlist[r.project]).interwikiLink + r.title);
                     attribs.Add("toname", ((Project)prjlist[r.project]).interwikiLink + r.movedTo);
-                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + HttpUtility.UrlEncode(r.title.Replace(' ', '_')));
+                    attribs.Add("url", r.blockLength); //The blockLength field stores the moveFrom URL
                     attribs.Add("reason", r.comment);
                     message = getMessage(5500 + userOffset, ref attribs);
                     break;
@@ -856,7 +855,7 @@ namespace SWMTBot
                     break;
                 case RCEvent.EventType.newuser:
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
-                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + HttpUtility.UrlEncode(r.user.Replace(' ','_')));
+                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + SWMTUtils.wikiEncode(r.user));
                     listMatch bnuMatch = listman.matchesList(r.user, 11);
                     if (bnuMatch.Success)
                     {
@@ -872,7 +871,7 @@ namespace SWMTBot
                 case RCEvent.EventType.newuser2:
                     attribs.Add("creator", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.title);
-                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + HttpUtility.UrlEncode(r.user.Replace(' ', '_')));
+                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + SWMTUtils.wikiEncode(r.user));
                     listMatch bnuMatch2 = listman.matchesList(r.user, 11);
                     if (bnuMatch2.Success)
                     {
@@ -890,7 +889,7 @@ namespace SWMTBot
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("uploaditem", ((Project)prjlist[r.project]).interwikiLink + r.title);
                     attribs.Add("reason", r.comment);
-                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + HttpUtility.UrlEncode(r.title.Replace(' ', '_')));
+                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
                     message = getMessage(userOffset + 5600, ref attribs);
                     break;
             }
@@ -899,7 +898,11 @@ namespace SWMTBot
             {
                 //Allow multiline
                 foreach (string line in message.Split(new char[1] { '\n' }))
-                    irc.SendMessage(SendType.Message, FeedChannel, line);
+                {
+                    //Chunk messages that are too long
+                    foreach (string chunk in SWMTUtils.stringSplit(line, 400))
+                        irc.SendMessage(SendType.Message, FeedChannel, chunk);
+                }
             }
         }
 

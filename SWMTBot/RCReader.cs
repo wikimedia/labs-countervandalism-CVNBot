@@ -315,6 +315,8 @@ namespace SWMTBot
                             {
                                 rce.title = Project.translateNamespace(rce.project, mrm.Groups["item1"].Captures[0].Value);
                                 rce.movedTo = Project.translateNamespace(rce.project, mrm.Groups["item2"].Captures[0].Value);
+                                //We use the unused blockLength field to store our "moved from" URL
+                                rce.blockLength = ((Project)Program.prjlist[rce.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(fields[2]);
                                 try
                                 {
                                     rce.comment = mrm.Groups["comment"].Captures[0].Value;
@@ -328,6 +330,8 @@ namespace SWMTBot
                                 {
                                     rce.title = Project.translateNamespace(rce.project, mm.Groups["item1"].Captures[0].Value);
                                     rce.movedTo = Project.translateNamespace(rce.project, mm.Groups["item2"].Captures[0].Value);
+                                    //We use the unused blockLength field to store our "moved from" URL
+                                    rce.blockLength = ((Project)Program.prjlist[rce.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(fields[2]);
                                     try
                                     {
                                         rce.comment = mm.Groups["comment"].Captures[0].Value;
