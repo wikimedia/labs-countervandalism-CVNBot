@@ -15,7 +15,7 @@ namespace SWMTBot
 {
     class Program
     {
-        const string version = "1.15.1";
+        const string version = "1.15.5-testing";
         
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -194,6 +194,8 @@ namespace SWMTBot
         {
             if (e.Data.Channel != BroadcastChannel)
                 return; //Just in case
+            if (e.Data.Message == "" || e.Data.Message == null)
+                return; //Prevent empty messages from crashing the bot
             Match bm = broadcastMsg.Match(e.Data.Message);
             if (bm.Success)
             {
@@ -313,7 +315,10 @@ namespace SWMTBot
         }
 
         static void irc_OnChannelMessage(object sender, IrcEventArgs e)
-        {      
+        {
+            if (e.Data.Message == "" || e.Data.Message == null)
+                return; //Prevent empty messages from crashing the bot
+
             Match cmdMatch = botCmd.Match(e.Data.Message);
 
             if (cmdMatch.Success)
@@ -917,6 +922,10 @@ namespace SWMTBot
         {
             try
             {
+                //Delayed quitting after parting in PartIRC()
+                irc.Disconnect();
+                rcirc.rcirc.Disconnect();
+
                 listman.closeDBConnection();
                 LogManager.Shutdown();
             }

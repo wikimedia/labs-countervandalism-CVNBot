@@ -62,6 +62,7 @@ namespace SWMTBot
             rcirc.OnChannelMessage += new IrcEventHandler(rcirc_OnChannelMessage);
             rcirc.OnConnected += new EventHandler(rcirc_OnConnected);
             rcirc.OnQueryMessage += new IrcEventHandler(rcirc_OnQueryMessage);
+            rcirc.OnDisconnected += new EventHandler(rcirc_OnDisconnected);
 
             try
             {
@@ -91,6 +92,12 @@ namespace SWMTBot
                 //Apparently this is handled, so we don't need to catch it
                 return;
             }
+        }
+
+        void rcirc_OnDisconnected(object sender, EventArgs e)
+        {
+            //Currently a debug function to see if this thing actually works
+            logger.Warn("RCReader has been disconnected");
         }
 
         void rcirc_OnQueryMessage(object sender, IrcEventArgs e)
@@ -178,43 +185,50 @@ namespace SWMTBot
                                 rce.eventtype = RCEvent.EventType.newuser;
                             break;
                         case "block":
-                            //Could be a block or unblock; need to parse regex
-                            Match bm = ((Project)Program.prjlist[rce.project]).rblockRegex.Match(rce.comment);
-                            if (bm.Success)
+                            try
                             {
-                                rce.eventtype = RCEvent.EventType.block;
-                                rce.title = bm.Groups["item1"].Captures[0].Value;
-                                rce.blockLength = "24 hours"; //Set default value in case our Regex has fallen back to laziness
-                                try
+                                //Could be a block or unblock; need to parse regex
+                                Match bm = ((Project)Program.prjlist[rce.project]).rblockRegex.Match(rce.comment);
+                                if (bm.Success)
                                 {
-                                    rce.blockLength = bm.Groups["item2"].Captures[0].Value;
-                                }
-                                catch (ArgumentOutOfRangeException) { }
-                                try
-                                {
-                                    rce.comment = bm.Groups["comment"].Captures[0].Value;
-                                }
-                                catch (ArgumentOutOfRangeException) { }
-                            }
-                            else
-                            {
-                                Match ubm = ((Project)Program.prjlist[rce.project]).runblockRegex.Match(rce.comment);
-                                if (ubm.Success)
-                                {
-                                    rce.eventtype = RCEvent.EventType.unblock;
+                                    rce.eventtype = RCEvent.EventType.block;
                                     rce.title = bm.Groups["item1"].Captures[0].Value;
+                                    rce.blockLength = "24 hours"; //Set default value in case our Regex has fallen back to laziness
                                     try
                                     {
-                                        rce.comment = ubm.Groups["comment"].Captures[0].Value;
+                                        rce.blockLength = bm.Groups["item2"].Captures[0].Value;
+                                    }
+                                    catch (ArgumentOutOfRangeException) { }
+                                    try
+                                    {
+                                        rce.comment = bm.Groups["comment"].Captures[0].Value;
                                     }
                                     catch (ArgumentOutOfRangeException) { }
                                 }
                                 else
                                 {
-                                    //All failed; is block but regex does not match
-                                    logger.Warn("Unmatched block type: " + rce.comment);
-                                    return;
+                                    Match ubm = ((Project)Program.prjlist[rce.project]).runblockRegex.Match(rce.comment);
+                                    if (ubm.Success)
+                                    {
+                                        rce.eventtype = RCEvent.EventType.unblock;
+                                        rce.title = bm.Groups["item1"].Captures[0].Value;
+                                        try
+                                        {
+                                            rce.comment = ubm.Groups["comment"].Captures[0].Value;
+                                        }
+                                        catch (ArgumentOutOfRangeException) { }
+                                    }
+                                    else
+                                    {
+                                        //All failed; is block but regex does not match
+                                        logger.Warn("Unmatched block type: " + rce.comment);
+                                        return;
+                                    }
                                 }
+                            }
+                            catch (ArgumentOutOfRangeException aoore)
+                            {
+                                Program.BroadcastDD("ERROR", "RCR_AOORE_2", aoore.Message, e.Data.Channel + "/" + e.Data.Message);
                             }
                             break;
                         case "protect":
@@ -394,7 +408,8 @@ namespace SWMTBot
             catch (ArgumentOutOfRangeException eor)
             {
                 //Broadcast this for Distributed Debugging
-                Program.BroadcastDD("ERROR", "RCR_AOORE", eor.Message, e.Data.Channel + " " + e.Data.Message);
+                Program.BroadcastDD("ERROR", "RCR_AOORE", eor.Message, e.Data.Channel + "/" + e.Data.Message
+                    + "Fields: " + fields.ToString());
             }
         }
 
