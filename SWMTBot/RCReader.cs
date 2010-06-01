@@ -13,7 +13,7 @@ namespace SWMTBot
         public enum EventType
         {
             delete, restore, upload, block, unblock, edit, protect, unprotect,
-            move, rollback, newuser, import, renameuser, makebot, unknown, newuser2
+            move, rollback, newuser, import, renameuser, makebot, unknown, newuser2, autocreate
         }
 
         public string project;
@@ -50,7 +50,8 @@ namespace SWMTBot
 
         private static ILog logger = LogManager.GetLogger("SWMTBot.RCReader");
 
-        public void initiateConnection() {
+        public void initiateConnection()
+        {
             Thread.CurrentThread.Name = "RCReader";
 
             logger.Info("RCReader thread started");
@@ -203,7 +204,16 @@ namespace SWMTBot
                                 }
                             }
                             else
-                                rce.eventtype = RCEvent.EventType.newuser;
+                            {
+                                if(fields[4].Contains("autocreate"))
+                                {
+                                    rce.eventtype = RCEvent.EventType.autocreate;
+                                }
+                                else
+                                {
+                                    rce.eventtype = RCEvent.EventType.newuser;
+                                }
+                            }
                             break;
                         case "block":
                             try

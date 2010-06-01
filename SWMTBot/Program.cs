@@ -24,7 +24,7 @@ namespace SWMTBot
 
     class Program
     {
-        const string version = "1.18.0";
+        const string version = "1.19.0";
         
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -699,12 +699,19 @@ namespace SWMTBot
                         SendMessageF(SendType.Message, e.Data.Channel,
                             listman.handleListCommand(20, e.Data.Nick, extraParams), false, true);
                         break;
+                    
+                    //_1568: Restrict the "get" command to ops
                     case "getadmins":
-                        SendMessageF(SendType.Message, e.Data.Channel, listman.configGetAdmins(extraParams), false, true);
-                        break;
-                    case "getbots":
-                        SendMessageF(SendType.Message, e.Data.Channel, listman.configGetBots(extraParams), false, true);
-                        break;
+                        if (!hasPrivileges('@', ref e))
+                            return;
+                            SendMessageF(SendType.Message, e.Data.Channel, listman.configGetAdmins(extraParams), false, true);
+                            break;
+                     case "getbots":
+                        if (!hasPrivileges('@', ref e))
+                            return;
+                            SendMessageF(SendType.Message, e.Data.Channel, listman.configGetBots(extraParams), false, true);
+                            break;
+
                     case "intel":
                         string intelResult = listman.GlobalIntel(extraParams);
                         foreach (string chunk in intelResult.Split(new char[1] {'\n'}))

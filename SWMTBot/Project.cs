@@ -161,7 +161,7 @@ namespace SWMTBot
         {
             if (!snamespacesAlreadySet)
             {
-                snamespaces = SWMTUtils.getRawDocument(rooturl + "w/query.php?what=namespaces&noprofile=&format=xml");
+                snamespaces = SWMTUtils.getRawDocument(rooturl + "w/api.php?action=query&meta=siteinfo&siprop=namespaces&format=xml");
                 if (snamespaces == "")
                     throw new Exception("Can't load list of namespaces from " + rooturl);
             }
@@ -170,7 +170,7 @@ namespace SWMTBot
 
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(snamespaces);
-            XmlNode namespacesNode = doc.GetElementsByTagName("yurik")[0].FirstChild.FirstChild;
+            XmlNode namespacesNode = doc.GetElementsByTagName("namespaces")[0].FirstChild.FirstChild;
             for (int i = 0; i < namespacesNode.ChildNodes.Count; i++)
             {
                 namespaces.Add(namespacesNode.ChildNodes[i].Attributes["id"].Value, namespacesNode.ChildNodes[i].InnerText);

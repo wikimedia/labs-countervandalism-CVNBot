@@ -13,6 +13,7 @@ namespace SWMTBot
         static Regex rStripper = new Regex(@"(,|and)");
         static Regex rSpaces = new Regex(@"\s{2,}");
         static Regex rfindValues = new Regex(@"(\d+) (year|month|fortnight|week|day|hour|minute|min|second|sec)s?");
+        //TODO: Something is still wrong here, some exprs show up as 3 instead of 3 day(s)
 
         /// <summary>
         /// Like PHP's str_split() function, splits a string into an array of chunks
