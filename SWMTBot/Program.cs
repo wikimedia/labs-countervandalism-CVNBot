@@ -24,7 +24,7 @@ namespace SWMTBot
 
     class Program
     {
-        const string version = "1.17.1";
+        const string version = "1.18.0";
         
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -39,6 +39,7 @@ namespace SWMTBot
         static Queue priQueue = new Queue();
         static Boolean dontSendNow = false;
         static int sentLength = 0;
+        static ManualResetEvent sendlock = new ManualResetEvent(true);
 
         static Regex broadcastMsg = new Regex(@"\*\x02B/1.1\x02\*(?<list>.+?)\*(?<action>.+?)\*\x03"
             +@"07\x02(?<item>.+?)\x02\x03\*\x03"
@@ -58,6 +59,7 @@ namespace SWMTBot
         static string ircServerName;
         static int bufflen = 1400;
         static long maxlag = 600000000; // 60 seconds in 100-nanoseconds
+        static bool IsCubbie = false;
 
         public static string botNick;
 
@@ -94,11 +96,13 @@ namespace SWMTBot
             newbig = Int32.Parse((string)mainConfig["newbig"]);
             newsmall = Int32.Parse((string)mainConfig["newsmall"]);
             prjlist.fnProjectsXML = (string)mainConfig["projects"];
+            IsCubbie = mainConfig.ContainsKey("IsCubbie");
+
             botCmd = new Regex("^" + botNick + @" (?<command>\S*)(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
 
             logger.Info("Loading messages");
             readMessages((string)mainConfig["messages"]);
-            if ((!msgs.ContainsKey("00000")) || ((String)msgs["00000"] != "2.01"))
+            if ((!msgs.ContainsKey("00000")) || ((String)msgs["00000"] != "2.02"))
             {
                 logger.Fatal("Message file version mismatch or read messages failed");
                 Exit();
@@ -123,6 +127,7 @@ namespace SWMTBot
             irc.OnError += new Meebey.SmartIrc4net.ErrorEventHandler(irc_OnError);
             irc.OnConnectionError += new EventHandler(irc_OnConnectionError);
             irc.OnPong += new PongEventHandler(irc_OnPong);
+            //irc.PingTimeout = 10;
 
             try
             {
@@ -182,6 +187,7 @@ namespace SWMTBot
             {
                 logger.Error("OnConnectionError in Program, restarting...");
                 Restart();
+                //Exit(); /* DEBUG */
             }
         }
 
@@ -358,7 +364,9 @@ namespace SWMTBot
         {
             sentLength = 0;
             dontSendNow = false;
-            //logger.Info("Got ping!");
+            sendlock.Set();
+            //logger.Info("Got pong: " + e.Data.RawMessage);
+            irc.LastPongReceived = DateTime.Now; //Hacked SmartIrc4net
         }
 
         /// <summary>
@@ -384,39 +392,40 @@ namespace SWMTBot
         static void msgthread()
         {
             Thread.CurrentThread.Name = "Messaging";
+            Thread.CurrentThread.IsBackground = true; //Allow runtime to close this thread at shutdown
+            //Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
             logger.Info("Started messaging");
 
             while (irc.IsConnected) {
                 QueuedMessage qm;
 
-                lock (priQueue)
+                //Console.WriteLine("Lag is " + irc.Lag.ToString());
+
+                // First check for any priority messages to send
+                if (priQueue.Count > 0)
                 {
-                    lock (fcQueue)
-                    {
-                        // First check for any priority messages to send
-                        if (priQueue.Count > 0)
-                        {
-                            // We have priority messages to handle
-                            qm = (QueuedMessage)priQueue.Dequeue();
-                        }
-                        else
-                        {
-                            // No priority messages; let's handle the regular-class messages
-                            // Do we have any messages to handle?
-                            if (fcQueue.Count == 0)
-                            {
-                                // No messages at all to handle
-                                Thread.Sleep(10); // Sleep for 10 miliseconds
-                                continue;
-                            }
-
-                            // We do have a message to dequeue, so dequeue it
-                            qm = (QueuedMessage)fcQueue.Dequeue();
-
-                            //logger.Info(fcQueue.Count.ToString() + " in normal. sentLength: " + sentLength.ToString());
-                        }
-                    }
+                    // We have priority messages to handle
+                    lock (priQueue)
+                        qm = (QueuedMessage)priQueue.Dequeue();
                 }
+                else
+                {
+                    // No priority messages; let's handle the regular-class messages
+                    // Do we have any messages to handle?
+                    if (fcQueue.Count == 0)
+                    {
+                        // No messages at all to handle
+                        Thread.Sleep(50); // Sleep for 50 miliseconds
+                        continue; // Start the loop over
+                    }
+
+                    // We do have a message to dequeue, so dequeue it
+                    lock (fcQueue)
+                        qm = (QueuedMessage)fcQueue.Dequeue();
+
+                    //logger.Info(fcQueue.Count.ToString() + " in normal. sentLength: " + sentLength.ToString());
+                }
+
 
                 // Okay, we now have a message to handle in qm
 
@@ -424,28 +433,31 @@ namespace SWMTBot
                 if (qm.IsDroppable && (DateTime.Now.Ticks - qm.SentTime > maxlag))
                 {
                     //logger.Info("Lost packet");
-                    continue;
+                    continue; // Start the loop over
                 }
 
                 // If it's okay to send now, but we would exceed the bufflen if we were to send it
                 if (!dontSendNow && (sentLength + calculateByteLength(qm) + 2 > bufflen))
                 {
                     // Ping the server and wait for a reply
-                    irc.RfcPing("bacon");
+                    irc.RfcPing(ircServerName); //Removed Priority.Critical
+                    irc.LastPingSent = DateTime.Now; //Hacked SmartIrc4net
+                    sendlock.Reset();
                     dontSendNow = true;
-                    //logger.Info("Waiting for bacon ping");
+                    //logger.Info("Waiting for artificial PONG");
                 }
 
                 // Sleep while it's not okay to send
                 while (dontSendNow)
-                    Thread.Sleep(10);
+                    Thread.Sleep(1000);
+                //sendlock.WaitOne();
                 
                 // Okay, we can carry on now. Is our message still fresh?
                 if (qm.IsDroppable && (DateTime.Now.Ticks - qm.SentTime > maxlag))
                 // Oops, sowwy. Our message has rotten.
                 {
                     //logger.Info("Lost packet");
-                    continue;
+                    continue; // Start the loop over
                 }
 
                 // At last! Send the damn thing!
@@ -457,9 +469,9 @@ namespace SWMTBot
                 }
 
                 //logger.Info("Lag was " + (DateTime.Now.Ticks - qm.SentTime));
-
+                
                 // Throttle on our part
-                Thread.Sleep(400);
+                Thread.Sleep(300);
             }
 
             logger.Info("Thread ended");
@@ -845,6 +857,10 @@ namespace SWMTBot
             if (ignoreBotEdits && (userOffset == 5))
                 return;
 
+            //If this IsCubbie, then ignore non-uploads
+            if (IsCubbie && (r.eventtype != RCEvent.EventType.upload))
+                return;
+
             switch (r.eventtype)
             {
                 case RCEvent.EventType.edit:
@@ -1094,12 +1110,47 @@ namespace SWMTBot
                         message = getMessage(5210, ref attribs);
                     break;
                 case RCEvent.EventType.upload:
-                    /* TODO: Check if watched item */
+                    int uMsg = 5600;
+
+                    // Check if the edit summary matches BES
+                    listMatch ubes2 = listman.matchesList(r.comment, 20);
+                    if (ubes2.Success)
+                    {
+                        attribs.Add("watchword", ubes2.matchedItem);
+                        attribs.Add("lmreason", ubes2.matchedReason);
+                        uMsg = 95620;
+                    }
+
+                    // Now check if the title matches BES
+                    listMatch ubes1 = listman.matchesList(r.title, 20);
+                    if (ubes1.Success)
+                    {
+                        attribs.Add("watchword", ubes1.matchedItem);
+                        attribs.Add("lmreason", ubes1.matchedReason);
+                        uMsg = 95620;
+                    }
+
+                    // Check if upload is watched
+                    listMatch uwa = listman.isWatchedArticle(r.title, r.project);
+                    if (uwa.Success)
+                        uMsg = 5610;
+
+                    // If normal and uploaded by an admin, bot or whitelisted person (TODO: unless watched or matches word)
+                    if ((uMsg == 5600) && ((userOffset == 2) || (userOffset == 5) || (userOffset == 0)))
+                        return;
+
+                    // If our message is 95620, we might need to truncate r.comment
+                    if (uMsg == 95620)
+                    {
+                        if (r.comment.Length > 25)
+                            r.comment = r.comment.Substring(0, 23) + "...";
+                    }
+
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("uploaditem", ((Project)prjlist[r.project]).interwikiLink + r.title);
                     attribs.Add("reason", r.comment);
                     attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
-                    message = getMessage(userOffset + 5600, ref attribs);
+                    message = getMessage(userOffset + uMsg, ref attribs);
                     break;
             }
 
@@ -1110,8 +1161,10 @@ namespace SWMTBot
                 {
                     //Chunk messages that are too long
                     foreach (string chunk in SWMTUtils.stringSplit(line, 400))
-                        SendMessageF(SendType.Message, FeedChannel, chunk, true, false);
-                        //irc.SendMessage(SendType.Message, FeedChannel, chunk);
+                    {
+                        if ((chunk.Trim() != "\"\"") && (chunk.Trim() != "\""))
+                            SendMessageF(SendType.Message, FeedChannel, chunk, true, false);
+                    }
                 }
             }
         }

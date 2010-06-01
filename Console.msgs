@@ -6,7 +6,7 @@
 # %b = Toggle bolding
 #
 # 0 = Reporting (largely compatible with CVUBot) / 9 = SWMTBot-only reporting / 1 = Formatted / 2 = Interface
-00000=2.01
+00000=2.02
 
 00020=Anonymous user
 00021=Named user
@@ -129,6 +129,14 @@
 05614=%c13User%c14 [[${editor}]] %c13uploaded watched item%c14 [[${uploaditem}]] %c10URL:%c14 ${url} "${reason}"
 05615=%c14Bot%c14 [[${editor}]] %c14uploaded watched item%c14 [[${uploaditem}]] %c10URL:%c14 ${url} "${reason}"
 05616=%c07Greylist%c14 [[${editor}]] %c07uploaded watched item%c14 [[${uploaditem}]] %c10URL:%c14 ${url} "${reason}"
+
+95620=%c10Whitelist%c14 [[${editor}]] %c10uploaded%c14 [[${uploaditem}]] "${reason}" %c04%bMatches%b "${watchword}" (${lmreason})%c ${url}
+95621=%c04%bBlacklist%b%c14 [[${editor}]] %c04%buploaded%b%c14 [[${uploaditem}]] "${reason}" %c04%bMatches%b "${watchword}" (${lmreason})%c ${url}
+95622=%c14Admin%c14 [[${editor}]] %c14uploaded%c14 [[${uploaditem}]] "${reason}" %bMatches%b "${watchword}" (${lmreason}) ${url}
+95623=%c03%bIP%b%c14 [[${editor}]] %c03%buploaded%b%c14 [[${uploaditem}]] "${reason}" %c04%bMatches%b "${watchword}" (${lmreason})%c ${url}
+95624=%c13User%c14 [[${editor}]] %c13uploaded%c14 [[${uploaditem}]] "${reason}" %c04%bMatches%b "${watchword}" (${lmreason})%c ${url}
+95625=%c14Bot%c14 [[${editor}]] %c14uploaded%c14 [[${uploaditem}]] "${reason}" %c04%bMatches%b "${watchword}" (${lmreason})%c ${url}
+95626=%c04Greylist%c14 [[${editor}]] %c04uploaded%c14 [[${uploaditem}]] "${reason}" %c04%bMatches%b "${watchword}" (${lmreason})%c ${url}
 
 05700=%c06Unblock Editor%c14 [[${blockname}]] %c06unblocked by admin%c14 [[${editor}]] "${reason}"
 05701=%c06Range Unblocked ${blockname} by admin%c14 [[${editor}]] "${reason}"
