@@ -164,7 +164,7 @@ namespace SWMTBot
         /// <returns></returns>
         public static string wikiEncode(string input)
         {
-            return HttpUtility.UrlEncode(input.Replace(' ', '_')).Replace("(","%28").Replace(")","%29");
+            return HttpUtility.UrlEncode(input.Replace(' ', '_')).Replace("(","%28").Replace(")","%29").Replace("!","%21");
         }
     }
 }

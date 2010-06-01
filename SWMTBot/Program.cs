@@ -1041,8 +1041,11 @@ namespace SWMTBot
                     break;
                 case RCEvent.EventType.move:
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ceditor", r.user);
                     attribs.Add("fromname", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("cfromname", r.title);
                     attribs.Add("toname", ((Project)prjlist[r.project]).interwikiLink + r.movedTo);
+                    attribs.Add("ctoname", r.movedTo);
                     attribs.Add("url", r.blockLength); //The blockLength field stores the moveFrom URL
                     attribs.Add("reason", r.comment);
                     message = getMessage(5500 + userOffset, ref attribs);
@@ -1050,7 +1053,9 @@ namespace SWMTBot
                 case RCEvent.EventType.block:
                     attribs.Add("ipcat", "");
                     attribs.Add("blockname", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("cblockname", r.title.Split(new char[1] { ':' }, 2)[1]);
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ceditor", r.user);
                     attribs.Add("length", r.blockLength);
                     attribs.Add("reason", r.comment);
                     message = getMessage(5400, ref attribs);
@@ -1075,19 +1080,26 @@ namespace SWMTBot
                     break;
                 case RCEvent.EventType.unblock:
                     attribs.Add("blockname", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("cblockname", r.title.Split(new char[1] { ':' }, 2)[1]);
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ceditor", r.user);
                     attribs.Add("reason", r.comment);
                     message = getMessage(5700, ref attribs);
                     break;
                 case RCEvent.EventType.delete:
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ceditor", r.user);
                     attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("carticle", r.title);
+                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
                     attribs.Add("reason", r.comment);
                     message = getMessage(05300, ref attribs);
                     break;
                 case RCEvent.EventType.newuser:
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ceditor", r.user);
                     attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + SWMTUtils.wikiEncode(r.user));
+                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + SWMTUtils.wikiEncode(r.user));
                     listMatch bnuMatch = listman.matchesList(r.user, 11);
                     if (bnuMatch.Success)
                     {
@@ -1102,8 +1114,11 @@ namespace SWMTBot
                     break;
                 case RCEvent.EventType.newuser2:
                     attribs.Add("creator", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ccreator", r.user);
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.title);
+                    attribs.Add("ceditor", r.title);
                     attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + SWMTUtils.wikiEncode(r.user));
+                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + SWMTUtils.wikiEncode(r.user));
                     listMatch bnuMatch2 = listman.matchesList(r.user, 11);
                     if (bnuMatch2.Success)
                     {
@@ -1154,7 +1169,9 @@ namespace SWMTBot
                     }
 
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ceditor", r.user);
                     attribs.Add("uploaditem", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("cuploaditem", r.title);
                     attribs.Add("reason", r.comment);
                     attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
                     message = getMessage(userOffset + uMsg, ref attribs);

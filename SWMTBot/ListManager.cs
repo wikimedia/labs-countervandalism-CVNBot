@@ -109,7 +109,7 @@ namespace SWMTBot
         string parseExpiryDate(string expiry)
         {
             if (expiry == "0")
-                return "the end of time";
+                return (string)Program.msgs["20006"];
             else
             {
                 DateTime dt = new DateTime(Convert.ToInt64(expiry));
