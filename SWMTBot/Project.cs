@@ -202,7 +202,8 @@ namespace SWMTBot
             //Sometimes $2, block length, is not included. Our functions fall back to "96 hours" if this is the case:
             //Some newer messages (e.g. http://lmo.wikipedia.org/wiki/MediaWiki:Blocklogentry have a third item, $3: "anononly,nocreate,autoblock", for example.
             //This may conflict with $2 detection.
-            generateRegex("MediaWiki:Blocklogentry", 2, ref blockRegex, true);
+            //Trying (changed 2 -> 3) to see if length of time will be correctly detected using just this method:
+            generateRegex("MediaWiki:Blocklogentry", 3, ref blockRegex, true);
             generateRegex("MediaWiki:Unblocklogentry", 0, ref unblockRegex, false);
             //Sometimes the details of the rollback are not included. We're not using this message, so ignore:
             generateRegex("MediaWiki:Revertpage", 2, ref rollbackRegex, true);
@@ -233,6 +234,13 @@ namespace SWMTBot
             mwMessage = mwMessage.Replace("$3", "(?:.+?)");
             mwMessage = mwMessage.Replace("$", @"\$");
             mwMessage = "^" + mwMessage + @"(?:: (?<comment>.*?))?$"; //Special:Log comments are preceded by a colon
+
+            //Dirty code: Block log exceptions!
+            if (mwMessageTitle == "MediaWiki:Blocklogentry")
+            {
+                mwMessage = mwMessage.Replace("(?<item3>.+?)", "\\((?<item3>.+?)\\)");
+                mwMessage = mwMessage.Replace(@"(?<item2>.+?)(?:: (?<comment>.*?))?$", "(?<item2>.+?)$");
+            }
 
             try
             {

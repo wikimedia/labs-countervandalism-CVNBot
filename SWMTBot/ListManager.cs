@@ -840,9 +840,10 @@ namespace SWMTBot
                     string list = SWMTUtils.getRawDocument("http://" + projectName
                         + ".org/w/index.php?title=Special:Listusers&group=" + getGroup + "&limit=5000&offset=0");
 
-                    //Now parse the list:
-                    string sr = list.Substring(list.IndexOf("<ol start='1' class='special'>") + 30);
-                    Match lusers = adminLine.Match(sr.Substring(0, sr.IndexOf("</ol>")));
+                    //Now parse the list: 
+                    /* _1568: FIX: MW error */
+                    string sr = list.Substring(list.IndexOf("<ul>") + 4);
+                    Match lusers = adminLine.Match(sr.Substring(0, sr.IndexOf("</ul>")));
                     while (lusers.Success)
                     {
                         addUserToList(lusers.Groups[1].Captures[0].Value, projectName, getGroupUT, "SWMTBot"
@@ -910,8 +911,7 @@ namespace SWMTBot
                         , "The userlist fetcher is currently off on another errand");
 
                 Program.irc.SendMessage(Meebey.SmartIrc4net.SendType.Message, currentGetBatchChannel
-                        , "Request to get all admins and bots requested. This operation will take roughly "
-                        + (Program.prjlist.Count * 4).ToString() + " seconds.");
+                        , "Request to get admins and bots for all " + Program.prjlist.Count.ToString() + " wikis accepted.");
 
                 foreach (DictionaryEntry de in Program.prjlist)
                 {
@@ -946,6 +946,34 @@ namespace SWMTBot
                 currentGetThreadMode = "";
                 currentGetBatchChannel = "";
             }
+        }
+
+        /// <summary>
+        /// Purges the local data for a particular project
+        /// </summary>
+        /// <param name="cmdParams">The name of the project. Remember, it might not actually exist now.</param>
+        /// <returns></returns>
+        public string purgeWikiData(string cmdParams)
+        {
+            if (cmdParams.Contains("'"))
+                return "Sorry, invalid wiki name.";
+
+            int total = 0;
+            IDbConnection timdbcon = (IDbConnection)new SqliteConnection(connectionString);
+            timdbcon.Open();
+            IDbCommand timcmd = timdbcon.CreateCommand();
+            lock (dbtoken)
+            {
+                timcmd.CommandText = "DELETE FROM users WHERE project = '" + cmdParams + "'";
+                total += timcmd.ExecuteNonQuery();
+                timcmd.CommandText = "DELETE FROM watchlist WHERE project = '" + cmdParams + "'";
+                total += timcmd.ExecuteNonQuery();
+                timdbcon.Close();
+            }
+            timdbcon = null;
+            string resultStr =  "Threw away " + total.ToString() + " items that were related to " + cmdParams;
+            logger.Info(resultStr);
+            return resultStr;
         }
     }
 }

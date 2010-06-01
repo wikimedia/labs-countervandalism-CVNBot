@@ -13,6 +13,7 @@ namespace SWMTBot
         private ILog logger = LogManager.GetLogger("SWMTBot.ProjectList");
 
         public string fnProjectsXML;
+        public string currentBatchReloadChannel = "";
 
         /// <summary>
         /// Dumps all Projects to an XML file (Projects.xml)
@@ -47,7 +48,7 @@ namespace SWMTBot
                 string prjDefinition = "<project>" + parentnode.ChildNodes[i].InnerXml + "</project>";
                 Project prj = new Project();
                 prj.readProjectDetails(prjDefinition);
-                logger.Info("Registering " + prj.projectName);
+                //logger.Info("Registering " + prj.projectName);
                 this.Add(prj.projectName, prj);
             }
         }
@@ -142,6 +143,24 @@ namespace SWMTBot
 
             //Dump new settings:
             dumpToFile();
+        }
+
+        public void reloadAllWikis()
+        {
+            Thread.CurrentThread.Name = "ReloadAll";
+
+            Program.irc.SendMessage(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel
+                        , "Request to reload all " + this.Count.ToString() + " wikis accepted.");
+
+            foreach (DictionaryEntry dicent in this)
+            {
+                Project prj = (Project)dicent.Value;
+                prj.retrieveWikiDetails();
+                Thread.Sleep(800);
+            }
+
+            Program.irc.SendMessage(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel
+                        , "Reloaded all wikis. Phew, give the Wikimedia servers a break :(");
         }
     }
 }

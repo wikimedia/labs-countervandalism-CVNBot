@@ -15,7 +15,7 @@ namespace SWMTBot
 {
     class Program
     {
-        const string version = "1.15.5-testing";
+        const string version = "1.17.0";
         
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -31,11 +31,11 @@ namespace SWMTBot
             +@"09\x02(?<reason>.*?)\x02\x03\*\x03"
             +@"11\x02(?<adder>.*?)\x03\x02\*");
         static Regex botCmd;
-        /* TODO: These options should be configurable */
-        static int editblank = -1500;
-        static int editbig = 1500;
-        static int newbig = 2000;
-        static int newsmall = 15;
+        /* _1568: Added rcitems to .ini */
+        static int editblank;
+        static int editbig;
+        static int newbig;
+        static int newsmall;
         static bool ignoreBotEdits = true;
         static string ControlChannel;
         static string FeedChannel;
@@ -71,6 +71,11 @@ namespace SWMTBot
             FeedChannel = (string)mainConfig["feedchannel"];
             BroadcastChannel = (string)mainConfig["broadcastchannel"];
             ircServerName = (string)mainConfig["ircserver"];
+            /* _1568: Added for .ini */
+            editblank = Int32.Parse((string)mainConfig["editblank"]);
+            editbig = Int32.Parse((string)mainConfig["editbig"]);
+            newbig = Int32.Parse((string)mainConfig["newbig"]);
+            newsmall = Int32.Parse((string)mainConfig["newsmall"]);
             prjlist.fnProjectsXML = (string)mainConfig["projects"];
             botCmd = new Regex("^" + botNick + @" (?<command>\S*)(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
 
@@ -88,7 +93,7 @@ namespace SWMTBot
             logger.Info("Loading lists");
             listman.initDBConnection((string)mainConfig["lists"]);
 
-            logger.Info("Starting main IRC client");
+            logger.Info("Setting up main IRC client");
             //Set up freenode IRC client
             irc.Encoding = System.Text.Encoding.UTF8;
             irc.SendDelay = 300;
@@ -99,6 +104,7 @@ namespace SWMTBot
             irc.OnChannelNotice += new IrcEventHandler(irc_OnChannelNotice);
             irc.OnConnected += new EventHandler(irc_OnConnected);
             irc.OnError += new Meebey.SmartIrc4net.ErrorEventHandler(irc_OnError);
+            irc.OnConnectionError += new EventHandler(irc_OnConnectionError);
 
             try
             {
@@ -140,9 +146,20 @@ namespace SWMTBot
             catch (Exception e)
             {
                 // this should not happen by just in case we handle it nicely
-                logger.Fatal("Error occurred! Message: " + e.Message);
+                logger.Fatal("Error occurred in Main IRC try clause! Message: " + e.Message);
                 logger.Fatal("Exception: " + e.StackTrace);
                 Exit();
+            }
+        }
+
+        static void irc_OnConnectionError(object sender, EventArgs e)
+        {
+            //Let's try to catch those strange disposal errors
+            //But only if it ain't a legitimate disconnection
+            if (rcirc.rcirc.AutoReconnect)
+            {
+                logger.Error("Caught connection error in Main class, restarting...");
+                Restart();
             }
         }
 
@@ -153,7 +170,7 @@ namespace SWMTBot
         {
             try
             {
-                logger.Error("Caught unhandled exception", (Exception)e.ExceptionObject);
+                logger.Error("Caught unhandled exception in global catcher", (Exception)e.ExceptionObject);
             }
             catch
             {
@@ -180,7 +197,7 @@ namespace SWMTBot
             if (e.ErrorMessage.Contains("Excess Flood")) //Do not localize
             {
                 //Oops, we were flooded off
-                logger.Info("Initiating restart sequence");
+                logger.Warn("Initiating restart sequence after Excess Flood");
                 Restart();
             }
         }
@@ -374,7 +391,7 @@ namespace SWMTBot
                         break;
                     case "reload":
                         //Reloads wiki data for a project
-                        if (!irc.GetChannelUser(e.Data.Channel, e.Data.Nick).IsOp)
+                        if (!hasPrivileges('@', ref e))
                             return;
                         try
                         {
@@ -523,6 +540,17 @@ namespace SWMTBot
                             irc.SendMessage(SendType.Message, e.Data.Channel, chunk);
                             Thread.Sleep(400);
                         }
+                        break;
+                    case "purge":
+                        if (!hasPrivileges('@', ref e))
+                            return;
+                        irc.SendMessage(SendType.Message, e.Data.Channel, listman.purgeWikiData(extraParams));
+                        break;
+                    case "batchreload":
+                        if (!hasPrivileges('@', ref e))
+                            return;
+                        prjlist.currentBatchReloadChannel = e.Data.Channel;
+                        new Thread(new ThreadStart(prjlist.reloadAllWikis)).Start();
                         break;
                 }
             }
@@ -841,8 +869,8 @@ namespace SWMTBot
                     attribs.Add("length", r.blockLength);
                     attribs.Add("reason", r.comment);
                     message = getMessage(5400, ref attribs);
-                    //If the user isn't botlisted, add to blacklist
-                    if (listman.classifyEditor(r.user, r.project) != ListManager.UserType.bot)
+                    //If the blocked user (r.title) isn't botlisted, add to blacklist
+                    if (listman.classifyEditor(r.title.Split(new char[1] { ':' }, 2)[1], r.project) != ListManager.UserType.bot)
                     {
                         //If this isn't an indefinite/infinite block, add to blacklist
                         //Since we're in the RCReader thread, and we'll be writing to the db, we better open a new connection
@@ -851,9 +879,10 @@ namespace SWMTBot
                         if ((r.blockLength.ToLower() != "indefinite") && (r.blockLength.ToLower() != "infinite"))
                         {                                                               //345,600 seconds = 96 hours
                             int listLen = Convert.ToInt32(SWMTUtils.ParseDateTimeLength(r.blockLength, 345600) * 2.5);
+                            string blComment = "Autoblacklist: " + r.comment + " on " + r.project;
                             message += "\n" + listman.addUserToList(r.title.Split(new char[1] { ':' }, 2)[1], "" //Global bl
-                                , ListManager.UserType.blacklisted, r.user, "Autoblacklist: " + r.comment, listLen, ref rcdbcon);
-                            Broadcast("BL", "ADD", r.title.Split(new char[1] { ':' }, 2)[1], listLen, "Autoblacklist: " + r.comment, r.user);
+                                , ListManager.UserType.blacklisted, r.user, blComment , listLen, ref rcdbcon);
+                            Broadcast("BL", "ADD", r.title.Split(new char[1] { ':' }, 2)[1], listLen, blComment, r.user);
                         }
                         rcdbcon.Close();
                         rcdbcon = null;
@@ -864,6 +893,12 @@ namespace SWMTBot
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("reason", r.comment);
                     message = getMessage(5700, ref attribs);
+                    break;
+                case RCEvent.EventType.delete:
+                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("reason", r.comment);
+                    message = getMessage(05300, ref attribs);
                     break;
                 case RCEvent.EventType.newuser:
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
@@ -924,6 +959,7 @@ namespace SWMTBot
             {
                 //Delayed quitting after parting in PartIRC()
                 irc.Disconnect();
+                rcirc.rcirc.AutoReconnect = false;
                 rcirc.rcirc.Disconnect();
 
                 listman.closeDBConnection();

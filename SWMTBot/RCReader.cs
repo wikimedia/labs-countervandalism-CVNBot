@@ -63,6 +63,7 @@ namespace SWMTBot
             rcirc.OnConnected += new EventHandler(rcirc_OnConnected);
             rcirc.OnQueryMessage += new IrcEventHandler(rcirc_OnQueryMessage);
             rcirc.OnDisconnected += new EventHandler(rcirc_OnDisconnected);
+            rcirc.OnConnectionError += new EventHandler(rcirc_OnConnectionError);
 
             try
             {
@@ -94,10 +95,25 @@ namespace SWMTBot
             }
         }
 
+        void rcirc_OnConnectionError(object sender, EventArgs e)
+        {
+            //Let's try to catch those awkward disposal exceptions
+            //If it ain't a legitimate disconnection (i.e., if it wasn't ordered)
+            if (rcirc.AutoReconnect)
+            {
+                logger.Error("Caught connection error in RCReader class, restarting...");
+                Program.Restart();
+            }
+        }
+
         void rcirc_OnDisconnected(object sender, EventArgs e)
         {
-            //Currently a debug function to see if this thing actually works
-            logger.Warn("RCReader has been disconnected");
+            if (rcirc.AutoReconnect)
+            {
+                //Was an unexpected disconnection
+                logger.Warn("RCReader has been disconnected, attempting reconnection");
+                rcirc.Reconnect();
+            }
         }
 
         void rcirc_OnQueryMessage(object sender, IrcEventArgs e)
@@ -113,7 +129,7 @@ namespace SWMTBot
 
         void rcirc_OnConnected(object sender, EventArgs e)
         {
-            logger.Info("Connected to live IRC feed");
+            logger.Info("Connected to RC feed");
         }
 
         void rcirc_OnChannelMessage(object sender, IrcEventArgs e)
@@ -166,19 +182,24 @@ namespace SWMTBot
                         case "newusers":
                             //Could be a user creating their own account, or a user creating a sockpuppet
 
+                            //Message as of June 5, 2007 on test.wikipedia
+                            //[[Special:Log/newusers]] create2  * Tangotango * created account for User:Sockpuppy
+                            
+                            //Old? :
                             //[[Special:Log/newusers]] create2  * Srikeit *  created account for User:Srikeit Test: [[User talk:Srikeit Test|Talk]] | [[Special:Contributions/Srikeit Test|contribs]] | [[Special:Blockip/Srikeit Test|block]]
                             //Check the flag
-                            if (fields[4] == "create2")
+                            if (fields[4].Contains("create2")) //For some reason create2 shows up as " create2"
                             {
                                 Match mc2 = ((Project)Program.prjlist[rce.project]).rCreate2Regex.Match(rce.comment);
                                 if (mc2.Success)
                                 {
                                     rce.title = mc2.Groups[1].Captures[0].Value;
                                     rce.eventtype = RCEvent.EventType.newuser2;
+                                    //logger.Info("create2 event detected, and mc2 success");
                                 }
                                 else
                                 {
-                                    logger.Warn("Unmatched create2 event: " + rce.comment);
+                                    logger.Warn("Unmatched create2 event: " + e.Data.Message);
                                 }
                             }
                             else
@@ -211,7 +232,7 @@ namespace SWMTBot
                                     if (ubm.Success)
                                     {
                                         rce.eventtype = RCEvent.EventType.unblock;
-                                        rce.title = bm.Groups["item1"].Captures[0].Value;
+                                        rce.title = ubm.Groups["item1"].Captures[0].Value;
                                         try
                                         {
                                             rce.comment = ubm.Groups["comment"].Captures[0].Value;
@@ -221,7 +242,7 @@ namespace SWMTBot
                                     else
                                     {
                                         //All failed; is block but regex does not match
-                                        logger.Warn("Unmatched block type: " + rce.comment);
+                                        logger.Warn("Unmatched block type: " + e.Data.Message);
                                         return;
                                     }
                                 }
@@ -259,7 +280,7 @@ namespace SWMTBot
                                 }
                                 else
                                 {
-                                    logger.Warn("Unmatched protect type: " + rce.comment);
+                                    logger.Warn("Unmatched protect type: " + e.Data.Message);
                                     return;
                                 }
                             }
@@ -270,6 +291,7 @@ namespace SWMTBot
                         //break;
                         case "delete":
                             //Could be a delete or restore; need to parse regex
+                            //_1568: ADDED: Support for deletions, now reported in rc stream
                             Match dm = ((Project)Program.prjlist[rce.project]).rdeleteRegex.Match(rce.comment);
                             if (dm.Success)
                             {
@@ -296,7 +318,7 @@ namespace SWMTBot
                                 }
                                 else
                                 {
-                                    logger.Warn("Unmatched delete type: " + rce.comment);
+                                    logger.Warn("Unmatched delete type: " + e.Data.Message);
                                     return;
                                 }
                             }
@@ -316,7 +338,7 @@ namespace SWMTBot
                             }
                             else
                             {
-                                logger.Warn("Unmatched upload: " + rce.comment);
+                                logger.Warn("Unmatched upload: " + e.Data.Message);
                                 return;
                             }
                             break;
@@ -354,7 +376,7 @@ namespace SWMTBot
                                 }
                                 else
                                 {
-                                    logger.Warn("Unmatched move type: " + rce.comment);
+                                    logger.Warn("Unmatched move type: " + e.Data.Message);
                                     return;
                                 }
                             }
@@ -375,7 +397,7 @@ namespace SWMTBot
                             return; //Not interested today
                         //break;
                         default:
-                            logger.Warn("Unhandled log type: " + logType + "; Comment was: " + rce.comment);
+                            logger.Warn("Unhandled log type: " + logType + "; " + e.Data.Message);
                             //Don't react to event
                             return;
                     }
