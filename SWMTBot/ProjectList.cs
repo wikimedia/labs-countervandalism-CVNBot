@@ -149,8 +149,8 @@ namespace SWMTBot
         {
             Thread.CurrentThread.Name = "ReloadAll";
 
-            Program.irc.SendMessage(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel
-                        , "Request to reload all " + this.Count.ToString() + " wikis accepted.");
+            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel
+                        , "Request to reload all " + this.Count.ToString() + " wikis accepted.", false, true);
 
             foreach (DictionaryEntry dicent in this)
             {
@@ -159,8 +159,8 @@ namespace SWMTBot
                 Thread.Sleep(800);
             }
 
-            Program.irc.SendMessage(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel
-                        , "Reloaded all wikis. Phew, give the Wikimedia servers a break :(");
+            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel
+                        , "Reloaded all wikis. Phew, give the Wikimedia servers a break :(", false, false);
         }
     }
 }

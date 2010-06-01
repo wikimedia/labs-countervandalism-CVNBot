@@ -199,7 +199,7 @@ namespace SWMTBot
                                 }
                                 else
                                 {
-                                    logger.Warn("Unmatched create2 event: " + e.Data.Message);
+                                    logger.Warn("Unmatched create2 event in " + rce.project + ": " + e.Data.Message);
                                 }
                             }
                             else
@@ -242,7 +242,7 @@ namespace SWMTBot
                                     else
                                     {
                                         //All failed; is block but regex does not match
-                                        logger.Warn("Unmatched block type: " + e.Data.Message);
+                                        logger.Warn("Unmatched block type in " + rce.project + ": " + e.Data.Message);
                                         return;
                                     }
                                 }
@@ -280,7 +280,7 @@ namespace SWMTBot
                                 }
                                 else
                                 {
-                                    logger.Warn("Unmatched protect type: " + e.Data.Message);
+                                    logger.Warn("Unmatched protect type in " + rce.project + ": " + e.Data.Message);
                                     return;
                                 }
                             }
@@ -318,7 +318,7 @@ namespace SWMTBot
                                 }
                                 else
                                 {
-                                    logger.Warn("Unmatched delete type: " + e.Data.Message);
+                                    logger.Warn("Unmatched delete type in " + rce.project + ": " + e.Data.Message);
                                     return;
                                 }
                             }
@@ -338,7 +338,7 @@ namespace SWMTBot
                             }
                             else
                             {
-                                logger.Warn("Unmatched upload: " + e.Data.Message);
+                                logger.Warn("Unmatched upload in " + rce.project + ": " + e.Data.Message);
                                 return;
                             }
                             break;
@@ -376,7 +376,7 @@ namespace SWMTBot
                                 }
                                 else
                                 {
-                                    logger.Warn("Unmatched move type: " + e.Data.Message);
+                                    logger.Warn("Unmatched move type in " + rce.project + ": " + e.Data.Message);
                                     return;
                                 }
                             }
@@ -397,7 +397,7 @@ namespace SWMTBot
                             return; //Not interested today
                         //break;
                         default:
-                            logger.Warn("Unhandled log type: " + logType + "; " + e.Data.Message);
+                            logger.Warn("Unhandled log type: " + logType + " in " + rce.project + ": " + e.Data.Message);
                             //Don't react to event
                             return;
                     }

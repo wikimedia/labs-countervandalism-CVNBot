@@ -13,9 +13,18 @@ using log4net;
 
 namespace SWMTBot
 {
+    class QueuedMessage
+    {
+        public SendType type;
+        public String destination;
+        public String message;
+        public long SentTime;
+        public bool IsDroppable = false;
+    }
+
     class Program
     {
-        const string version = "1.17.0";
+        const string version = "1.17.1";
         
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -24,6 +33,12 @@ namespace SWMTBot
         public static SortedList msgs = new SortedList();
         public static SortedList mainConfig = new SortedList();
         private static ILog logger = LogManager.GetLogger("SWMTBot.Program");
+
+        //Flood protection objects
+        static Queue fcQueue = new Queue();
+        static Queue priQueue = new Queue();
+        static Boolean dontSendNow = false;
+        static int sentLength = 0;
 
         static Regex broadcastMsg = new Regex(@"\*\x02B/1.1\x02\*(?<list>.+?)\*(?<action>.+?)\*\x03"
             +@"07\x02(?<item>.+?)\x02\x03\*\x03"
@@ -41,6 +56,8 @@ namespace SWMTBot
         static string FeedChannel;
         static string BroadcastChannel;
         static string ircServerName;
+        static int bufflen = 1400;
+        static long maxlag = 600000000; // 60 seconds in 100-nanoseconds
 
         public static string botNick;
 
@@ -105,6 +122,7 @@ namespace SWMTBot
             irc.OnConnected += new EventHandler(irc_OnConnected);
             irc.OnError += new Meebey.SmartIrc4net.ErrorEventHandler(irc_OnError);
             irc.OnConnectionError += new EventHandler(irc_OnConnectionError);
+            irc.OnPong += new PongEventHandler(irc_OnPong);
 
             try
             {
@@ -116,12 +134,16 @@ namespace SWMTBot
                 Exit();
             }
 
+            // Now initialize flood protection code
+            new Thread(new ThreadStart(msgthread)).Start();
+
             try
             {
                 irc.Login(botNick, (string)mainConfig["description"] + " " + version, 4, botNick, (string)mainConfig["botpass"]);
                 irc.RfcJoin(ControlChannel);
                 irc.RfcJoin(FeedChannel);
-                irc.RfcJoin(BroadcastChannel);
+                if (BroadcastChannel != "None")
+                    irc.RfcJoin(BroadcastChannel);
                 
                 //Now connect the RCReader to channels
                 new Thread(new ThreadStart(rcirc.initiateConnection)).Start();
@@ -158,7 +180,7 @@ namespace SWMTBot
             //But only if it ain't a legitimate disconnection
             if (rcirc.rcirc.AutoReconnect)
             {
-                logger.Error("Caught connection error in Main class, restarting...");
+                logger.Error("OnConnectionError in Program, restarting...");
                 Restart();
             }
         }
@@ -285,11 +307,12 @@ namespace SWMTBot
                         case "FIND":
                             if (list == "BLEEP")
                                 if (prjlist.ContainsKey(item))
-                                    irc.SendMessage(SendType.Action, reason, "has " + item + ", " + adder + " :D");
+                                    SendMessageF(SendType.Action, reason, "has " + item + ", " + adder + " :D", false, true);
                             break;
                         case "COUNT":
                             if (list == "BLEEP")
-                                irc.SendMessage(SendType.Action, reason, "owns " + prjlist.Count.ToString() + " wikis; version is " + version);
+                                SendMessageF(SendType.Action, reason, "owns " + prjlist.Count.ToString() + " wikis; version is " + version,
+                                    false, true);
                             break;
                         //Gracefully ignore unknown action types
                     }
@@ -306,6 +329,144 @@ namespace SWMTBot
             logger.Info("Connected to " + ircServerName);
         }
 
+
+        #region Flood protection code
+
+        /// <summary>
+        /// Route all irc.SendMessage() calls through this to use the queue
+        /// </summary>
+        public static void SendMessageF(SendType type, string destination, string message, bool IsDroppable, bool IsPriority)
+        {
+            QueuedMessage qm = new QueuedMessage();
+            qm.type = type;
+            qm.message = message;
+            qm.destination = destination;
+            qm.SentTime = DateTime.Now.Ticks;
+            qm.IsDroppable = IsDroppable;
+
+            if (IsPriority)
+                lock (priQueue)
+                    priQueue.Enqueue(qm);
+            else
+                lock (fcQueue)
+                    fcQueue.Enqueue(qm);
+
+            //logger.Info("Queued item");
+        }
+
+        static void irc_OnPong(object sender, PongEventArgs e)
+        {
+            sentLength = 0;
+            dontSendNow = false;
+            //logger.Info("Got ping!");
+        }
+
+        /// <summary>
+        /// Calculates the rough length, in bytes, of a queued message
+        /// </summary>
+        /// <param name="qm"></param>
+        /// <returns></returns>
+        static int calculateByteLength(QueuedMessage qm)
+        {
+            // PRIVMSG #channelname :My message here (10 + destination + message)
+            // NOTICE #channelname :My message here (9 + dest + msg)
+            if (qm.type == SendType.Notice)
+                return 11 + System.Text.ASCIIEncoding.Unicode.GetByteCount(qm.message)
+                    + System.Text.ASCIIEncoding.Unicode.GetByteCount(qm.destination);
+            else
+                return 12 + System.Text.ASCIIEncoding.Unicode.GetByteCount(qm.message)
+                    + System.Text.ASCIIEncoding.Unicode.GetByteCount(qm.destination);
+        }
+
+        /// <summary>
+        /// Thread function that runs continuously in the background, sending messages
+        /// </summary>
+        static void msgthread()
+        {
+            Thread.CurrentThread.Name = "Messaging";
+            logger.Info("Started messaging");
+
+            while (irc.IsConnected) {
+                QueuedMessage qm;
+
+                lock (priQueue)
+                {
+                    lock (fcQueue)
+                    {
+                        // First check for any priority messages to send
+                        if (priQueue.Count > 0)
+                        {
+                            // We have priority messages to handle
+                            qm = (QueuedMessage)priQueue.Dequeue();
+                        }
+                        else
+                        {
+                            // No priority messages; let's handle the regular-class messages
+                            // Do we have any messages to handle?
+                            if (fcQueue.Count == 0)
+                            {
+                                // No messages at all to handle
+                                Thread.Sleep(10); // Sleep for 10 miliseconds
+                                continue;
+                            }
+
+                            // We do have a message to dequeue, so dequeue it
+                            qm = (QueuedMessage)fcQueue.Dequeue();
+
+                            //logger.Info(fcQueue.Count.ToString() + " in normal. sentLength: " + sentLength.ToString());
+                        }
+                    }
+                }
+
+                // Okay, we now have a message to handle in qm
+
+                // Is our message too old?
+                if (qm.IsDroppable && (DateTime.Now.Ticks - qm.SentTime > maxlag))
+                {
+                    //logger.Info("Lost packet");
+                    continue;
+                }
+
+                // If it's okay to send now, but we would exceed the bufflen if we were to send it
+                if (!dontSendNow && (sentLength + calculateByteLength(qm) + 2 > bufflen))
+                {
+                    // Ping the server and wait for a reply
+                    irc.RfcPing("bacon");
+                    dontSendNow = true;
+                    //logger.Info("Waiting for bacon ping");
+                }
+
+                // Sleep while it's not okay to send
+                while (dontSendNow)
+                    Thread.Sleep(10);
+                
+                // Okay, we can carry on now. Is our message still fresh?
+                if (qm.IsDroppable && (DateTime.Now.Ticks - qm.SentTime > maxlag))
+                // Oops, sowwy. Our message has rotten.
+                {
+                    //logger.Info("Lost packet");
+                    continue;
+                }
+
+                // At last! Send the damn thing!
+                // ...but only if we're still connected
+                if (irc.IsConnected)
+                {
+                    sentLength = sentLength + calculateByteLength(qm) + 2;
+                    irc.SendMessage(qm.type, qm.destination, qm.message);
+                }
+
+                //logger.Info("Lag was " + (DateTime.Now.Ticks - qm.SentTime));
+
+                // Throttle on our part
+                Thread.Sleep(400);
+            }
+
+            logger.Info("Thread ended");
+        }
+
+        #endregion
+
         static bool hasPrivileges(char minimum, ref IrcEventArgs e)
         {
             switch (minimum)
@@ -313,7 +474,7 @@ namespace SWMTBot
                 case '@':
                     if (!irc.GetChannelUser(e.Data.Channel, e.Data.Nick).IsOp)
                     {
-                        irc.SendMessage(SendType.Notice, e.Data.Nick, (String)msgs["00122"]);
+                        SendMessageF(SendType.Notice, e.Data.Nick, (String)msgs["00122"], false, true);
                         return false;
                     }
                     else
@@ -321,7 +482,7 @@ namespace SWMTBot
                 case '+':
                     if (!irc.GetChannelUser(e.Data.Channel, e.Data.Nick).IsOp && !irc.GetChannelUser(e.Data.Channel, e.Data.Nick).IsVoice)
                     {
-                        irc.SendMessage(SendType.Notice, e.Data.Nick, (String)msgs["00120"]);
+                        SendMessageF(SendType.Notice, e.Data.Nick, (String)msgs["00120"], false, true);
                         return false;
                     }
                     else
@@ -376,18 +537,18 @@ namespace SWMTBot
                         break;
                     case "status":
                         TimeSpan ago = DateTime.Now.Subtract(rcirc.lastMessage);
-                        irc.SendMessage(SendType.Message, e.Data.Channel, "Last message was received on RCReader "
-                            + ago.TotalSeconds + " seconds ago");
+                        SendMessageF(SendType.Message, e.Data.Channel, "Last message was received on RCReader "
+                            + ago.TotalSeconds + " seconds ago", false, false);
                         break;
                     case "help":
-                        irc.SendMessage(SendType.Message, e.Data.Channel, (String)msgs["20005"]);
+                        SendMessageF(SendType.Message, e.Data.Channel, (String)msgs["20005"], false, true);
                         break;
                     case "msgs":
                         //Reloads msgs
                         if (!hasPrivileges('@', ref e))
                             return;
                         readMessages((string)mainConfig["messages"]);
-                        irc.SendMessage(SendType.Message, e.Data.Channel, "Re-read messages");
+                        SendMessageF(SendType.Message, e.Data.Channel, "Re-read messages", false, false);
                         break;
                     case "reload":
                         //Reloads wiki data for a project
@@ -399,11 +560,11 @@ namespace SWMTBot
                                 throw new Exception("Project " + cmdParams[0] + " is not loaded");
 
                             ((Project)prjlist[cmdParams[0]]).retrieveWikiDetails();
-                            irc.SendMessage(SendType.Message, e.Data.Channel, "Reloaded project " + cmdParams[0]);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Reloaded project " + cmdParams[0], false, false);
                         }
                         catch (Exception ex)
                         {
-                            irc.SendMessage(SendType.Message, e.Data.Channel, "Unable to reload: " + ex.Message);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Unable to reload: " + ex.Message, false, true);
                             logger.Error("Reload project failed: " + ex.Message);
                         }
                         break;
@@ -417,16 +578,16 @@ namespace SWMTBot
                             else
                                 prjlist.addNewProject(cmdParams[0], "");
 
-                            irc.SendMessage(SendType.Message, e.Data.Channel, "Loaded new project " + cmdParams[0]);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Loaded new project " + cmdParams[0], false, true);
                             //Automatically get admins and bots:
                             Thread.Sleep(200);
-                            irc.SendMessage(SendType.Message, e.Data.Channel, listman.configGetAdmins(cmdParams[0]));
+                            SendMessageF(SendType.Message, e.Data.Channel, listman.configGetAdmins(cmdParams[0]), false, false);
                             Thread.Sleep(500);
-                            irc.SendMessage(SendType.Message, e.Data.Channel, listman.configGetBots(cmdParams[0]));
+                            SendMessageF(SendType.Message, e.Data.Channel, listman.configGetBots(cmdParams[0]), false, false);
                         }
                         catch (Exception ex)
                         {
-                            irc.SendMessage(SendType.Message, e.Data.Channel, "Unable to add project: " + ex.Message);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Unable to add project: " + ex.Message, false, true);
                             logger.Error("Add project failed: " + ex.Message);
                         }
                         break;
@@ -439,24 +600,25 @@ namespace SWMTBot
                             {
                                 if (prjlist.ContainsKey(cmdParams[0]))
                                 {
-                                    irc.SendMessage(SendType.Action, e.Data.Channel, "has " + cmdParams[0] + ", " + e.Data.Nick + " :D");
+                                    SendMessageF(SendType.Action, e.Data.Channel, "has " + cmdParams[0] + ", " + e.Data.Nick + " :D", false, true);
                                 }
                                 else
                                 {
                                     Broadcast("BLEEP", "FIND", cmdParams[0], 0, e.Data.Channel, e.Data.Nick);
-                                    irc.SendMessage(SendType.Message, e.Data.Channel, "Bleeped. Please wait for a reply.");
+                                    SendMessageF(SendType.Message, e.Data.Channel, "Bleeped. Please wait for a reply.", false, true);
                                 }
                             }
                         } catch (Exception ex)
                         {
-                            irc.SendMessage(SendType.Message, e.Data.Channel, "Unable to bleep: " + ex.Message);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Unable to bleep: " + ex.Message, false, true);
                         }
                         break;
                     case "count":
                         if (!hasPrivileges('+', ref e))
                             return;
                         Broadcast("BLEEP", "COUNT", "BLEEP", 0, e.Data.Channel, e.Data.Nick);
-                        irc.SendMessage(SendType.Action, e.Data.Channel, "owns " + prjlist.Count.ToString() + " wikis; version is " + version);
+                        SendMessageF(SendType.Action, e.Data.Channel, "owns " + prjlist.Count.ToString() + " wikis; version is " + version,
+                            false, true);
                         break;
                     case "drop":
                         if (!hasPrivileges('@', ref e))
@@ -464,11 +626,11 @@ namespace SWMTBot
                         try
                         {
                             prjlist.deleteProject(cmdParams[0]);
-                            irc.SendMessage(SendType.Message, e.Data.Channel, "Deleted project " + cmdParams[0]);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Deleted project " + cmdParams[0], false, true);
                         }
                         catch (Exception ex)
                         {
-                            irc.SendMessage(SendType.Message, e.Data.Channel, "Unable to delete project: " + ex.Message);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Unable to delete project: " + ex.Message, false, true);
                             logger.Error("Delete project failed: " + ex.Message);
                         }
                         break;
@@ -480,10 +642,7 @@ namespace SWMTBot
                         }
                         result += "(Total: " + prjlist.Count.ToString() + " wikis)";
                         foreach (string chunk in SWMTUtils.stringSplit(result, 400))
-                        {
-                            irc.SendMessage(SendType.Message, e.Data.Channel, chunk);
-                            Thread.Sleep(400);
-                        }
+                            SendMessageF(SendType.Message, e.Data.Channel, chunk, false, true);
                         break;
                     case "batchgetusers":
                         if (!hasPrivileges('@', ref e))
@@ -492,59 +651,60 @@ namespace SWMTBot
                         new Thread(new ThreadStart(listman.BatchGetAllAdminsAndBots)).Start();
                         break;
                     case "bl":
-                        irc.SendMessage(SendType.Message, e.Data.Channel,
-                            listman.handleListCommand(1, e.Data.Nick, extraParams));
+                        SendMessageF(SendType.Message, e.Data.Channel,
+                            listman.handleListCommand(1, e.Data.Nick, extraParams), false, true);
                         break;
                     case "wl":
-                        irc.SendMessage(SendType.Message, e.Data.Channel,
-                            listman.handleListCommand(0, e.Data.Nick, extraParams));
+                        SendMessageF(SendType.Message, e.Data.Channel,
+                            listman.handleListCommand(0, e.Data.Nick, extraParams), false, true);
                         break;
                     case "gl":
-                        irc.SendMessage(SendType.Message, e.Data.Channel,
-                            listman.handleListCommand(6, e.Data.Nick, extraParams));
+                        SendMessageF(SendType.Message, e.Data.Channel,
+                            listman.handleListCommand(6, e.Data.Nick, extraParams), false, true);
                         break;
                     case "al":
-                        irc.SendMessage(SendType.Message, e.Data.Channel,
-                            listman.handleListCommand(2, e.Data.Nick, extraParams));
+                        SendMessageF(SendType.Message, e.Data.Channel,
+                            listman.handleListCommand(2, e.Data.Nick, extraParams), false, true);
                         break;
                     case "bots":
-                        irc.SendMessage(SendType.Message, e.Data.Channel,
-                            listman.handleListCommand(5, e.Data.Nick, extraParams));
+                    case "bot":
+                        SendMessageF(SendType.Message, e.Data.Channel,
+                            listman.handleListCommand(5, e.Data.Nick, extraParams), false, true);
                         break;
                     case "cvp":
-                        irc.SendMessage(SendType.Message, e.Data.Channel,
-                            listman.handleListCommand(10, e.Data.Nick, extraParams));
+                        SendMessageF(SendType.Message, e.Data.Channel,
+                            listman.handleListCommand(10, e.Data.Nick, extraParams), false, true);
                         break;
                     case "bnu":
-                        irc.SendMessage(SendType.Message, e.Data.Channel,
-                            listman.handleListCommand(11, e.Data.Nick, extraParams));
+                        SendMessageF(SendType.Message, e.Data.Channel,
+                            listman.handleListCommand(11, e.Data.Nick, extraParams), false, true);
                         break;
                     case "bna":
-                        irc.SendMessage(SendType.Message, e.Data.Channel,
-                            listman.handleListCommand(12, e.Data.Nick, extraParams));
+                        SendMessageF(SendType.Message, e.Data.Channel,
+                            listman.handleListCommand(12, e.Data.Nick, extraParams), false, true);
                         break;
                     case "bes":
-                        irc.SendMessage(SendType.Message, e.Data.Channel,
-                            listman.handleListCommand(20, e.Data.Nick, extraParams));
+                        SendMessageF(SendType.Message, e.Data.Channel,
+                            listman.handleListCommand(20, e.Data.Nick, extraParams), false, true);
                         break;
                     case "getadmins":
-                        irc.SendMessage(SendType.Message, e.Data.Channel, listman.configGetAdmins(extraParams));
+                        SendMessageF(SendType.Message, e.Data.Channel, listman.configGetAdmins(extraParams), false, true);
                         break;
                     case "getbots":
-                        irc.SendMessage(SendType.Message, e.Data.Channel, listman.configGetBots(extraParams));
+                        SendMessageF(SendType.Message, e.Data.Channel, listman.configGetBots(extraParams), false, true);
                         break;
                     case "intel":
                         string intelResult = listman.GlobalIntel(extraParams);
                         foreach (string chunk in intelResult.Split(new char[1] {'\n'}))
                         {
-                            irc.SendMessage(SendType.Message, e.Data.Channel, chunk);
+                            SendMessageF(SendType.Message, e.Data.Channel, chunk, false, true);
                             Thread.Sleep(400);
                         }
                         break;
                     case "purge":
                         if (!hasPrivileges('@', ref e))
                             return;
-                        irc.SendMessage(SendType.Message, e.Data.Channel, listman.purgeWikiData(extraParams));
+                        SendMessageF(SendType.Message, e.Data.Channel, listman.purgeWikiData(extraParams), false, true);
                         break;
                     case "batchreload":
                         if (!hasPrivileges('@', ref e))
@@ -634,18 +794,20 @@ namespace SWMTBot
 
         public static void Broadcast(string list, string action, string item, int expiry, string reason, string adder)
         {
+            if (BroadcastChannel == "None")
+                return;
             string bMsg = "*%BB/1.1%B*" + list + "*" + action + "*%C07%B" + item + "%B%C*%C13" + expiry.ToString()
                 + "%C*%C09%B" + reason + "%B%C*%C11%B" + adder + "%C%B*";
-            irc.SendMessage(SendType.Notice, BroadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"));
-            Thread.Sleep(200);
+            SendMessageF(SendType.Notice, BroadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"), false, true);
         }
 
         public static void BroadcastDD(string type, string codename, string message, string ingredients)
         {
+            if (BroadcastChannel == "None")
+                return;
             string bMsg = "*%BDD/1.0%B*" + type + "*" + codename + "*%C07%B" + message + "%B%C*%C13" + ingredients + "%C*";
-            irc.SendMessage(SendType.Notice, BroadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"));
+            SendMessageF(SendType.Notice, BroadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"), false, true);
             logger.Info("Broadcasted DD: " + type + "," + codename + "," + message + "," + ingredients);
-            Thread.Sleep(200);
         }
 
         /// <summary>
@@ -948,7 +1110,8 @@ namespace SWMTBot
                 {
                     //Chunk messages that are too long
                     foreach (string chunk in SWMTUtils.stringSplit(line, 400))
-                        irc.SendMessage(SendType.Message, FeedChannel, chunk);
+                        SendMessageF(SendType.Message, FeedChannel, chunk, true, false);
+                        //irc.SendMessage(SendType.Message, FeedChannel, chunk);
                 }
             }
         }

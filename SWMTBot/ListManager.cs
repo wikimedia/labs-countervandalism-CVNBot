@@ -549,6 +549,9 @@ namespace SWMTBot
                                     Program.Broadcast("GL", "DEL", item, 0, reason, user);
                                     return delUserFromList(item, "", UserType.greylisted);
                                 case 2: //Adminlist
+                                    if (project == "")
+                                        return (string)Program.msgs["20001"];
+                                    return delUserFromList(item, project, UserType.admin);
                                 case 5: //Botlist
                                     if (project == "")
                                         return (string)Program.msgs["20001"];
@@ -907,11 +910,12 @@ namespace SWMTBot
                     return; //Shouldn't happen, but here anyway
 
                 if (currentGetThreadMode != "")
-                    Program.irc.SendMessage(Meebey.SmartIrc4net.SendType.Message, currentGetBatchChannel
-                        , "The userlist fetcher is currently off on another errand");
+                    Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentGetBatchChannel
+                        , "The userlist fetcher is currently off on another errand", false, true);
 
-                Program.irc.SendMessage(Meebey.SmartIrc4net.SendType.Message, currentGetBatchChannel
-                        , "Request to get admins and bots for all " + Program.prjlist.Count.ToString() + " wikis accepted.");
+                Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentGetBatchChannel
+                        , "Request to get admins and bots for all " + Program.prjlist.Count.ToString() + " wikis accepted.",
+                        false, true);
 
                 foreach (DictionaryEntry de in Program.prjlist)
                 {
@@ -936,8 +940,8 @@ namespace SWMTBot
                     Thread.Sleep(800);
                 }
 
-                Program.irc.SendMessage(Meebey.SmartIrc4net.SendType.Message, currentGetBatchChannel
-                        , "Done fetching all admins and bots. Phew, I'm tired :P");
+                Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentGetBatchChannel
+                        , "Done fetching all admins and bots. Phew, I'm tired :P", false, false);
             }
             finally
             {
