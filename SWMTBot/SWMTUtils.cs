@@ -46,7 +46,7 @@ namespace SWMTBot
         }
 
         /// <summary>
-        /// Like PHP's strtotime() function, attempts to parse a GNU date/time into number of hours
+        /// Like PHP's strtotime() function, attempts to parse a GNU date/time into number of seconds
         /// </summary>
         /// <param name="input">String representation of date/time length</param>
         /// <returns></returns>
@@ -63,11 +63,11 @@ namespace SWMTBot
                 case "infinite":
                     return 0;
                 case "tomorrow":
-                    return 24;
+                    return 24 * 3600;
             }
 
             //Now for some real parsing
-            Double sumHours = 0;
+            Double sumSeconds = 0;
             MatchCollection mc = rfindValues.Matches(parseStr);
 
             foreach (Match m in mc)
@@ -75,38 +75,38 @@ namespace SWMTBot
                 switch (m.Groups[2].Captures[0].Value)
                 {
                     case "year":
-                        sumHours += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 8760; //365 days
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 8760 * 3600; //365 days
                         break;
                     case "month":
-                        sumHours += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 732; //30.5 days
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 732 * 3600; //30.5 days
                         break;
                     case "fortnight":
-                        sumHours += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 336; //14 days
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 336 * 3600; //14 days
                         break;
                     case "week":
-                        sumHours += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 168; //7 days
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 168 * 3600; //7 days
                         break;
                     case "day":
-                        sumHours += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 24; //24 hours
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 24 * 3600; //24 hours
                         break;
                     case "hour":
-                        sumHours += Convert.ToInt32(m.Groups[1].Captures[0].Value); //1 hour
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 3600; //1 hour
                         break;
                     case "minute":
                     case "min":
-                        sumHours += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 0.0167; //One sixtieth of an hour
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 60; //60 seconds
                         break;
                     case "second":
                     case "sec":
-                        sumHours += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 2.7778e-4; //One three-thousand-six-hundreth of an hour
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value); //One second
                         break;
                 }
             }
 
-            if (sumHours == 0)
+            if (sumSeconds == 0)
                 return defaultLen;
 
-            return Convert.ToInt32(sumHours);
+            return Convert.ToInt32(sumSeconds);
         }
 
         /// <summary>

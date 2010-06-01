@@ -91,14 +91,14 @@ namespace SWMTBot
         /// <summary>
         /// Gets an expiry date in ticks in relation to Now
         /// </summary>
-        /// <param name="expiry">How many hours in the future to set expiry to</param>
+        /// <param name="expiry">How many seconds in the future to set expiry to</param>
         /// <returns></returns>
         string getExpiryDate(int expiry)
         {
             if (expiry == 0)
                 return "0";
             else
-                return DateTime.Now.AddHours(expiry).Ticks.ToString();
+                return DateTime.Now.AddSeconds(expiry).Ticks.ToString();
         }
 
         /// <summary>
@@ -154,9 +154,10 @@ namespace SWMTBot
                 return Program.getFormatMessage(16104, showUserOnList(name, project));
             }
                                                 //If adding to greylist, we can accept a new entry, as they may overlap
-            else if ((originalType == UserType.anon) || (originalType == UserType.user) || (type == UserType.greylisted))
+            else if ((originalType == UserType.anon) || (originalType == UserType.user) || (type == UserType.greylisted)
+                || ((originalType == UserType.greylisted) && (type == UserType.blacklisted))) //Also allow adding greylisted users to the blacklist
             {
-                // User was originally unlisted, we can safely add them to the new list
+                // User was originally unlisted or is on non-conflicting list
                 IDbCommand cmd = connector.CreateCommand();
                 cmd.CommandText = "INSERT INTO users (name, project, type, adder, reason, expiry) VALUES ('" + name.Replace("'", "''")
                     + "','" + project + "','" + ((int)type).ToString() + "','" + adder.Replace("'", "''")
@@ -479,9 +480,14 @@ namespace SWMTBot
                 {
                     string cmd = lc.Groups["cmd"].Captures[0].Value.ToLower();
                     string item = lc.Groups["item"].Captures[0].Value.Trim();
-                    int len = 0;
+                    int len;
+                    //Set length defaults: for all but blacklist, this is 0 (indefinite). For blacklist, is 96 hours.
+                    if (listtype == 1)
+                        len = 345600; //= 96 hours for blacklist
+                    else
+                        len = 0;
                     if (lc.Groups["len"].Success)
-                        len = Convert.ToInt32(lc.Groups["len"].Captures[0].Value);
+                        len = Convert.ToInt32(lc.Groups["len"].Captures[0].Value) * 3600; //Convert input, in hours, to seconds
                     string reason = "No reason given";
                     if (lc.Groups["reason"].Success)
                         reason = lc.Groups["reason"].Captures[0].Value;

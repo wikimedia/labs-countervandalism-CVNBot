@@ -15,7 +15,7 @@ namespace SWMTBot
 {
     class Program
     {
-        const string version = "1.14.4";
+        const string version = "1.15.0";
         
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -25,7 +25,7 @@ namespace SWMTBot
         public static SortedList mainConfig = new SortedList();
         private static ILog logger = LogManager.GetLogger("SWMTBot.Program");
 
-        static Regex broadcastMsg = new Regex(@"\*\x02B/1.0\x02\*(?<list>.+?)\*(?<action>.+?)\*\x03"
+        static Regex broadcastMsg = new Regex(@"\*\x02B/1.1\x02\*(?<list>.+?)\*(?<action>.+?)\*\x03"
             +@"07\x02(?<item>.+?)\x02\x03\*\x03"
             +@"13(?<len>\d+?)\x03\*\x03"
             +@"09\x02(?<reason>.*?)\x02\x03\*\x03"
@@ -76,7 +76,7 @@ namespace SWMTBot
 
             logger.Info("Loading messages");
             readMessages((string)mainConfig["messages"]);
-            if ((!msgs.ContainsKey("00000")) || ((String)msgs["00000"] != "2.00"))
+            if ((!msgs.ContainsKey("00000")) || ((String)msgs["00000"] != "2.01"))
             {
                 logger.Fatal("Message file version mismatch or read messages failed");
                 Exit();
@@ -357,6 +357,9 @@ namespace SWMTBot
                         irc.SendMessage(SendType.Message, e.Data.Channel, "Last message was received on RCReader "
                             + ago.TotalSeconds + " seconds ago");
                         break;
+                    case "help":
+                        irc.SendMessage(SendType.Message, e.Data.Channel, (String)msgs["20005"]);
+                        break;
                     case "msgs":
                         //Reloads msgs
                         if (!hasPrivileges('@', ref e))
@@ -598,7 +601,7 @@ namespace SWMTBot
 
         public static void Broadcast(string list, string action, string item, int expiry, string reason, string adder)
         {
-            string bMsg = "*%BB/1.0%B*" + list + "*" + action + "*%C07%B" + item + "%B%C*%C13" + expiry.ToString()
+            string bMsg = "*%BB/1.1%B*" + list + "*" + action + "*%C07%B" + item + "%B%C*%C13" + expiry.ToString()
                 + "%C*%C09%B" + reason + "%B%C*%C11%B" + adder + "%C%B*";
             irc.SendMessage(SendType.Notice, BroadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"));
             Thread.Sleep(200);
@@ -628,7 +631,7 @@ namespace SWMTBot
                 listman.addUserToList(username, "", ListManager.UserType.greylisted, "SWMTBot", reason, 1, ref rcdbcon);
                 rcdbcon.Close();
                 rcdbcon = null;
-                Broadcast("GL", "ADD", username, 1, reason, "SWMTBot");
+                Broadcast("GL", "ADD", username, 900, reason, "SWMTBot"); //Greylist for 900 seconds = 15 mins * 60 secs 
             }
         }
 
@@ -833,19 +836,23 @@ namespace SWMTBot
                     attribs.Add("length", r.blockLength);
                     attribs.Add("reason", r.comment);
                     message = getMessage(5400, ref attribs);
-                    //If this isn't an indefinite/infinite block, add to blacklist
-                    //Since we're in the RCReader thread, and we'll be writing to the db, we better open a new connection
-                    IDbConnection rcdbcon = (IDbConnection)new SqliteConnection(listman.connectionString);
-                    rcdbcon.Open();
-                    if ((r.blockLength.ToLower() != "indefinite") && (r.blockLength.ToLower() != "infinite"))
+                    //If the user isn't botlisted, add to blacklist
+                    if (listman.classifyEditor(r.user, r.project) != ListManager.UserType.bot)
                     {
-                        int listLen = Convert.ToInt32(SWMTUtils.ParseDateTimeLength(r.blockLength, 96) * 2.5);
-                        message += "\n" + listman.addUserToList(r.title.Split(new char[1] { ':' }, 2)[1], "" //Global bl
-                            , ListManager.UserType.blacklisted, r.user, "Autoblacklist: " + r.comment, listLen, ref rcdbcon);
-                        Broadcast("BL", "ADD", r.title.Split(new char[1] { ':' }, 2)[1], listLen, "Autoblacklist: " + r.comment, r.user);
+                        //If this isn't an indefinite/infinite block, add to blacklist
+                        //Since we're in the RCReader thread, and we'll be writing to the db, we better open a new connection
+                        IDbConnection rcdbcon = (IDbConnection)new SqliteConnection(listman.connectionString);
+                        rcdbcon.Open();
+                        if ((r.blockLength.ToLower() != "indefinite") && (r.blockLength.ToLower() != "infinite"))
+                        {                                                               //345,600 seconds = 96 hours
+                            int listLen = Convert.ToInt32(SWMTUtils.ParseDateTimeLength(r.blockLength, 345600) * 2.5);
+                            message += "\n" + listman.addUserToList(r.title.Split(new char[1] { ':' }, 2)[1], "" //Global bl
+                                , ListManager.UserType.blacklisted, r.user, "Autoblacklist: " + r.comment, listLen, ref rcdbcon);
+                            Broadcast("BL", "ADD", r.title.Split(new char[1] { ':' }, 2)[1], listLen, "Autoblacklist: " + r.comment, r.user);
+                        }
+                        rcdbcon.Close();
+                        rcdbcon = null;
                     }
-                    rcdbcon.Close();
-                    rcdbcon = null;
                     break;
                 case RCEvent.EventType.unblock:
                     attribs.Add("blockname", ((Project)prjlist[r.project]).interwikiLink + r.title);
