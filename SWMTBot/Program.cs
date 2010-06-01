@@ -15,7 +15,7 @@ namespace SWMTBot
 {
     class Program
     {
-        const string version = "1.15.0";
+        const string version = "1.15.1";
         
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
