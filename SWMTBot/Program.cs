@@ -16,7 +16,7 @@ namespace SWMTBot
 {
     class Program
     {
-        const string version = "1.14.0";
+        const string version = "1.14.3";
         
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -79,7 +79,7 @@ namespace SWMTBot
             readMessages((string)mainConfig["messages"]);
             if ((!msgs.ContainsKey("00000")) || ((String)msgs["00000"] != "2.00"))
             {
-                logger.Fatal("Message file version mismatch");
+                logger.Fatal("Message file version mismatch or read messages failed");
                 Exit();
             }
 
@@ -528,21 +528,28 @@ namespace SWMTBot
         static void readMessages(string filename)
         {
             msgs.Clear();
-
-            using (StreamReader sr = new StreamReader(filename)) {
-                String line;
-                while ((line = sr.ReadLine()) != null)
+            try
+            {
+                using (StreamReader sr = new StreamReader(filename))
                 {
-                    if (line.StartsWith("#") || (line == ""))
+                    String line;
+                    while ((line = sr.ReadLine()) != null)
                     {
-                        //Ignore: comment or blank line
-                    }
-                    else
-                    {
-                        string[] parts = line.Split(new char[1] { '=' }, 2);
-                        msgs.Add(parts[0], parts[1].Replace(@"%c", "\x03").Replace(@"%b", "\x02"));
+                        if (line.StartsWith("#") || (line == ""))
+                        {
+                            //Ignore: comment or blank line
+                        }
+                        else
+                        {
+                            string[] parts = line.Split(new char[1] { '=' }, 2);
+                            msgs.Add(parts[0], parts[1].Replace(@"%c", "\x03").Replace(@"%b", "\x02"));
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                logger.Error("Unable to read messages from file", e);
             }
         }
 

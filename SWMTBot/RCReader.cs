@@ -78,7 +78,7 @@ namespace SWMTBot
 
                 foreach (string prj in Program.prjlist.Keys)
                 {
-                    logger.Info("Joining #" + prj);
+                    //logger.Info("Joining #" + prj);
                     rcirc.RfcJoin("#" + prj);
                 }
 
@@ -109,24 +109,12 @@ namespace SWMTBot
             logger.Info("Connected to live IRC feed");
         }
 
-        static string replaceStrMax(string input, char oldChar, char newChar, int maxChars)
-        {
-            for (int i = 1; i <= maxChars; i++)
-            {
-                int place = input.IndexOf(oldChar); //Find first oldChar
-                if (place == -1) //If not found then finish
-                    break;
-                input = input.Substring(0, place) + newChar + input.Substring(place + 1); //Replace first oldChar with newChar
-            }
-            return input;
-        }
-
         void rcirc_OnChannelMessage(object sender, IrcEventArgs e)
         {
             lastMessage = DateTime.Now;
 
             //Same as RCParser.py->parseRCmsg()
-            string strippedmsg = stripBold.Replace(stripColours.Replace(replaceStrMax(e.Data.Message, '\x03', '\x04', 14), "\x03"), "");
+            string strippedmsg = stripBold.Replace(stripColours.Replace(SWMTUtils.replaceStrMax(e.Data.Message, '\x03', '\x04', 14), "\x03"), "");
             string[] fields = strippedmsg.Split(new char[1] { '\x03' }, 15);
             if (fields.Length == 15)
             {

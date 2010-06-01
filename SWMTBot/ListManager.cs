@@ -113,7 +113,7 @@ namespace SWMTBot
             else
             {
                 DateTime dt = new DateTime(Convert.ToInt64(expiry));
-                return dt.ToUniversalTime().ToString("r");
+                return dt.ToUniversalTime().ToString("HH:mm, d MMMM yyyy");
             }
         }
 
@@ -147,7 +147,8 @@ namespace SWMTBot
                 IDbCommand cmd = connector.CreateCommand();
                 cmd.CommandText = "UPDATE users SET adder = '" + adder.Replace("'", "''") + "', reason = '"
                     + reason.Replace("'", "''") + "', expiry = '" + getExpiryDate(expiry)
-                    + "' WHERE name = '" + name.Replace("'", "''") + "' AND project = '" + project + "'";
+                    + "' WHERE name = '" + name.Replace("'", "''") + "' AND project = '" + project
+                    + "' AND type ='" + ((int)originalType).ToString() + "'";
                 lock(dbtoken)
                     cmd.ExecuteNonQuery();
                 return Program.getFormatMessage(16104, showUserOnList(name, project));
@@ -770,7 +771,7 @@ namespace SWMTBot
                 IDataReader idr = cmd.ExecuteReader();
                 while (idr.Read())
                 {
-                    if (Regex.IsMatch(title, idr.GetString(0)))
+                    if (Regex.IsMatch(title, idr.GetString(0), RegexOptions.IgnoreCase))
                     {
                         lm.Success = true;
                         lm.matchedItem = idr.GetString(0);

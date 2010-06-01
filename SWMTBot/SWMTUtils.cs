@@ -134,5 +134,25 @@ namespace SWMTBot
                 throw new Exception("Unable to retrieve " + url + " from server. Error was: " + e.Message);
             }
         }
+
+        /// <summary>
+        /// Replaces up to the maximum number of old characters with new characters in a string
+        /// </summary>
+        /// <param name="input">The string to work on</param>
+        /// <param name="oldChar">The character to replace</param>
+        /// <param name="newChar">The character to insert</param>
+        /// <param name="maxChars">The maximum number of instances to replace</param>
+        /// <returns></returns>
+        public static string replaceStrMax(string input, char oldChar, char newChar, int maxChars)
+        {
+            for (int i = 1; i <= maxChars; i++)
+            {
+                int place = input.IndexOf(oldChar); //Find first oldChar
+                if (place == -1) //If not found then finish
+                    break;
+                input = input.Substring(0, place) + newChar + input.Substring(place + 1); //Replace first oldChar with newChar
+            }
+            return input;
+        }
     }
 }

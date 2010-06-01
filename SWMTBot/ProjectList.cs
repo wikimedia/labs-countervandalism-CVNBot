@@ -47,7 +47,7 @@ namespace SWMTBot
                 string prjDefinition = "<project>" + parentnode.ChildNodes[i].InnerXml + "</project>";
                 Project prj = new Project();
                 prj.readProjectDetails(prjDefinition);
-                logger.Info("Adding " + prj.projectName);
+                logger.Info("Registering " + prj.projectName);
                 this.Add(prj.projectName, prj);
             }
         }
