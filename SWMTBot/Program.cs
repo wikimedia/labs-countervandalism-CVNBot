@@ -878,7 +878,9 @@ namespace SWMTBot
                     else
                         diffsize = r.szdiff.ToString();
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ceditor", r.user);
                     attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("carticle", r.title);
                     attribs.Add("size", diffsize);
                     attribs.Add("url", r.url);
                     attribs.Add("reason", r.comment);
