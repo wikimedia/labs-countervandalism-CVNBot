@@ -13,3 +13,18 @@ C:\users\alex\SWMTBot desktop - Copy\SWMTBot\obj\Release\SWMTBot.exe.manifest
 C:\users\alex\SWMTBot desktop - Copy\SWMTBot\obj\Release\SWMTBot.application
 C:\users\alex\SWMTBot desktop - Copy\SWMTBot\obj\Release\SWMTBot.exe
 C:\users\alex\SWMTBot desktop - Copy\SWMTBot\obj\Release\SWMTBot.pdb
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\obj\Release\SWMTBot.exe
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\obj\Release\SWMTBot.pdb
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\bin\Release\Projects.xml
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\bin\Release\SWMTBot.exe.manifest
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\bin\Release\SWMTBot.application
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\bin\Release\SWMTBot.exe
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\bin\Release\SWMTBot.pdb
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\bin\Release\log4net.dll
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\bin\Release\Meebey.SmartIrc4net.dll
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\bin\Release\Mono.Data.SqliteClient.dll
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\bin\Release\log4net.xml
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\obj\Release\ResolveAssemblyReference.cache
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\obj\Release\SWMTBot.TrustInfo.xml
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\obj\Release\SWMTBot.exe.manifest
+C:\Users\Alex\Desktop\p_swmtbot\SWMTBot\obj\Release\SWMTBot.application
