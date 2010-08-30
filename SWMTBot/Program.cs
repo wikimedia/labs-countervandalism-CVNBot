@@ -24,7 +24,7 @@ namespace SWMTBot
 
     class Program
     {
-        const string version = "1.20.1";
+        const string version = "1.20.2";
         
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -98,7 +98,7 @@ namespace SWMTBot
             prjlist.fnProjectsXML = (string)mainConfig["projects"];
             IsCubbie = mainConfig.ContainsKey("IsCubbie");
 
-            botCmd = new Regex("^" + botNick + @" (?<command>\S*)(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
+            botCmd = new Regex("^" + botNick + @" (\s*(?<command>\S*))(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
 
             logger.Info("Loading messages");
             readMessages((string)mainConfig["messages"]);
@@ -522,7 +522,7 @@ namespace SWMTBot
                 string extraParams;
                 try
                 {
-                    extraParams = cmdMatch.Groups["params"].Captures[0].Value;
+                    extraParams = cmdMatch.Groups["params"].Captures[0].Value.Trim();
                 }
                 catch (Exception)
                 {
