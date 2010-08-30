@@ -1053,7 +1053,6 @@ namespace SWMTBot
                     message = getMessage(5500 + userOffset, ref attribs);
                     break;
                 case RCEvent.EventType.block:
-                    attribs.Add("ipcat", "");
                     attribs.Add("blockname", ((Project)prjlist[r.project]).interwikiLink + r.title);
                     attribs.Add("cblockname", r.title.Split(new char[1] { ':' }, 2)[1]);
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);

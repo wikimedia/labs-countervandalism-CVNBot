@@ -103,8 +103,8 @@
 05300=%c14[[${editor}]] deleted article [[${article}]] "${reason}"
 05301=%c04[[${editor}]] deleted watched article [[${article}]] "${reason}"
 
-05400=%c06Block editor ${ipcat}%c14 [[${blockname}]] %c06blocked by admin%c14 [[${editor}]] Length: ${length} "${reason}"
-05401=%c06Range blocked ${ipcat} ${blockname} by admin%c14 [[${editor}]] Length: ${length} "${reason}"
+05400=%c06Block editor%c14 [[${blockname}]] %c06blocked by admin%c14 [[${editor}]] Length: ${length} "${reason}"
+05401=%c06Range blocked ${blockname} by admin%c14 [[${editor}]] Length: ${length} "${reason}"
 
 05500=%c10Whitelist%c14 [[${editor}]] %c10Move from%c14 [[${fromname}]] to [[${toname}]] %c10URL:%c12 ${url}%c14 "${reason}"
 05501=%c04%bBlacklist%b%c14 [[${editor}]] %c04%bMove from%b%c14 [[${fromname}]] to [[${toname}]] %c10URL:%c12 ${url}%c14 "${reason}"
