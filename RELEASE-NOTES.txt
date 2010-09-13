@@ -40,7 +40,7 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
 ..
 
 
-For notes on 1.16.x and older releases, see HISTORY
+For notes on 1.19.0 and older releases, see HISTORY
 
 
 === Online documentation ===
