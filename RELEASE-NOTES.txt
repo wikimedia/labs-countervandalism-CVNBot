@@ -1,0 +1,56 @@
+= SWMTBot release notes =
+
+
+== SWMTBot 1.20.x ==
+
+THIS IS NOT A RELEASE YET
+
+Those wishing to use the trunk code instead of a stable release can obtain
+it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
+
+=== Changes in 1.20.x ===
+
+* "the end of time" is now controlled by Console.msgs to allow translation
+* newuser/newuser2 event gets a talkurl attribute
+* delete event gets a url attribute
+* actions now have a clean-attribute (cname) besides the regular one. For
+  more flexibility in the layout of the messages. Enabling [[]] (renders
+  "[[xx:User:Foo]]") and  (renders "Foo")
+* (bug 15) Add {talkurl} attribute for block and unblock event
+
+=== New features in 1.20.x ===
+
+*
+
+=== Bug fixes in 1.20.x ===
+
+* SWMTUtils.wikiEncode() now encodes exclamation mark aswell (some IRC
+  clients cut off link of pagetitle contained it)
+* (bug 11) added clean-attributes missing for edit/newpage
+* (bug 16) Remove deprecated {ipcat}
+* (bug 12) Trim whitespace when dealing with list manager
+
+== Compatibility ==
+
+..
+
+
+== Upgrading ==
+
+..
+
+
+For notes on 1.16.x and older releases, see HISTORY
+
+
+=== Online documentation ===
+
+Documentation for both users and channel operators is currently available
+on Meta :
+
+  http://meta.wikimedia.org/wiki/SWMTBot
+
+
+=== IRC help ===
+
+There's usually someone online in #countervandalism on irc.freenode.net
