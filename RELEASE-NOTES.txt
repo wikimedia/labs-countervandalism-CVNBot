@@ -20,7 +20,7 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
 
 === New features in 1.20.x ===
 
-*
+* (bug 12) Trim whitespace when dealing with list manager
 
 === Bug fixes in 1.20.x ===
 
@@ -28,16 +28,16 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
   clients cut off link of pagetitle contained it)
 * (bug 11) added clean-attributes missing for edit/newpage
 * (bug 16) Remove deprecated {ipcat}
-* (bug 12) Trim whitespace when dealing with list manager
 
-== Compatibility ==
+== Compatibility & Upgrading ==
 
-..
+The old deprecated {ipcat} attribute (which previously was manually set to an
+empty string) has been removed from the Program and Console.msgs. Make sure
+you keep the Console.msgs up to date aswell, since else it'll display
+"{ipcat}" litterly in your bot messages.
 
-
-== Upgrading ==
-
-..
+Lists.sqlite, SWMTBot.ini and Projects.xml remain unchanged and don't need
+upgrading. All other files can simply be replaced, and restart the bot.
 
 
 For notes on 1.19.0 and older releases, see HISTORY
