@@ -555,6 +555,20 @@ namespace SWMTBot
                     case "help":
                         SendMessageF(SendType.Message, e.Data.Channel, (String)msgs["20005"], false, true);
                         break;
+                    case "settings":
+                    	string settingsmessage = botNick + " settings: ";
+                    	settingsmessage += "editblank:" + editblank;
+                    	settingsmessage += ", editbig:" + editbig;
+                    	settingsmessage += ", newbig:" + newbig;
+                    	settingsmessage += ", newsmall:" + newsmall;
+                    	if(IsCubbie)
+                    		settingsmessage += ", IsCubbie:true";
+                    	else
+                    		settingsmessage += ", IsCubbie:false";
+                    	
+                    	//TODO: Put this into msgs with attributes
+                        SendMessageF(SendType.Message, e.Data.Channel, settingsmessage, false, true);
+                        break;
                     case "msgs":
                         //Reloads msgs
                         if (!hasPrivileges('@', ref e))
