@@ -25,7 +25,7 @@ namespace SWMTBot
     class Program
     {
         const string version = "1.20beta";
-        
+
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
         public static ProjectList prjlist = new ProjectList();
@@ -149,15 +149,15 @@ namespace SWMTBot
                 irc.RfcJoin(FeedChannel);
                 if (BroadcastChannel != "None")
                     irc.RfcJoin(BroadcastChannel);
-                
+
                 //Now connect the RCReader to channels
                 new Thread(new ThreadStart(rcirc.initiateConnection)).Start();
 
                 // here we tell the IRC API to go into a receive mode, all events
                 // will be triggered by _this_ thread (main thread in this case)
                 // Listen() blocks by default, you can also use ListenOnce() if you
-                // need that does one IRC operation and then returns, so you need then 
-                // an own loop 
+                // need that does one IRC operation and then returns, so you need then
+                // an own loop
                 irc.Listen();
 
                 // when Listen() returns our IRC session is over, to be sure we call
@@ -451,7 +451,7 @@ namespace SWMTBot
                 while (dontSendNow)
                     Thread.Sleep(1000);
                 //sendlock.WaitOne();
-                
+
                 // Okay, we can carry on now. Is our message still fresh?
                 if (qm.IsDroppable && (DateTime.Now.Ticks - qm.SentTime > maxlag))
                 // Oops, sowwy. Our message has rotten.
@@ -469,7 +469,7 @@ namespace SWMTBot
                 }
 
                 //logger.Info("Lag was " + (DateTime.Now.Ticks - qm.SentTime));
-                
+
                 // Throttle on our part
                 Thread.Sleep(300);
             }
@@ -555,19 +555,17 @@ namespace SWMTBot
                     case "help":
                         SendMessageF(SendType.Message, e.Data.Channel, (String)msgs["20005"], false, true);
                         break;
+                    case "version":
+                    case "config":
                     case "settings":
-                    	string settingsmessage = botNick + " settings: ";
-                    	settingsmessage += "editblank:" + editblank;
-                    	settingsmessage += ", editbig:" + editbig;
-                    	settingsmessage += ", newbig:" + newbig;
-                    	settingsmessage += ", newsmall:" + newsmall;
+                    	string settingsmessage = "runs version: " + version + "; settings: editblank:" + editblank + ", editbig:" + editbig + ", newbig:" + newbig + ", newsmall:" + newsmall;
                     	if(IsCubbie)
                     		settingsmessage += ", IsCubbie:true";
                     	else
                     		settingsmessage += ", IsCubbie:false";
-                    	
+
                     	//TODO: Put this into msgs with attributes
-                        SendMessageF(SendType.Message, e.Data.Channel, settingsmessage, false, true);
+                        SendMessageF(SendType.Action, e.Data.Channel, settingsmessage, false, true);
                         break;
                     case "msgs":
                         //Reloads msgs
@@ -713,7 +711,7 @@ namespace SWMTBot
                         SendMessageF(SendType.Message, e.Data.Channel,
                             listman.handleListCommand(20, e.Data.Nick, extraParams), false, true);
                         break;
-                    
+
                     //_1568: Restrict the "get" command to ops
                     case "getadmins":
                         if (!hasPrivileges('@', ref e))
@@ -859,7 +857,7 @@ namespace SWMTBot
                 listman.addUserToList(username, "", ListManager.UserType.greylisted, "SWMTBot", reason, 1, ref rcdbcon);
                 rcdbcon.Close();
                 rcdbcon = null;
-                Broadcast("GL", "ADD", username, 900, reason, "SWMTBot"); //Greylist for 900 seconds = 15 mins * 60 secs 
+                Broadcast("GL", "ADD", username, 900, reason, "SWMTBot"); //Greylist for 900 seconds = 15 mins * 60 secs
             }
         }
 
@@ -1126,7 +1124,7 @@ namespace SWMTBot
                         message = getMessage(5201, ref attribs);
                         AddToGreylist(userOffset, r.user, Program.getFormatMessage(16320, bnuMatch.matchedItem));
                     }
-                    else                
+                    else
                         message = getMessage(5200, ref attribs);
                     break;
                 case RCEvent.EventType.newuser2:
@@ -1145,7 +1143,7 @@ namespace SWMTBot
                         message = getMessage(5211, ref attribs);
                         AddToGreylist(userOffset, r.user, Program.getFormatMessage(16320, bnuMatch2.matchedItem));
                     }
-                    else  
+                    else
                         message = getMessage(5210, ref attribs);
                     break;
                 case RCEvent.EventType.upload:
@@ -1231,6 +1229,7 @@ namespace SWMTBot
                 System.Environment.Exit(0);
             }
         }
+
 
         public static void Restart()
         {
