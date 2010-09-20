@@ -1,14 +1,14 @@
 = SWMTBot release notes =
 
 
-== SWMTBot 1.20.x ==
+== SWMTBot 1.20.0 ==
 
 THIS IS NOT A RELEASE YET
 
 Those wishing to use the trunk code instead of a stable release can obtain
 it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
 
-=== Changes in 1.20.x ===
+=== Changes in 1.20.0 ===
 
 * "the end of time" is now controlled by Console.msgs to allow translation
 * newuser/newuser2 event gets a talkurl attribute
@@ -18,11 +18,11 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
   "[[xx:User:Foo]]") and  (renders "Foo")
 * (bug 15) Add {talkurl} attribute for block and unblock event
 
-=== New features in 1.20.x ===
+=== New features in 1.20.0 ===
 
 * (bug 12) Trim whitespace when dealing with list manager
 
-=== Bug fixes in 1.20.x ===
+=== Bug fixes in 1.20.0 ===
 
 * SWMTUtils.wikiEncode() now encodes exclamation mark aswell (some IRC
   clients cut off link of pagetitle contained it)
