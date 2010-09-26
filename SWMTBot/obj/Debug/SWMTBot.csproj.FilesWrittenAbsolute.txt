@@ -1,10 +1,7 @@
 /Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/log4net.dll
 /Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/Meebey.SmartIrc4net.dll
 /Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/Mono.Data.SqliteClient.dll
-/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/Projects.xml
 /Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/SWMTBot.exe.mdb
 /Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/SWMTBot.exe
 /Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/obj/Debug/SWMTBot.exe
 /Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/obj/Debug/SWMTBot.exe.mdb
-/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/Mysql.Data.dll
-/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/MySql.Data.dll

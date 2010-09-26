@@ -671,65 +671,68 @@ namespace SWMTBot
         /// <returns></returns>
         public UserType classifyEditor(string username, string project)
         {
-            IDbCommand cmd = dbcon.CreateCommand();
+            if(!Program.disableClassifyEditor){
+            
+                IDbCommand cmd = dbcon.CreateCommand();
 
-            if (project != "")
-            {
-                // First, check if user is an admin or bot on this particular wiki
-                cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''") + "' AND project = '" + project
-                    + "' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
-                lock (dbtoken)
-                {
-                    IDataReader idr = cmd.ExecuteReader();
-                    if (idr.Read())
-                    {
-                        switch (idr.GetString(0))
-                        {
-                            case "2":
-                                idr.Close();
-                                return UserType.admin;
-                            case "5":
-                                idr.Close();
-                                return UserType.bot;
-                        }
-                    }
-                    idr.Close();
-                }
-            }
+	            if (project != "")
+	            {
+	                // First, check if user is an admin or bot on this particular wiki
+	                cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''") + "' AND project = '" + project
+	                    + "' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+	                lock (dbtoken)
+	                {
+	                    IDataReader idr = cmd.ExecuteReader();
+	                    if (idr.Read())
+	                    {
+	                        switch (idr.GetString(0))
+	                        {
+	                            case "2":
+	                                idr.Close();
+	                                return UserType.admin;
+	                            case "5":
+	                                idr.Close();
+	                                return UserType.bot;
+	                        }
+	                    }
+	                    idr.Close();
+	                }
+	            }
 
-            // Is user globally greylisted? (This takes precedence)
-            cmd.CommandText = "SELECT reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
-                + "' AND project = '' AND type = '6' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
-            lock (dbtoken)
-            {
-                IDataReader idr3 = cmd.ExecuteReader();
-                if (idr3.Read())
-                {
-                    idr3.Close();
-                    return UserType.greylisted;
-                }
-                idr3.Close();
-            }
-
-            // Next, if we're still here, check if user is globally whitelisted or blacklisted
-            cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''")
-                + "' AND project = '' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
-            lock (dbtoken)
-            {
-                IDataReader idr2 = cmd.ExecuteReader();
-                if (idr2.Read())
-                {
-                    switch (idr2.GetString(0))
-                    {
-                        case "0":
-                            idr2.Close();
-                            return UserType.whitelisted;
-                        case "1":
-                            idr2.Close();
-                            return UserType.blacklisted;
-                    }
-                }
-                idr2.Close();
+	            // Is user globally greylisted? (This takes precedence)
+	            cmd.CommandText = "SELECT reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
+	                + "' AND project = '' AND type = '6' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+	            lock (dbtoken)
+	            {
+	                IDataReader idr3 = cmd.ExecuteReader();
+	                if (idr3.Read())
+	                {
+	                    idr3.Close();
+	                    return UserType.greylisted;
+	                }
+	                idr3.Close();
+	            }
+	
+	            // Next, if we're still here, check if user is globally whitelisted or blacklisted
+	            cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''")
+	                + "' AND project = '' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+	            lock (dbtoken)
+	            {
+	                IDataReader idr2 = cmd.ExecuteReader();
+	                if (idr2.Read())
+	                {
+	                    switch (idr2.GetString(0))
+	                    {
+	                        case "0":
+	                            idr2.Close();
+	                            return UserType.whitelisted;
+	                        case "1":
+	                            idr2.Close();
+	                            return UserType.blacklisted;
+	                    }
+	                }
+	                idr2.Close();
+	            }
             }
 
             // Finally, if we're still here, user is either user or anon

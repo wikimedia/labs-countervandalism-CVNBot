@@ -24,7 +24,7 @@ namespace SWMTBot
 
     class Program
     {
-        const string version = "1.20beta";
+        const string version = "1.20beta (r25)";
 
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -66,23 +66,30 @@ namespace SWMTBot
          * These settings allow filtering of user types and event types
          * They are defined via the .ini file and loaded on top of the Main thread
          * Possible values: 
-         *  "show" (show and allow autolist) - default
-         *  "softhide" (hide non-specials, show exceptions and allow autolist)
-         *  "hardhide" (hide all but do autolist)
-         *  "ignore" (hide and ignore totally)
+         *  1 "show"     (show and allow autolist) - default
+         *  2 "softhide" (hide non-specials, show exceptions and allow autolist)
+         *  3 "hardhide" (hide all but do autolist)
+         *  4 "ignore"   (hide and ignore totally)
          * show/ignore is dealt with at beginning of ReactToRCEvent()
-         * softhide is dealt with at end of ReactToRCEvent() (after autolistings are done)
-         * hardhide is done inline
+         * hardhide is dealt with at end of ReactToRCEvent() (after autolistings are done)
+         * softhide is done inline
          */
-        static string feedFilterUsersAnon = "show";
-            //feedFilterUsersAnon: 
-        //TODO: static string feedFilterUsersReg;
-        //TODO: static string feedFilterUsersWhite;
-        //TODO: static string feedFilterEventEdit;
-        //TODO: static string feedFilterEventNewpage;
-        //TODO: static string feedFilterEventUpload;
-        //TODO: static string feedFilterEventLogs;
-        static bool IsCubbie = false; // Overrides the above if true to only show uploads and nothing else
+        static int feedFilterUsersAnon = 1;
+        static int feedFilterUsersReg = 2;
+        //TODO: static int feedFilterUsersBot;
+        //TODO: static int feedFilterEventNewuser;
+        static int feedFilterEventUpload = 1;
+        
+        // IsCubbie overrides feedfilters if true to only show uploads and ignore the rest
+        static bool IsCubbie = false;
+        
+        // Set this to true to stops the bot from checking the database when requesting a usertype
+        //  and instead will only return 3 (anon) or 4 (user) based on a regex.
+        // This speeds up the the flow incredibly (especially when using SQLite) and makes it possible
+        // to load a lot of the biggest wikis without any delay
+        // This will mean that the actual output in the feedchannel is very unusable (all edits go through, no bot, user, whitelist detection)
+        // Recommended to use in combination with high(est) feedFilter settings (originally written for CVNBlackRock bot)
+        public static bool disableClassifyEditor = false;
 
         public static string botNick;
 
@@ -120,7 +127,10 @@ namespace SWMTBot
             newsmall = Int32.Parse((string)mainConfig["newsmall"]);
             prjlist.fnProjectsXML = (string)mainConfig["projects"];
             IsCubbie = mainConfig.ContainsKey("IsCubbie");
-            feedFilterUsersAnon = mainConfig.ContainsKey("feedFilterUsersAnon") ? (string)mainConfig["feedFilterUsersAnon"] : "show";
+            disableClassifyEditor = mainConfig.ContainsKey("disableClassifyEditor");
+            feedFilterUsersAnon = mainConfig.ContainsKey("feedFilterUsersAnon") ? Int32.Parse((string)mainConfig["feedFilterUsersAnon"]) : 1;
+            feedFilterUsersReg = mainConfig.ContainsKey("feedFilterUsersReg") ? Int32.Parse((string)mainConfig["feedFilterUsersReg"]) : 2;
+            feedFilterEventUpload = mainConfig.ContainsKey("feedFilterEventUpload") ? Int32.Parse((string)mainConfig["feedFilterEventUpload"]) : 1;
 
             botCmd = new Regex("^" + botNick + @" (\s*(?<command>\S*))(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
 
@@ -582,13 +592,10 @@ namespace SWMTBot
                     case "version":
                     case "config":
                     case "settings":
-                    	string settingsmessage = "runs version: " + version + " in " + FeedChannel + "; settings: editblank:" + editblank + ", editbig:" + editbig + ", newbig:" + newbig + ", newsmall:" + newsmall + ", feedFilterUsersAnon:" + feedFilterUsersAnon;
-                    	if(IsCubbie)
-                    		settingsmessage += ", IsCubbie:true";
-                    	else
-                    		settingsmessage += ", IsCubbie:false";
+                    	string settingsmessage = "runs version: " + version + " in " + FeedChannel + "; settings: editblank:" + editblank + ", editbig:" + editbig + ", newbig:" + newbig + ", newsmall:" + newsmall + ", feedFilterUsersAnon:" + feedFilterUsersAnon + ", feedFilterUsersReg:" + feedFilterUsersReg + ", feedFilterEventUpload:" + feedFilterEventUpload;
+                    	settingsmessage += IsCubbie ? ", IsCubbie:true" : ", IsCubbie:false";
+                    	settingsmessage += disableClassifyEditor ? ", disableClassifyEditor:true" : ", disableClassifyEditor:false";
 
-                    	//TODO: Put this into msgs with attributes
                         foreach (string chunk in SWMTUtils.stringSplit(settingsmessage, 400))
                             SendMessageF(SendType.Action, e.Data.Channel, chunk, false, true);
                         break;
@@ -895,7 +902,7 @@ namespace SWMTBot
             Hashtable attribs = new Hashtable();
             String message = "";
             int userOffset = (int)(listman.classifyEditor(r.user, r.project));
-            String feedFilterThis = "show";
+            int feedFilterThis = 1;
 
             /* If this is a bot action, and if bot edits are ignored, return */
             /* HACK: If this is a bot admin (not currently supported), and it blocks, then the user will not be blacklisted */
@@ -907,11 +914,16 @@ namespace SWMTBot
                 return;
             
             //Feed filters
-            if(feedFilterUsersAnon == "ignore" && (userOffset == 3))
+            if(userOffset == 3)
                 feedFilterThis = feedFilterUsersAnon;
-            //TODO: Add the other feed filters
+                
+            if(userOffset == 4)
+                feedFilterThis = feedFilterUsersReg;
+                
+            if(r.eventtype == RCEvent.EventType.upload)
+                feedFilterThis = feedFilterEventUpload;
             
-            if(feedFilterThis == "ignore")
+            if(feedFilterThis == 4)// 4 is "ignore"
                 return;
 
             switch (r.eventtype)
@@ -961,7 +973,11 @@ namespace SWMTBot
                             createNothingSpecial = false;
 
                         //If this is an anon and anons should be shown, create is always special
-                        if ((userOffset == 3) && (feedFilterUsersAnon == "show"))
+                        if ((userOffset == 3) && (feedFilterUsersAnon == 1))
+                            createNothingSpecial = false;
+
+                        //If this is an normal user and normal users should be shown, create is always special
+                        if ((userOffset == 4) && (feedFilterUsersReg == 1))
                             createNothingSpecial = false;
 
                         // Now check if the edit summary matches BES
@@ -1007,7 +1023,7 @@ namespace SWMTBot
                         if ((userOffset == 4) && (createNothingSpecial))
                             return;
 
-                        // If else: user is on blacklist, or, user is on greylisted, or, user is IP and Anon is "show"
+                        // If else: user is on blacklist, or, user is on greylisted, or feedFilter setting made it special
                         	// show, continue, dont return! 
                     }
                     else
@@ -1039,7 +1055,11 @@ namespace SWMTBot
                             editNothingSpecial = false;
 
                         //If this is an anon and anons should be shown, edit is always special
-                        if ((userOffset == 3) && (feedFilterUsersAnon == "show"))
+                        if ((userOffset == 3) && (feedFilterUsersAnon == 1))
+                            editNothingSpecial = false;
+
+                        //If this is an normal user and normal users should be shown, edit is always special
+                        if ((userOffset == 4) && (feedFilterUsersReg == 1))
                             editNothingSpecial = false;
 
                         // Now check if user has edited a watched page
@@ -1218,7 +1238,11 @@ namespace SWMTBot
                     // If normal and uploaded by an admin, bot or whitelisted person (TODO: unless watched or matches word)
                     if ((uMsg == 5600) && ((userOffset == 2) || (userOffset == 5) || (userOffset == 0)))
                         return;
-
+                        
+                    // if normal and uploads are softhidden and user is normal user or anon
+                    if ((uMsg == 5600) && (feedFilterEventUpload == 2) && ((userOffset == 3) || (userOffset == 4)))
+                        return;
+                    
                     // If our message is 95620, we might need to truncate r.comment
                     if (uMsg == 95620)
                     {
@@ -1236,22 +1260,23 @@ namespace SWMTBot
                     break;
             }
             
-            if (feedFilterThis == "hardhide"){
+            if (feedFilterThis == 3)
+            {
                 //autolistings have been done throughout ReactToRCEvent()
                 //if hardhide, just dont send the message now
-            } else { 
+                message = "";
+            }
 
-                if (message != "")
+            if (message != "")
+            {
+                //Allow multiline
+                foreach (string line in message.Split(new char[1] { '\n' }))
                 {
-                    //Allow multiline
-                    foreach (string line in message.Split(new char[1] { '\n' }))
+                    //Chunk messages that are too long
+                    foreach (string chunk in SWMTUtils.stringSplit(line, 400))
                     {
-                        //Chunk messages that are too long
-                        foreach (string chunk in SWMTUtils.stringSplit(line, 400))
-                        {
-                            if ((chunk.Trim() != "\"\"") && (chunk.Trim() != "\""))
-                                SendMessageF(SendType.Message, FeedChannel, chunk, true, false);
-                        }
+                        if ((chunk.Trim() != "\"\"") && (chunk.Trim() != "\""))
+                            SendMessageF(SendType.Message, FeedChannel, chunk, true, false);
                     }
                 }
             }

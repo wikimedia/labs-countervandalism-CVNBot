@@ -21,6 +21,7 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
 === New features in 1.20.0 ===
 
 * (bug 12) Trim whitespace when dealing with list manager
+* (bug 29) A few of the requested feed filters added: feedFilterUsersAnon, feedFilterUsersReg, feedFilterEventUpload
 
 === Bug fixes in 1.20.0 ===
 
