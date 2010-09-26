@@ -323,6 +323,11 @@ namespace SWMTBot
             if (originalTitle.Contains(":"))
             {
                 string nsEnglish;
+                
+		        // *Don't change these* unless it's a stopping bug. These names are made part of the title
+		        // in the watchlist and items database. (ie. don't change Image to File unless Image is broken)
+		        // When they do need to be changed, make sure to make note in the RELEASE-NOTES that databases
+		        // should be updated manually to keep all regexes and watchlists functional!
                 switch (((Project)Program.prjlist[project]).detectNamespace(originalTitle))
                 {
                     case -2:
