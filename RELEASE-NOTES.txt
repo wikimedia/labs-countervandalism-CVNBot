@@ -18,6 +18,8 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
   "[[xx:User:Foo]]") and  (renders "Foo")
 * (bug 15) Add {talkurl} attribute for block and unblock event
 * (bug 31) Finish protect and unprotect log type and also add modifyprotect
+* Added SWMTBot.exe.config to the SVN. For some reason it was on the botserver
+  but never made it here (this file creates the run.log-output of log4net)
 
 === New features in 1.20.0 ===
 
@@ -37,6 +39,9 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
   to clear out some WARNs about unhandled log types
 * (bug 6) Pagetitles containing a slash are not reported and cause WARN in log
 * nsEnglish[4] and nsEnglish[5] have been changed from "Wikipedia" to "Project"
+  to fix the bug where one could watch a non-Wikipedia project page, but when
+  an edit occurs, the generated pagetitle (and url) has the wrong namespace and 
+  thus broke the link
 
 == Compatibility & Upgrading ==
 
