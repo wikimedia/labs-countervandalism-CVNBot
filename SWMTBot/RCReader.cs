@@ -406,6 +406,10 @@ namespace SWMTBot
                             //rce.eventtype = RCEvent.EventType.makebot;
                             return; //Not interested today
                         //break;
+                        case "patrol":
+                            //Marked as patrolled
+                            return; //Not interested today
+                        //break;
                         default:
                             logger.Warn("Unhandled log type: " + logType + " in " + rce.project + ": " + e.Data.Message);
                             //Don't react to event

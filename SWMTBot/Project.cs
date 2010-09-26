@@ -4,11 +4,14 @@ using System.Text;
 using System.IO;
 using System.Xml;
 using System.Text.RegularExpressions;
+using log4net;
 
 namespace SWMTBot
 {
     class Project
     {
+        private static ILog logger = LogManager.GetLogger("SWMTBot.Project");
+        
         public string projectName;
         public string interwikiLink;
         public string rooturl; //Format: http://en.wikipedia.org/
@@ -170,10 +173,11 @@ namespace SWMTBot
 
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(snamespaces);
-            XmlNode namespacesNode = doc.GetElementsByTagName("namespaces")[0].FirstChild.FirstChild;
+            XmlNode namespacesNode = doc.GetElementsByTagName("namespaces")[0];
             for (int i = 0; i < namespacesNode.ChildNodes.Count; i++)
             {
                 namespaces.Add(namespacesNode.ChildNodes[i].Attributes["id"].Value, namespacesNode.ChildNodes[i].InnerText);
+                logger.Info("getNamespaces: id: "+namespacesNode.ChildNodes[i].Attributes["id"].Value + ", value: "+namespacesNode.ChildNodes[i].InnerText);
             }
         }
 
