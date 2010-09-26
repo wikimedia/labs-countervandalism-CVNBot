@@ -13,7 +13,8 @@ namespace SWMTBot
         public enum EventType
         {
             delete, restore, upload, block, unblock, edit, protect, unprotect,
-            move, rollback, newuser, import, renameuser, makebot, unknown, newuser2, autocreate
+            move, rollback, newuser, import, renameuser, makebot, unknown, newuser2, autocreate,
+            modifyprotect
         }
 
         public string project;
@@ -263,8 +264,10 @@ namespace SWMTBot
                             }
                             break;
                         case "protect":
-                            //Could be a protect or unprotect; need to parse regex
+                            //Could be a protect, modifyprotect or unprotect; need to parse regex
                             Match pm = ((Project)Program.prjlist[rce.project]).rprotectRegex.Match(rce.comment);
+                            Match modpm = ((Project)Program.prjlist[rce.project]).rmodifyprotectRegex.Match(rce.comment);
+                            Match upm = ((Project)Program.prjlist[rce.project]).runprotectRegex.Match(rce.comment);
                             if (pm.Success)
                             {
                                 rce.eventtype = RCEvent.EventType.protect;
@@ -275,9 +278,18 @@ namespace SWMTBot
                                 }
                                 catch (ArgumentOutOfRangeException) { }
                             }
+                            else if (modpm.Success)
+                            {
+                                rce.eventtype = RCEvent.EventType.modifyprotect;
+                                rce.title = Project.translateNamespace(rce.project, modpm.Groups["item1"].Captures[0].Value);
+                                try
+                                {
+                                    rce.comment = modpm.Groups["comment"].Captures[0].Value;
+                                }
+                                catch (ArgumentOutOfRangeException) { }
+                            }
                             else
                             {
-                                Match upm = ((Project)Program.prjlist[rce.project]).runprotectRegex.Match(rce.comment);
                                 if (upm.Success)
                                 {
                                     rce.eventtype = RCEvent.EventType.unprotect;

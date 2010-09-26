@@ -136,7 +136,7 @@ namespace SWMTBot
 
             logger.Info("Loading messages");
             readMessages((string)mainConfig["messages"]);
-            if ((!msgs.ContainsKey("00000")) || ((String)msgs["00000"] != "2.02"))
+            if ((!msgs.ContainsKey("00000")) || ((String)msgs["00000"] != "2.03"))
             {
                 logger.Fatal("Message file version mismatch or read messages failed");
                 Exit();
@@ -1257,6 +1257,36 @@ namespace SWMTBot
                     attribs.Add("reason", r.comment);
                     attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
                     message = getMessage(userOffset + uMsg, ref attribs);
+                    break;
+                case RCEvent.EventType.protect:
+                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ceditor", r.user);
+                    attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("carticle", r.title);
+                    attribs.Add("comment", r.comment);
+                    //'url' in protect is broken, it also contains " [move=sysop] (indefinite)" etc.
+                    //attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
+                    message = getMessage(5900, ref attribs);
+                    break;
+                case RCEvent.EventType.unprotect:
+                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ceditor", r.user);
+                    attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("carticle", r.title);
+                    attribs.Add("comment", r.comment);
+                    //'url' in unprotect is fine, it's just the pagetitle
+                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
+                    message = getMessage(5901, ref attribs);
+                    break;
+                case RCEvent.EventType.modifyprotect:
+                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ceditor", r.user);
+                    attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("carticle", r.title);
+                    attribs.Add("comment", r.comment);
+                    //'url' in modifyprotect is broken, it also contains " [move=sysop] (indefinite)" etc.
+                    //attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
+                    message = getMessage(5902, ref attribs);
                     break;
             }
             

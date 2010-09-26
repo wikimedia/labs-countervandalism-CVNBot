@@ -6,7 +6,7 @@
 # %b = Toggle bolding
 #
 # 0 = Reporting (largely compatible with CVUBot) / 9 = SWMTBot-only reporting / 1 = Formatted / 2 = Interface
-00000=2.02
+00000=2.03
 
 00020=Anonymous user
 00021=Named user
@@ -100,8 +100,8 @@
 05210=%c14New user [[${editor}]] created by [[${creator}]]. Block: ${blockurl}
 05211=%c14New user [[${editor}]] created by [[${creator}]] %c04containing watch word "${watchword}" ("${wwreason}"). Block: ${blockurl}
 
-05300=%c14[[${editor}]] deleted article [[${article}]] "${reason}"
-05301=%c04[[${editor}]] deleted watched article [[${article}]] "${reason}"
+05300=%c14[[${editor}]] deleted article [[${article}]] "${reason}" %c12${url}
+05301=%c04[[${editor}]] deleted watched article [[${article}]] "${reason}" %c12${url}
 
 05400=%c06Block editor%c14 [[${blockname}]] %c06blocked by admin%c14 [[${editor}]] Length: ${length} "${reason}"
 05401=%c06Range blocked ${blockname} by admin%c14 [[${editor}]] Length: ${length} "${reason}"
@@ -142,7 +142,8 @@
 05701=%c06Range Unblocked ${blockname} by admin%c14 [[${editor}]] "${reason}"
 
 05900=%c14Admin%c14 [[${editor}]] %c14Protected%c14 [[${article}]] "${comment}"
-05901=%c14Admin%c14 [[${editor}]] %c14Unprotected%c14 [[${article}]] "${comment}"
+05901=%c14Admin%c14 [[${editor}]] %c14Unprotected%c14 [[${article}]] "${comment}" %c12${url}
+05902=%c14Admin%c14 [[${editor}]] %c14Modified protection on%c14 [[${article}]] "${comment}"
 
 95040=%c10Whitelist%c14 [[${editor}]] %c10used edit summary "${watchword}" in creating%c14 [[${article}]] ${sizeattrib}(${size})${sizereset}%c14 %c10URL:%c12 ${url}%c14 "${reason}"
 95041=%c04%bBlacklist%c14%b [[${editor}]] %c04%bused edit summary "${watchword}" in creating%b%c14 [[${article}]] ${sizeattrib}(${size})${sizereset}%c14 %c10URL:%c12 ${url}%c14 "${reason}"

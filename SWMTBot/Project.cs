@@ -21,6 +21,7 @@ namespace SWMTBot
         string deleteRegex;
         string protectRegex;
         string unprotectRegex;
+        string modifyprotectRegex;
         string uploadRegex;
         string moveRegex;
         string moveredirRegex;
@@ -39,6 +40,7 @@ namespace SWMTBot
         public Regex rdeleteRegex;
         public Regex rprotectRegex;
         public Regex runprotectRegex;
+        public Regex rmodifyprotectRegex;
         public Regex ruploadRegex;
         public Regex rmoveRegex;
         public Regex rmoveredirRegex;
@@ -70,6 +72,15 @@ namespace SWMTBot
             rdeleteRegex = new Regex(deleteRegex);
             rprotectRegex = new Regex(protectRegex);
             runprotectRegex = new Regex(unprotectRegex);
+            
+            // modifyprotectRegex was recently added, may not exist in Projects.xml yet
+            // fall back to protectregex (to avoid failure) and WARN that reload is needed
+            if (modifyprotectRegex == null)
+            {
+                modifyprotectRegex = protectRegex;
+                logger.Warn("generateRegexen: modifyprotectRegex is null. Please try a reload for this wiki to populate it.");
+            }
+            rmodifyprotectRegex = new Regex(modifyprotectRegex);
             ruploadRegex = new Regex(uploadRegex);
             rmoveRegex = new Regex(moveRegex);
             rmoveredirRegex = new Regex(moveredirRegex);
@@ -104,6 +115,7 @@ namespace SWMTBot
             dump.WriteElementString("deleteRegex", deleteRegex);
             dump.WriteElementString("protectRegex", protectRegex);
             dump.WriteElementString("unprotectRegex", unprotectRegex);
+            dump.WriteElementString("modifyprotectRegex", modifyprotectRegex);
             dump.WriteElementString("uploadRegex", uploadRegex);
             dump.WriteElementString("moveRegex", moveRegex);
             dump.WriteElementString("moveredirRegex", moveredirRegex);
@@ -141,6 +153,7 @@ namespace SWMTBot
                     case "deleteRegex": deleteRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "protectRegex": protectRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "unprotectRegex": unprotectRegex = parentnode.ChildNodes[i].InnerText; break;
+                    case "modifyprotectRegex": modifyprotectRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "uploadRegex": uploadRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "moveRegex": moveRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "moveredirRegex": moveredirRegex = parentnode.ChildNodes[i].InnerText; break;
@@ -173,12 +186,14 @@ namespace SWMTBot
 
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(snamespaces);
+            string namespacesLogline = "";
             XmlNode namespacesNode = doc.GetElementsByTagName("namespaces")[0];
             for (int i = 0; i < namespacesNode.ChildNodes.Count; i++)
             {
                 namespaces.Add(namespacesNode.ChildNodes[i].Attributes["id"].Value, namespacesNode.ChildNodes[i].InnerText);
-                //logger.Info("getNamespaces: id: "+namespacesNode.ChildNodes[i].Attributes["id"].Value + ", value: "+namespacesNode.ChildNodes[i].InnerText); //DEBUG
+                namespacesLogline += "id["+namespacesNode.ChildNodes[i].Attributes["id"].Value + "]="+namespacesNode.ChildNodes[i].InnerText + "; ";
             }
+            logger.Info("getNamespaces: "+namespacesLogline);
         }
 
         public void retrieveWikiDetails()
@@ -197,6 +212,7 @@ namespace SWMTBot
             generateRegex("MediaWiki:Deletedarticle", 1, ref deleteRegex, false);
             generateRegex("MediaWiki:Protectedarticle", 1, ref protectRegex, false);
             generateRegex("MediaWiki:Unprotectedarticle", 1, ref unprotectRegex, false);
+            generateRegex("MediaWiki:Modifiedarticleprotection", 1, ref modifyprotectRegex, true);
             generateRegex("MediaWiki:Uploadedimage", 0, ref uploadRegex, false);
             generateRegex("MediaWiki:1movedto2", 2, ref moveRegex, false);
             generateRegex("MediaWiki:1movedto2_redir", 2, ref moveredirRegex, false);
@@ -325,10 +341,10 @@ namespace SWMTBot
                         nsEnglish = "User talk";
                         break;
                     case 4:
-                        nsEnglish = "Wikipedia";
+                        nsEnglish = "Project";
                         break;
                     case 5:
-                        nsEnglish = "Wikipedia talk";
+                        nsEnglish = "Project talk";
                         break;
                     case 6:
                         nsEnglish = "Image";

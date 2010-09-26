@@ -17,14 +17,15 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
   more flexibility in the layout of the messages. Enabling [[]] (renders
   "[[xx:User:Foo]]") and  (renders "Foo")
 * (bug 15) Add {talkurl} attribute for block and unblock event
+* (bug 31) Finish protect and unprotect log type and also add modifyprotect
 
 === New features in 1.20.0 ===
 
 * (bug 12) Trim whitespace when dealing with list manager
 * (bug 29) A few of the requested feed filters added: feedFilterUsersAnon,
-feedFilterUsersReg, feedFilterEventUpload
+  feedFilterUsersReg, feedFilterEventUpload
 * (bug 30) Setting to avoid database connection ListManager.ClassifyEditor.
-Can now be done with setting disableClassifyEditor in SWMTBot.ini
+  Can now be done with setting disableClassifyEditor in SWMTBot.ini
 
 === Bug fixes in 1.20.0 ===
 
@@ -34,26 +35,33 @@ Can now be done with setting disableClassifyEditor in SWMTBot.ini
 * (bug 16) Remove deprecated {ipcat}
 * added "patrol" as an empty switchcase in RCReader->rcirc_OnChannelMessage
   to clear out some WARNs about unhandled log types
-* (bug 6) Pagetitles containing a slash are not reported and cause WARN in
-log
+* (bug 6) Pagetitles containing a slash are not reported and cause WARN in log
+* nsEnglish[4] and nsEnglish[5] have been changed from "Wikipedia" to "Project"
 
 == Compatibility & Upgrading ==
 
-The old deprecated {ipcat} attribute (which previously was manually set to
-an
-empty string) has been removed from the Program and Console.msgs. Make sure
-you keep the Console.msgs up to date aswell, since else it'll display
-"{ipcat}" litterly in your bot messages.
+The old deprecated {ipcat} attribute (which previously was manually set to an
+empty string) has been removed from the Program and Console.msgs.
+Also message 05902 is added for modifyprotect log type.
+Make sure you view the difference between this release's Console.msgs your
+release and either replace or update yours the same way (view diff in Fisheye)
 
 Lists.sqlite and SWMTBot.ini remain unchanged and are totally compatible.
-They don't need
-upgrading.
+They don't need upgrading.
 
 Because bug 6 has been fixed Projects.xml needs to be rebuild in order to
 actually see it fixed. It's not a requirement (it will work without
 rebuilding). You can do so by doing the "batchreload" command.
 
 All other files can simply be replaced, and restart the bot.
+
+So summarized:
+* Quit the bot
+* Replace all files except for Projects.xml and SWMTBot.ini
+* If you have a custom Console.msgs get diff in FishEye and do the same,
+  otherwise just replace the entire file with the new version
+* After restarting run batchreload to update Projects.xml
+* Enjoy!
 
 
 For notes on 1.19.0 and older releases, see HISTORY
