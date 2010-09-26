@@ -177,7 +177,7 @@ namespace SWMTBot
             for (int i = 0; i < namespacesNode.ChildNodes.Count; i++)
             {
                 namespaces.Add(namespacesNode.ChildNodes[i].Attributes["id"].Value, namespacesNode.ChildNodes[i].InnerText);
-                logger.Info("getNamespaces: id: "+namespacesNode.ChildNodes[i].Attributes["id"].Value + ", value: "+namespacesNode.ChildNodes[i].InnerText);
+                //logger.Info("getNamespaces: id: "+namespacesNode.ChildNodes[i].Attributes["id"].Value + ", value: "+namespacesNode.ChildNodes[i].InnerText); //DEBUG
             }
         }
 

@@ -159,6 +159,9 @@ namespace SWMTBot
                 Thread.Sleep(800);
             }
 
+            //Dump new settings:
+            dumpToFile();
+
             Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel
                         , "Reloaded all wikis. Phew, give the Wikimedia servers a break :(", false, false);
         }
