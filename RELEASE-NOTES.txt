@@ -11,65 +11,69 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
 === Changes in 1.20.0 ===
 
 * "the end of time" is now controlled by Console.msgs to allow translation
-* newuser/newuser2 event gets a talkurl attribute
-* delete event gets a url attribute
-* actions now have a clean-attribute (cname) besides the regular one. For
-  more flexibility in the layout of the messages. Enabling [[]] (renders
-  "[[xx:User:Foo]]") and  (renders "Foo")
-* (bug 15) Add {talkurl} attribute for block and unblock event
-* (bug 31) Finish protect and unprotect log type and also add modifyprotect
+* newuser/newuser2 event gets a 'talkurl' attribute.
+* Delete event gets a 'url' attribute.
+* Actions now have a clean-attribute without prefixes ('c' + attrname) besides
+  the regular one, for more flexibility in the layout of the messages
+  So [[${editor}]] renders "[[xx:User:Foo]]") and ${ceditor} renders "Foo".
+* (bug 15) Add 'talkurl' attribute for block and unblock event.
+* (bug 31) Support for protect/unprotect log type and the (new) modifyprotect.
 * Added SWMTBot.exe.config to the SVN. For some reason it was on the botserver
-  but never made it here (this file creates the run.log-output of log4net)
+  but never made it here (this file is required to get the output of log4net.
+  ie. to terminal or run.log file).
 
 === New features in 1.20.0 ===
 
-* (bug 12) Trim whitespace when dealing with list manager
+* (bug 12) Trim whitespace around parameter when dealing with ListManager.
 * (bug 29) A few of the requested feed filters added: feedFilterUsersAnon,
-  feedFilterUsersReg, feedFilterEventUpload
-* (bug 30) Setting to avoid database connection ListManager.ClassifyEditor.
-  Can now be done with setting disableClassifyEditor in SWMTBot.ini
-* (bug 27) New command "config" for returning customizable .ini settings
-  optional parameter 'all' to distribute it to other bots and bots in the
-  same channel will also show their configs (like "count" does by default)
+  feedFilterUsersReg, feedFilterEventUpload.
+* (bug 30) New option to prevent dbconnection in ListManager.ClassifyEditor
+  Can now be done by adding setting disableClassifyEditor in SWMTBot.ini.
+* (bug 27) New command "config" for getting the customizable .ini settings
+  optional parameter 'all' to broadcast it (like "count" does by default)
+  causing all other bots in the same channel to also show their configs.
 
 === Bug fixes in 1.20.0 ===
 
-* SWMTUtils.wikiEncode() now encodes exclamation mark aswell (some IRC
-  clients cut off link of pagetitle contained it)
-* (bug 11) added clean-attributes missing for edit/newpage
-* (bug 16) Remove deprecated {ipcat}
-* added "patrol" (mark as patrolled) and "review" (FlaggedRevs / PendingChanges)
+* SWMTUtils.wikiEncode() now encodes exclamation mark aswell (some IRC clients
+  cut off links that ends with it).
+* (bug 11) added missing clean-attributes for EventType edit and newpage 
+* (bug 16) Remove deprecated {ipcat}.
+* added "patrol" (mark as patrolled) and "review" (FlaggedRevs/PendingChanges)
   as an empty switchcase in RCReader->rcirc_OnChannelMessage to clear out some
-  WARNs about unhandled log types
-* (bug 6) Pagetitles containing a slash are not reported and cause WARN in log
+  unnecessary WARNs about unhandled log types.
+* (bug 6) Pagetitles containing a slash were not reported
+  and cause a WARN in log.
 * nsEnglish[4] and nsEnglish[5] have been changed from "Wikipedia" to "Project"
-  to fix the bug where one could watch a non-Wikipedia project page, but when
-  an edit occurs, the generated pagetitle (and url) has the wrong namespace and 
-  thus broke the link
+  to fix the bug where one could watchlist project-ns page of a non-WP project,
+  but when an edit occurs, the generated pagetitle (and url) gets the wrong
+  namespace and thus resulted in a broken (404 error) link.
+  "Project" works everywhere.
 
 == Compatibility & Upgrading ==
 
 The old deprecated {ipcat} attribute (which previously was manually set to an
 empty string) has been removed from the Program and Console.msgs.
 Also message 05902 is added for modifyprotect log type.
-Make sure you view the difference between this release's Console.msgs your
-release and either replace or update yours the same way (view diff in Fisheye)
+Make sure that if you use an altered version of Console.msgs you view the 
+difference between this release's Console.msgs your release in FishEye
+and add/change lines accordingly.
 
 Lists.sqlite and SWMTBot.ini remain unchanged and are totally compatible.
-They don't need upgrading.
+They don't need any upgrading.
 
 Because bug 6 has been fixed Projects.xml needs to be rebuild in order to
-actually see it fixed. It's not a requirement (it will work without
-rebuilding). You can do so by doing the "batchreload" command.
-Keep in mind that reload will take up to 1 second per loaded wiki.
+actually see it fixed. It's not a requirement (bot will work as before without
+rebuilding). You can rebuild doing the "batchreload" command.
+Keep in mind that reload will take up to 2 seconds per loaded wiki.
 
-All other files can simply be replaced, and restart the bot.
+All other files can simply be replaced, and the bot restarted.
 
 So summarized:
 * Quit the bot
-* Replace all files except for Projects.xml and SWMTBot.ini
 * If you have a custom Console.msgs get diff in FishEye and do the same,
-  otherwise just replace the entire file with the new version
+  otherwise just replace that file with the new version
+* Replace all other files except for Projects.xml and SWMTBot.ini
 * After restarting run batchreload to update Projects.xml
 * Enjoy!
 
