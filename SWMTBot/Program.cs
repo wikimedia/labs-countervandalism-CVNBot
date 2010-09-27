@@ -354,6 +354,11 @@ namespace SWMTBot
                                 SendMessageF(SendType.Action, reason, "owns " + prjlist.Count.ToString() + " wikis; version is " + version,
                                     false, true);
                             break;
+                        case "CONFIG":
+                            if (list == "BLEEP")
+		                        BotConfigMsg(reason);
+                            break;
+                        
                         //Gracefully ignore unknown action types
                     }
                 }
@@ -590,14 +595,13 @@ namespace SWMTBot
                         SendMessageF(SendType.Message, e.Data.Channel, (String)msgs["20005"], false, true);
                         break;
                     case "version":
-                    case "config":
                     case "settings":
-                    	string settingsmessage = "runs version: " + version + " in " + FeedChannel + "; settings: editblank:" + editblank + ", editbig:" + editbig + ", newbig:" + newbig + ", newsmall:" + newsmall + ", feedFilterUsersAnon:" + feedFilterUsersAnon + ", feedFilterUsersReg:" + feedFilterUsersReg + ", feedFilterEventUpload:" + feedFilterEventUpload;
-                    	settingsmessage += IsCubbie ? ", IsCubbie:true" : ", IsCubbie:false";
-                    	settingsmessage += disableClassifyEditor ? ", disableClassifyEditor:true" : ", disableClassifyEditor:false";
-
-                        foreach (string chunk in SWMTUtils.stringSplit(settingsmessage, 400))
-                            SendMessageF(SendType.Action, e.Data.Channel, chunk, false, true);
+                    case "config":
+                        BotConfigMsg(e.Data.Channel);
+                        if (cmdParams[0] == "all")
+                        {
+                            Broadcast("BLEEP", "CONFIG", "BLEEP", 0, e.Data.Channel, e.Data.Nick);
+                        }
                         break;
                     case "msgs":
                         //Reloads msgs
@@ -899,32 +903,38 @@ namespace SWMTBot
         /// <param name="r"></param>
         public static void ReactToRCEvent(RCEvent r)
         {
+            int feedFilterThis = 1;
+            
+            // Feed filters -> Event
+            // Peform these checks before even classifying the user
+            // EventType is available right away, thus saving a db connection when settings are on ignore
+                if(r.eventtype == RCEvent.EventType.upload)
+                    feedFilterThis = feedFilterEventUpload;
+                
+                if (IsCubbie && (r.eventtype != RCEvent.EventType.upload))
+                    return;//If this IsCubbie, then ignore non-uploads
+                
+                if(feedFilterThis == 4)// 4 is "ignore"
+                    return;
+            
             Hashtable attribs = new Hashtable();
             String message = "";
             int userOffset = (int)(listman.classifyEditor(r.user, r.project));
-            int feedFilterThis = 1;
 
             /* If this is a bot action, and if bot edits are ignored, return */
             /* HACK: If this is a bot admin (not currently supported), and it blocks, then the user will not be blacklisted */
             if (ignoreBotEdits && (userOffset == 5))
                 return;
 
-            //If this IsCubbie, then ignore non-uploads
-            if (IsCubbie && (r.eventtype != RCEvent.EventType.upload))
-                return;
-            
-            //Feed filters
-            if(userOffset == 3)
-                feedFilterThis = feedFilterUsersAnon;
+            // Feed filters -> Users
+                if(userOffset == 3)
+                    feedFilterThis = feedFilterUsersAnon;
                 
-            if(userOffset == 4)
-                feedFilterThis = feedFilterUsersReg;
+                if(userOffset == 4)
+                    feedFilterThis = feedFilterUsersReg;
                 
-            if(r.eventtype == RCEvent.EventType.upload)
-                feedFilterThis = feedFilterEventUpload;
-            
-            if(feedFilterThis == 4)// 4 is "ignore"
-                return;
+                if(feedFilterThis == 4)// 4 is "ignore"
+                    return;
 
             switch (r.eventtype)
             {
@@ -1024,7 +1034,7 @@ namespace SWMTBot
                             return;
 
                         // If else: user is on blacklist, or, user is on greylisted, or feedFilter setting made it special
-                        	// show, continue, dont return! 
+                            // show, continue, dont return! 
                     }
                     else
                     { //Not new page; a simple edit
@@ -1310,6 +1320,18 @@ namespace SWMTBot
                     }
                 }
             }
+        }
+        
+        public static void BotConfigMsg(string destChannel)
+        {
+        
+	        string settingsmessage = "runs version: " + version + " in " + FeedChannel + "; settings: editblank:" + editblank + ", editbig:" + editbig + ", newbig:" + newbig + ", newsmall:" + newsmall + ", feedFilterUsersAnon:" + feedFilterUsersAnon + ", feedFilterUsersReg:" + feedFilterUsersReg + ", feedFilterEventUpload:" + feedFilterEventUpload;
+	        settingsmessage += IsCubbie ? ", IsCubbie:true" : ", IsCubbie:false";
+	        settingsmessage += disableClassifyEditor ? ", disableClassifyEditor:true" : ", disableClassifyEditor:false";
+	
+	        foreach (string chunk in SWMTUtils.stringSplit(settingsmessage, 400))
+	            SendMessageF(SendType.Action, destChannel, chunk, false, true);
+        
         }
 
         public static void Exit()

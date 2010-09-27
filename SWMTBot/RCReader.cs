@@ -340,7 +340,9 @@ namespace SWMTBot
                                 }
                                 else
                                 {
-                                    logger.Warn("Unmatched delete type in " + rce.project + ": " + e.Data.Message);
+                                    // could be 'revision' (change visibility of revision) or something else
+                                    // ignore for now, not supported not interested
+                                    //logger.Warn("Unmatched delete type in " + rce.project + ": " + e.Data.Message);
                                     return;
                                 }
                             }
@@ -360,7 +362,9 @@ namespace SWMTBot
                             }
                             else
                             {
-                                logger.Warn("Unmatched upload in " + rce.project + ": " + e.Data.Message);
+                            	// could be 'overwrite' (upload new version) or something else
+                                // ignore for now, not supported not interested
+                                //logger.Warn("Unmatched upload in " + rce.project + ": " + e.Data.Message);
                                 return;
                             }
                             break;
@@ -420,6 +424,10 @@ namespace SWMTBot
                         //break;
                         case "patrol":
                             //Marked as patrolled
+                            return; //Not interested today
+                        //break;
+                        case "review":
+                            //FlaggedRevisions or PendingChanges action
                             return; //Not interested today
                         //break;
                         default:

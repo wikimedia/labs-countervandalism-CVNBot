@@ -156,7 +156,7 @@ namespace SWMTBot
             {
                 Project prj = (Project)dicent.Value;
                 prj.retrieveWikiDetails();
-                Thread.Sleep(800);
+                Thread.Sleep(600);
             }
 
             //Dump new settings:
