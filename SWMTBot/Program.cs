@@ -24,7 +24,7 @@ namespace SWMTBot
 
     class Program
     {
-        const string version = "1.20beta";
+        const string version = "1.20beta (r39)";
 
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -75,7 +75,7 @@ namespace SWMTBot
          */
         static int feedFilterUsersAnon = 1;
         static int feedFilterUsersReg = 2;
-        static int feedFilterUsersBot = 4
+        static int feedFilterUsersBot = 4;
         //TODO: static int feedFilterEventNewuser;
         static int feedFilterEventUpload = 1;
         //TODO: static int feedFilterEventDelete = 1;
