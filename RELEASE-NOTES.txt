@@ -21,12 +21,13 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
 * Added SWMTBot.exe.config to the SVN. For some reason it was on the botserver
   but never made it here (this file is required to get the output of log4net.
   ie. to terminal or run.log file).
+* ignoreBotEdits is now deprecated in favor of feedFilterUsersBot
 
 === New features in 1.20.0 ===
 
 * (bug 12) Trim whitespace around parameter when dealing with ListManager.
 * (bug 29) A few of the requested feed filters added: feedFilterUsersAnon,
-  feedFilterUsersReg, feedFilterEventUpload.
+  feedFilterUsersReg, feedFilterEventUpload, feedFilterUsersBot
 * (bug 30) New option to prevent dbconnection in ListManager.ClassifyEditor
   Can now be done by adding setting disableClassifyEditor in SWMTBot.ini.
 * (bug 27) New command "config" for getting the customizable .ini settings

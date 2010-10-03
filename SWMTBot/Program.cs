@@ -52,7 +52,6 @@ namespace SWMTBot
         static int editbig;
         static int newbig;
         static int newsmall;
-        static bool ignoreBotEdits = true;
         static string ControlChannel;
         static string FeedChannel;
         static string BroadcastChannel;
@@ -76,9 +75,10 @@ namespace SWMTBot
          */
         static int feedFilterUsersAnon = 1;
         static int feedFilterUsersReg = 2;
-        //TODO: static int feedFilterUsersBot;
+        static int feedFilterUsersBot = 4
         //TODO: static int feedFilterEventNewuser;
         static int feedFilterEventUpload = 1;
+        //TODO: static int feedFilterEventDelete = 1;
         
         // IsCubbie overrides feedfilters if true to only show uploads and ignore the rest
         static bool IsCubbie = false;
@@ -130,6 +130,7 @@ namespace SWMTBot
             disableClassifyEditor = mainConfig.ContainsKey("disableClassifyEditor");
             feedFilterUsersAnon = mainConfig.ContainsKey("feedFilterUsersAnon") ? Int32.Parse((string)mainConfig["feedFilterUsersAnon"]) : 1;
             feedFilterUsersReg = mainConfig.ContainsKey("feedFilterUsersReg") ? Int32.Parse((string)mainConfig["feedFilterUsersReg"]) : 2;
+            feedFilterUsersBot = mainConfig.ContainsKey("feedFilterUsersBot") ? Int32.Parse((string)mainConfig["feedFilterUsersBot"]) : 4;
             feedFilterEventUpload = mainConfig.ContainsKey("feedFilterEventUpload") ? Int32.Parse((string)mainConfig["feedFilterEventUpload"]) : 1;
 
             botCmd = new Regex("^" + botNick + @" (\s*(?<command>\S*))(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
@@ -921,10 +922,9 @@ namespace SWMTBot
             String message = "";
             int userOffset = (int)(listman.classifyEditor(r.user, r.project));
 
-            /* If this is a bot action, and if bot edits are ignored, return */
-            /* HACK: If this is a bot admin (not currently supported), and it blocks, then the user will not be blacklisted */
-            if (ignoreBotEdits && (userOffset == 5))
-                return;
+            /* If the current event is by a bot user and it blocks (eg. bot admin) and 
+               bot edits are ignored (default) then the user will not be blacklisted */
+            /* TODO: Add new userOffset for botadmin ? */
 
             // Feed filters -> Users
                 if(userOffset == 3)
@@ -932,6 +932,9 @@ namespace SWMTBot
                 
                 if(userOffset == 4)
                     feedFilterThis = feedFilterUsersReg;
+                
+                if(userOffset == 5)
+                    feedFilterThis = feedFilterUsersBot;
                 
                 if(feedFilterThis == 4)// 4 is "ignore"
                     return;
@@ -1325,7 +1328,7 @@ namespace SWMTBot
         public static void BotConfigMsg(string destChannel)
         {
         
-	        string settingsmessage = "runs version: " + version + " in " + FeedChannel + "; settings: editblank:" + editblank + ", editbig:" + editbig + ", newbig:" + newbig + ", newsmall:" + newsmall + ", feedFilterUsersAnon:" + feedFilterUsersAnon + ", feedFilterUsersReg:" + feedFilterUsersReg + ", feedFilterEventUpload:" + feedFilterEventUpload;
+	        string settingsmessage = "runs version: " + version + " in " + FeedChannel + "; settings: editblank:" + editblank + ", editbig:" + editbig + ", newbig:" + newbig + ", newsmall:" + newsmall + ", feedFilterUsersAnon:" + feedFilterUsersAnon + ", feedFilterUsersReg:" + feedFilterUsersReg + ", feedFilterUsersBot:" + feedFilterUsersBot + ", feedFilterEventUpload:" + feedFilterEventUpload;
 	        settingsmessage += IsCubbie ? ", IsCubbie:true" : ", IsCubbie:false";
 	        settingsmessage += disableClassifyEditor ? ", disableClassifyEditor:true" : ", disableClassifyEditor:false";
 	
