@@ -919,6 +919,9 @@ namespace SWMTBot
                 if (IsCubbie && (r.eventtype != RCEvent.EventType.upload))
                     return;//If this IsCubbie, then ignore non-uploads
                 
+	            if (r.botflag && (feedFilterUsersBot == 4))
+	            	return;
+                
                 if(feedFilterThis == 4)// 4 is "ignore"
                     return;
             

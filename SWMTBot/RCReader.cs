@@ -23,6 +23,7 @@ namespace SWMTBot
         public string user;
         public bool minor;
         public bool newpage;
+        public bool botflag;
         public int szdiff;
         public string comment;
         public EventType eventtype;
@@ -170,6 +171,8 @@ namespace SWMTBot
                     //This is a regular edit
                     rce.minor = fields[4].Contains("M");
                     rce.newpage = fields[4].Contains("N");
+                    rce.botflag = fields[4].Contains("B");
+                    //logger.Info("DEBUG: fields[4]:" + fields[4]);
                     rce.eventtype = RCEvent.EventType.edit;
                     rce.comment = fields[14].Replace("\x03", "");
                 }
@@ -438,6 +441,7 @@ namespace SWMTBot
                     //These flags don't apply to log events, but must be initialized
                     rce.minor = false;
                     rce.newpage = false;
+                    rce.botflag = false;
                 }
 
                 //Deal with the diff size

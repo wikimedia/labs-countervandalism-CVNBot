@@ -22,6 +22,9 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
   but never made it here (this file is required to get the output of log4net.
   ie. to terminal or run.log file).
 * ignoreBotEdits is now deprecated in favor of feedFilterUsersBot
+* RCEvent now extracts botflag aswell. Making it possible to detect (and return)
+  botedits in ReactToRCEvent without a database connection (ie.
+  calling classifyEditor). This decreases delay/lag on busy wikis noticeably.
 
 === New features in 1.20.0 ===
 
