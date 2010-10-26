@@ -24,7 +24,7 @@ namespace SWMTBot
 
     class Program
     {
-        const string version = "1.20beta (r39)";
+        const string version = "1.20beta";
 
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -78,7 +78,7 @@ namespace SWMTBot
         static int feedFilterUsersBot = 4;
         //TODO: static int feedFilterEventNewuser;
         static int feedFilterEventUpload = 1;
-        //TODO: static int feedFilterEventDelete = 1;
+        static int feedFilterEventDelete = 1;
         
         // IsCubbie overrides feedfilters if true to only show uploads and ignore the rest
         static bool IsCubbie = false;
@@ -132,6 +132,7 @@ namespace SWMTBot
             feedFilterUsersReg = mainConfig.ContainsKey("feedFilterUsersReg") ? Int32.Parse((string)mainConfig["feedFilterUsersReg"]) : 2;
             feedFilterUsersBot = mainConfig.ContainsKey("feedFilterUsersBot") ? Int32.Parse((string)mainConfig["feedFilterUsersBot"]) : 4;
             feedFilterEventUpload = mainConfig.ContainsKey("feedFilterEventUpload") ? Int32.Parse((string)mainConfig["feedFilterEventUpload"]) : 1;
+            feedFilterEventDelete = mainConfig.ContainsKey("feedFilterEventDelete") ? Int32.Parse((string)mainConfig["feedFilterEventDelete"]) : 1;
 
             botCmd = new Regex("^" + botNick + @" (\s*(?<command>\S*))(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
 
@@ -912,6 +913,9 @@ namespace SWMTBot
                 if(r.eventtype == RCEvent.EventType.upload)
                     feedFilterThis = feedFilterEventUpload;
                 
+                if(r.eventtype == RCEvent.EventType.delete)
+                    feedFilterThis = feedFilterEventDelete;
+                
                 if (IsCubbie && (r.eventtype != RCEvent.EventType.upload))
                     return;//If this IsCubbie, then ignore non-uploads
                 
@@ -1328,7 +1332,7 @@ namespace SWMTBot
         public static void BotConfigMsg(string destChannel)
         {
         
-	        string settingsmessage = "runs version: " + version + " in " + FeedChannel + "; settings: editblank:" + editblank + ", editbig:" + editbig + ", newbig:" + newbig + ", newsmall:" + newsmall + ", feedFilterUsersAnon:" + feedFilterUsersAnon + ", feedFilterUsersReg:" + feedFilterUsersReg + ", feedFilterUsersBot:" + feedFilterUsersBot + ", feedFilterEventUpload:" + feedFilterEventUpload;
+	        string settingsmessage = "runs version: " + version + " in " + FeedChannel + "; settings: editblank:" + editblank + ", editbig:" + editbig + ", newbig:" + newbig + ", newsmall:" + newsmall + ", feedFilterUsersAnon:" + feedFilterUsersAnon + ", feedFilterUsersReg:" + feedFilterUsersReg + ", feedFilterUsersBot:" + feedFilterUsersBot + ", feedFilterEventUpload:" + feedFilterEventUpload + ", feedFilterEventDelete:" + feedFilterEventDelete;
 	        settingsmessage += IsCubbie ? ", IsCubbie:true" : ", IsCubbie:false";
 	        settingsmessage += disableClassifyEditor ? ", disableClassifyEditor:true" : ", disableClassifyEditor:false";
 	
