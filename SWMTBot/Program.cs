@@ -76,7 +76,7 @@ namespace SWMTBot
         static int feedFilterUsersAnon = 1;
         static int feedFilterUsersReg = 2;
         static int feedFilterUsersBot = 4;
-        //TODO: static int feedFilterEventNewuser;
+        static int feedFilterEventMinorEdit = 4;
         static int feedFilterEventUpload = 1;
         static int feedFilterEventDelete = 1;
         
@@ -131,6 +131,7 @@ namespace SWMTBot
             feedFilterUsersAnon = mainConfig.ContainsKey("feedFilterUsersAnon") ? Int32.Parse((string)mainConfig["feedFilterUsersAnon"]) : 1;
             feedFilterUsersReg = mainConfig.ContainsKey("feedFilterUsersReg") ? Int32.Parse((string)mainConfig["feedFilterUsersReg"]) : 2;
             feedFilterUsersBot = mainConfig.ContainsKey("feedFilterUsersBot") ? Int32.Parse((string)mainConfig["feedFilterUsersBot"]) : 4;
+            feedFilterEventMinorEdit = mainConfig.ContainsKey("feedFilterEventMinorEdit") ? Int32.Parse((string)mainConfig["feedFilterEventMinorEdit"]) : 4;
             feedFilterEventUpload = mainConfig.ContainsKey("feedFilterEventUpload") ? Int32.Parse((string)mainConfig["feedFilterEventUpload"]) : 1;
             feedFilterEventDelete = mainConfig.ContainsKey("feedFilterEventDelete") ? Int32.Parse((string)mainConfig["feedFilterEventDelete"]) : 1;
 
@@ -922,6 +923,9 @@ namespace SWMTBot
 	            if (r.botflag && (feedFilterUsersBot == 4))
 	            	return;
                 
+	            if (r.minor && (feedFilterEventMinorEdit == 4))
+	            	return;
+                
                 if(feedFilterThis == 4)// 4 is "ignore"
                     return;
             
@@ -992,11 +996,11 @@ namespace SWMTBot
                         if ((userOffset == 1) || (userOffset == 6))
                             createNothingSpecial = false;
 
-                        //If this is an anon and anons should be shown, create is always special
+                        //If this is an anon and anons should always be shown, create is always special
                         if ((userOffset == 3) && (feedFilterUsersAnon == 1))
                             createNothingSpecial = false;
 
-                        //If this is an normal user and normal users should be shown, create is always special
+                        //If this is an normal user and normal users should always be shown, create is always special
                         if ((userOffset == 4) && (feedFilterUsersReg == 1))
                             createNothingSpecial = false;
 
@@ -1074,11 +1078,11 @@ namespace SWMTBot
                         if ((userOffset == 1) || (userOffset == 6))
                             editNothingSpecial = false;
 
-                        //If this is an anon and anons should be shown, edit is always special
+                        //If this is an anon and anons should always be shown, edit is always special
                         if ((userOffset == 3) && (feedFilterUsersAnon == 1))
                             editNothingSpecial = false;
 
-                        //If this is an normal user and normal users should be shown, edit is always special
+                        //If this is an normal user and normal users should always be shown, edit is always special
                         if ((userOffset == 4) && (feedFilterUsersReg == 1))
                             editNothingSpecial = false;
 
