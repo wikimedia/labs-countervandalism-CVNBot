@@ -24,7 +24,7 @@ namespace SWMTBot
 
     class Program
     {
-        const string version = "1.20beta";
+        const string version = "1.20beta (r43+ working copy) optimizing feedFilters";
 
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -931,21 +931,21 @@ namespace SWMTBot
             // Peform these checks before even classifying the user
             // EventType is available right away, thus saving a db connection when settings are on ignore
                 if(r.eventtype == RCEvent.EventType.upload)
-                    feedFilterThis = feedFilterEventUpload;
+                    feedFilterThisEvent = feedFilterEventUpload;
 
                 if(r.eventtype == RCEvent.EventType.delete)
-                    feedFilterThis = feedFilterEventDelete;
+                    feedFilterThisEvent = feedFilterEventDelete;
+
+                if (r.minor)
+                    feedFilterThisEvent = feedFilterEventMinorEdit;
+
+                if (feedFilterThisEvent == 4)// 4 is "ignore"
+                    return;
 
                 if (IsCubbie && (r.eventtype != RCEvent.EventType.upload))
                     return;//If this IsCubbie, then ignore non-uploads
 
                 if (r.botflag && (feedFilterUsersBot == 4))
-                    return;
-
-                if (r.minor && (feedFilterEventMinorEdit == 4))
-                    return;
-
-                if(feedFilterThis == 4)// 4 is "ignore"
                     return;
 
             Hashtable attribs = new Hashtable();
@@ -958,15 +958,15 @@ namespace SWMTBot
 
             // Feed filters -> Users
                 if(userOffset == 3)
-                    feedFilterThis = feedFilterUsersAnon;
+                    feedFilterThisUser = feedFilterUsersAnon;
 
                 if(userOffset == 4)
-                    feedFilterThis = feedFilterUsersReg;
+                    feedFilterThisUser = feedFilterUsersReg;
 
                 if(userOffset == 5)
-                    feedFilterThis = feedFilterUsersBot;
+                    feedFilterThisUser = feedFilterUsersBot;
 
-                if(feedFilterThis == 4)// 4 is "ignore"
+                if(feedFilterThisUser == 4)// 4 is "ignore"
                     return;
 
             switch (r.eventtype)
@@ -1015,12 +1015,10 @@ namespace SWMTBot
                         if ((userOffset == 1) || (userOffset == 6))
                             createNothingSpecial = false;
 
-                        //If this is an anon and anons should always be shown, create is always special
-                        if ((userOffset == 3) && (feedFilterUsersAnon == 1))
-                            createNothingSpecial = false;
-
-                        //If this is an normal user and normal users should always be shown, create is always special
-                        if ((userOffset == 4) && (feedFilterUsersReg == 1))
+                        //If the current usertype should always be shown, create is always special
+                        //By default this is anonymous users (feedFilterUsersAnon=1)
+                        //But feedFilterUsersReg or feedFilterUsersBot can be 1 aswell
+                        if (feedFilterThisUser == 1)
                             createNothingSpecial = false;
 
                         // Now check if the edit summary matches BES
@@ -1058,16 +1056,15 @@ namespace SWMTBot
                             AddToGreylist(userOffset, r.user, Program.getFormatMessage(16301, (String)attribs["article"]));
                         }
 
-                        // If created by an admin, bot or whitelisted person
-                        if ((userOffset == 2) || (userOffset == 5) || (userOffset == 0))
+                        // If created by an admin or whitelisted person
+                        if ((userOffset == 2) || (userOffset == 0))
                             return;
 
                         // If created by a user and nothing special
                         if ((userOffset == 4) && (createNothingSpecial))
                             return;
 
-                        // If else: user is on blacklist, or, user is on greylisted, or feedFilter setting made it special
-                            // show, continue, dont return!
+                        // Else: create was special. So show it, continue, dont return!
                     }
                     else
                     { //Not new page; a simple edit
@@ -1097,12 +1094,10 @@ namespace SWMTBot
                         if ((userOffset == 1) || (userOffset == 6))
                             editNothingSpecial = false;
 
-                        //If this is an anon and anons should always be shown, edit is always special
-                        if ((userOffset == 3) && (feedFilterUsersAnon == 1))
-                            editNothingSpecial = false;
-
-                        //If this is an normal user and normal users should always be shown, edit is always special
-                        if ((userOffset == 4) && (feedFilterUsersReg == 1))
+                        //If the current usertype should always be shown, create is always special
+                        //By default this is anonymous users (feedFilterUsersAnon=1)
+                        //But feedFilterUsersReg or feedFilterUsersBot can be 1 aswell
+                        if (feedFilterThisUser == 1)
                             editNothingSpecial = false;
 
                         // Now check if user has edited a watched page
@@ -1154,7 +1149,7 @@ namespace SWMTBot
                             AddToGreylist(userOffset, r.user, Program.getFormatMessage(16310, r.comment, (String)attribs["article"]));
                         }
 
-                        // If nothing special about the edit (i.e., it's normal-sized, it's not on a watched page), return
+                        // If nothing special about the edit return
                         if (editNothingSpecial)
                             return;
                     }
@@ -1333,7 +1328,7 @@ namespace SWMTBot
                     break;
             }
 
-            if (feedFilterThis == 3)
+            if (feedFilterEventThis == 3 || feedFilterUserThis == 3)
             {
                 // Autolistings have been done throughout ReactToRCEvent()
                 // If this message triggered hardhide, we're done now
