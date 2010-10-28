@@ -67,7 +67,7 @@ namespace SWMTBot
          * Possible values:
          *  1 "show"     (show and allow autolist) - default
          *  2 "softhide" (hide non-specials, show exceptions and allow autolist)
-         *	   softhide users: only large actions or matching watchlist/BES/BNU etc.
+         *     softhide users: only large actions or matching watchlist/BES/BNU etc.
          *     softhide events: hide bots, admins, whitelist performing the event
          *  3 "hardhide" (hide all but do autolist)
          *  4 "ignore"   (hide and ignore totally)
@@ -78,11 +78,15 @@ namespace SWMTBot
         static int feedFilterUsersAnon = 1;
         static int feedFilterUsersReg = 2;
         static int feedFilterUsersBot = 4;
-        static int feedFilterEventMinorEdit = 4;
+        static int feedFilterEventMinorEdit = 4; // No 'softhide', 2 behaves like 1
+        static int feedFilterEventEdit = 1; // No 'softhide', 2 behaves like 1
+        static int feedFilterEventNewpage = 1; // No 'softhide', 2 behaves like 1
         static int feedFilterEventMove = 1;
+        static int feedFilterEventBlock = 1; // No 'softhide', 2 behaves like 1; includes unblock
         static int feedFilterEventDelete = 1;
         static int feedFilterEventNewuser = 1;
         static int feedFilterEventUpload = 1;
+        static int feedFilterEventProtect = 1; // No 'softhide', 2 behaves like 1; includes unprotect and modifyprotect
 
         // IsCubbie overrides feedfilters if true to only show uploads and ignore the rest
         static bool IsCubbie = false;
@@ -136,10 +140,14 @@ namespace SWMTBot
             feedFilterUsersReg = mainConfig.ContainsKey("feedFilterUsersReg") ? Int32.Parse((string)mainConfig["feedFilterUsersReg"]) : 2;
             feedFilterUsersBot = mainConfig.ContainsKey("feedFilterUsersBot") ? Int32.Parse((string)mainConfig["feedFilterUsersBot"]) : 4;
             feedFilterEventMinorEdit = mainConfig.ContainsKey("feedFilterEventMinorEdit") ? Int32.Parse((string)mainConfig["feedFilterEventMinorEdit"]) : 4;
+            feedFilterEventEdit = mainConfig.ContainsKey("feedFilterEventEdit") ? Int32.Parse((string)mainConfig["feedFilterEventEdit"]) : 1;
+            feedFilterEventNewpage = mainConfig.ContainsKey("feedFilterEventNewpage") ? Int32.Parse((string)mainConfig["feedFilterEventNewpage"]) : 1;
             feedFilterEventMove = mainConfig.ContainsKey("feedFilterEventMove") ? Int32.Parse((string)mainConfig["feedFilterEventMove"]) : 1;
+            feedFilterEventBlock = mainConfig.ContainsKey("feedFilterEventBlock") ? Int32.Parse((string)mainConfig["feedFilterEventBlock"]) : 1;
             feedFilterEventDelete = mainConfig.ContainsKey("feedFilterEventDelete") ? Int32.Parse((string)mainConfig["feedFilterEventDelete"]) : 1;
             feedFilterEventNewuser = mainConfig.ContainsKey("feedFilterEventNewuser") ? Int32.Parse((string)mainConfig["feedFilterEventNewuser"]) : 1;
             feedFilterEventUpload = mainConfig.ContainsKey("feedFilterEventUpload") ? Int32.Parse((string)mainConfig["feedFilterEventUpload"]) : 1;
+            feedFilterEventProtect = mainConfig.ContainsKey("feedFilterEventProtect") ? Int32.Parse((string)mainConfig["feedFilterEventProtect"]) : 1;
 
             botCmd = new Regex("^" + botNick + @" (\s*(?<command>\S*))(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
 
@@ -936,9 +944,15 @@ namespace SWMTBot
 
             // Feed filters -> Event
             // Peform these checks before even classifying the user
-            // EventType is available right away, thus saving a db connection when settings are on ignore
+            // EventType is available right away, thus saving a db connection when setting is on 4 ('ignore')
                 if (r.minor)
                     feedFilterThisEvent = feedFilterEventMinorEdit;
+
+                if (r.eventtype == RCEvent.EventType.edit && !r.newpage)
+                    feedFilterThisEvent = feedFilterEventEdit;
+
+                if (r.eventtype == RCEvent.EventType.edit && r.newpage)
+                    feedFilterThisEvent = feedFilterEventNewpage;
 
                 if (r.eventtype == RCEvent.EventType.move)
                     feedFilterThisEvent = feedFilterEventMove;
@@ -946,11 +960,17 @@ namespace SWMTBot
                 if (r.eventtype == RCEvent.EventType.delete)
                     feedFilterThisEvent = feedFilterEventDelete;
 
+                if (r.eventtype == RCEvent.EventType.block || r.eventtype == RCEvent.EventType.unblock)
+                    feedFilterThisEvent = feedFilterEventBlock;
+
                 if (r.eventtype == RCEvent.EventType.newuser || r.eventtype == RCEvent.EventType.newuser2 || r.eventtype == RCEvent.EventType.autocreate)
                     feedFilterThisEvent = feedFilterEventNewuser;
 
                 if (r.eventtype == RCEvent.EventType.upload)
                     feedFilterThisEvent = feedFilterEventUpload;
+
+                if (r.eventtype == RCEvent.EventType.protect || r.eventtype == RCEvent.EventType.unprotect || r.eventtype == RCEvent.EventType.modifyprotect)
+                    feedFilterThisEvent = feedFilterEventProtect;
 
                 if (feedFilterThisEvent == 4)// 4 is "ignore"
                     return;
@@ -1234,49 +1254,43 @@ namespace SWMTBot
                     message = getMessage(05300, ref attribs);
                     break;
                 case RCEvent.EventType.newuser:
-                	if (feedFilterThisEvent == 1 || feedFilterThisEvent == 2)
-                	{
-                        attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
-                        attribs.Add("ceditor", r.user);
-                        attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + SWMTUtils.wikiEncode(r.user));
-                        attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + SWMTUtils.wikiEncode(r.user));
-                        listMatch bnuMatch = listman.matchesList(r.user, 11);
-                        if (bnuMatch.Success && feedFilterThisEvent == 1)
-                        {
-                            // Matches BNU
-                            attribs.Add("watchword", bnuMatch.matchedItem);
-                            attribs.Add("wwreason", bnuMatch.matchedReason);
-                            message = getMessage(5201, ref attribs);
-                            AddToGreylist(userOffset, r.user, Program.getFormatMessage(16320, bnuMatch.matchedItem));
-                        }
-                        // Only show non-special creations if newuser event is 1 ('show')
-	                    else if (feedFilterThisEvent == 1) {
-                            message = getMessage(5200, ref attribs);
-                        }
+                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ceditor", r.user);
+                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + SWMTUtils.wikiEncode(r.user));
+                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + SWMTUtils.wikiEncode(r.user));
+                    listMatch bnuMatch = listman.matchesList(r.user, 11);
+                    if (bnuMatch.Success && feedFilterThisEvent == 1)
+                    {
+                        // Matches BNU
+                        attribs.Add("watchword", bnuMatch.matchedItem);
+                        attribs.Add("wwreason", bnuMatch.matchedReason);
+                        message = getMessage(5201, ref attribs);
+                        AddToGreylist(userOffset, r.user, Program.getFormatMessage(16320, bnuMatch.matchedItem));
+                    }
+                    // Only show non-special creations if newuser event is 1 ('show')
+                    else if (feedFilterThisEvent == 1) {
+                        message = getMessage(5200, ref attribs);
                     }
                     break;
                 case RCEvent.EventType.newuser2:
-                	if (feedFilterThisEvent == 1 || feedFilterThisEvent == 2)
-                	{
-                        attribs.Add("creator", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
-	                    attribs.Add("ccreator", r.user);
-	                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.title);
-	                    attribs.Add("ceditor", r.title);
-	                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + SWMTUtils.wikiEncode(r.user));
-	                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + SWMTUtils.wikiEncode(r.user));
-	                    listMatch bnuMatch2 = listman.matchesList(r.user, 11);
-	                    if (bnuMatch2.Success)
-	                    {
-	                        // Matches BNU
-	                        attribs.Add("watchword", bnuMatch2.matchedItem);
-	                        attribs.Add("wwreason", bnuMatch2.matchedReason);
-	                        message = getMessage(5211, ref attribs);
-	                        AddToGreylist(userOffset, r.user, Program.getFormatMessage(16320, bnuMatch2.matchedItem));
-	                    }
-                        // Only show non-special creations if newuser event is 1 ('show')
-	                    else if (feedFilterThisEvent == 1) {
-	                        message = getMessage(5210, ref attribs);
-	                    }
+                    attribs.Add("creator", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("ccreator", r.user);
+                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.title);
+                    attribs.Add("ceditor", r.title);
+                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + SWMTUtils.wikiEncode(r.user));
+                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + SWMTUtils.wikiEncode(r.user));
+                    listMatch bnuMatch2 = listman.matchesList(r.user, 11);
+                    if (bnuMatch2.Success)
+                    {
+                        // Matches BNU
+                        attribs.Add("watchword", bnuMatch2.matchedItem);
+                        attribs.Add("wwreason", bnuMatch2.matchedReason);
+                        message = getMessage(5211, ref attribs);
+                        AddToGreylist(userOffset, r.user, Program.getFormatMessage(16320, bnuMatch2.matchedItem));
+                    }
+                    // Only show non-special creations if newuser event is 1 ('show')
+                    else if (feedFilterThisEvent == 1) {
+                        message = getMessage(5210, ref attribs);
                     }
                     break;
                 case RCEvent.EventType.upload:
@@ -1380,13 +1394,16 @@ namespace SWMTBot
                 + ", editbig:" + editbig
                 + ", newbig:" + newbig
                 + ", newsmall:" + newsmall
-                + ", feedFilterUsersAnon:" + feedFilterUsersAnon
+                + "\nfeedFilterUsersAnon:" + feedFilterUsersAnon
                 + ", feedFilterUsersReg:" + feedFilterUsersReg
                 + ", feedFilterUsersBot:" + feedFilterUsersBot
                 + ", feedFilterEventMinorEdit:" + feedFilterEventMinorEdit
+                + ", feedFilterEventEdit:" + feedFilterEventEdit
+                + ", feedFilterEventNewpage:" + feedFilterEventNewpage
                 + ", feedFilterEventMove:" + feedFilterEventMove
                 + ", feedFilterEventDelete:" + feedFilterEventDelete
-                + ", feedFilterEventUpload:" + feedFilterEventUpload;
+                + ", feedFilterEventUpload:" + feedFilterEventUpload
+                + ", feedFilterEventProtect:" + feedFilterEventProtect;
             settingsmessage += IsCubbie ? ", IsCubbie:true" : ", IsCubbie:false";
             settingsmessage += disableClassifyEditor ? ", disableClassifyEditor:true" : ", disableClassifyEditor:false;";
 

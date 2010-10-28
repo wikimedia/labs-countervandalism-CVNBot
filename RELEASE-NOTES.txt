@@ -30,8 +30,9 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
 
 * (bug 12) Trim whitespace around parameter when dealing with ListManager.
 * (bug 29) New feed filters added: feedFilterUsersAnon, feedFilterUsersReg
-  feedFilterUsersBot, feedFilterEventMinorEdit, feedFilterEventMove, 
-  feedFilterEventDelete, feedFilterEventNewuser and feedFilterEventUpload.
+  feedFilterUsersBot, feedFilterEventMinorEdit, feedFilterEventEdit, 
+  feedFilterEventNewpage, feedFilterEventMove, feedFilterEventDelete, 
+  feedFilterEventNewuser, feedFilterEventUpload and feedFilterEventProtect.
   These can be set in SWMTBot.ini to 1, 2, 3 or 4.
   Check the bug ticket and code comments for more info.
 * (bug 30) New option to prevent dbconnection in ListManager.ClassifyEditor
