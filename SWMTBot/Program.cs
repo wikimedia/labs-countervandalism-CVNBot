@@ -67,6 +67,8 @@ namespace SWMTBot
          * Possible values:
          *  1 "show"     (show and allow autolist) - default
          *  2 "softhide" (hide non-specials, show exceptions and allow autolist)
+         *	   softhide users: only large actions or matching watchlist/BES/BNU etc.
+         *     softhide events: hide bots, admins, whitelist performing the event
          *  3 "hardhide" (hide all but do autolist)
          *  4 "ignore"   (hide and ignore totally)
          * show/ignore is dealt with at beginning of ReactToRCEvent()
@@ -77,8 +79,9 @@ namespace SWMTBot
         static int feedFilterUsersReg = 2;
         static int feedFilterUsersBot = 4;
         static int feedFilterEventMinorEdit = 4;
-        static int feedFilterEventUpload = 1;
+        static int feedFilterEventMove = 1;
         static int feedFilterEventDelete = 1;
+        static int feedFilterEventUpload = 1;
 
         // IsCubbie overrides feedfilters if true to only show uploads and ignore the rest
         static bool IsCubbie = false;
@@ -132,8 +135,9 @@ namespace SWMTBot
             feedFilterUsersReg = mainConfig.ContainsKey("feedFilterUsersReg") ? Int32.Parse((string)mainConfig["feedFilterUsersReg"]) : 2;
             feedFilterUsersBot = mainConfig.ContainsKey("feedFilterUsersBot") ? Int32.Parse((string)mainConfig["feedFilterUsersBot"]) : 4;
             feedFilterEventMinorEdit = mainConfig.ContainsKey("feedFilterEventMinorEdit") ? Int32.Parse((string)mainConfig["feedFilterEventMinorEdit"]) : 4;
-            feedFilterEventUpload = mainConfig.ContainsKey("feedFilterEventUpload") ? Int32.Parse((string)mainConfig["feedFilterEventUpload"]) : 1;
+            feedFilterEventMove = mainConfig.ContainsKey("feedFilterEventMove") ? Int32.Parse((string)mainConfig["feedFilterEventMove"]) : 1;
             feedFilterEventDelete = mainConfig.ContainsKey("feedFilterEventDelete") ? Int32.Parse((string)mainConfig["feedFilterEventDelete"]) : 1;
+            feedFilterEventUpload = mainConfig.ContainsKey("feedFilterEventUpload") ? Int32.Parse((string)mainConfig["feedFilterEventUpload"]) : 1;
 
             botCmd = new Regex("^" + botNick + @" (\s*(?<command>\S*))(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
 
@@ -931,14 +935,17 @@ namespace SWMTBot
             // Feed filters -> Event
             // Peform these checks before even classifying the user
             // EventType is available right away, thus saving a db connection when settings are on ignore
-                if(r.eventtype == RCEvent.EventType.upload)
-                    feedFilterThisEvent = feedFilterEventUpload;
-
-                if(r.eventtype == RCEvent.EventType.delete)
-                    feedFilterThisEvent = feedFilterEventDelete;
-
                 if (r.minor)
                     feedFilterThisEvent = feedFilterEventMinorEdit;
+
+                if (r.eventtype == RCEvent.EventType.move)
+                    feedFilterThisEvent = feedFilterEventMove;
+
+                if (r.eventtype == RCEvent.EventType.delete)
+                    feedFilterThisEvent = feedFilterEventDelete;
+
+                if (r.eventtype == RCEvent.EventType.upload)
+                    feedFilterThisEvent = feedFilterEventUpload;
 
                 if (feedFilterThisEvent == 4)// 4 is "ignore"
                     return;
@@ -989,7 +996,7 @@ namespace SWMTBot
 
                     if (r.newpage)
                     {
-                        bool createNothingSpecial = false;
+                        bool createSpecial = true;
 
                         // First, just check sizes, and assign default messages in case nothing else is at fault
                         if (r.szdiff >= newbig)
@@ -1009,18 +1016,18 @@ namespace SWMTBot
                             attribs.Add("sizeattrib", "");
                             attribs.Add("sizereset", "");
                             message = getMessage(5000 + userOffset, ref attribs);
-                            createNothingSpecial = true;
+                            createSpecial = false;
                         }
 
                         //If this is a blacklisted or greylisted user, create is always special
                         if ((userOffset == 1) || (userOffset == 6))
-                            createNothingSpecial = false;
+                            createSpecial = true;
 
                         //If the current usertype should always be shown, create is always special
                         //By default this is anonymous users (feedFilterUsersAnon=1)
                         //But feedFilterUsersReg or feedFilterUsersBot can be 1 aswell
                         if (feedFilterThisUser == 1)
-                            createNothingSpecial = false;
+                            createSpecial = true;
 
                         // Now check if the edit summary matches BES
                         listMatch lm = listman.matchesList(r.comment, 20);
@@ -1030,7 +1037,7 @@ namespace SWMTBot
                             attribs.Add("watchword", lm.matchedItem);
                             //attribs.Add("reason", lm.matchedReason);
                             message = getMessage(95040 + userOffset, ref attribs);
-                            createNothingSpecial = false;
+                            createSpecial = true;
                             AddToGreylist(userOffset, r.user, Program.getFormatMessage(16300, (String)attribs["article"], lm.matchedItem));
                         }
 
@@ -1042,7 +1049,7 @@ namespace SWMTBot
                             attribs.Add("watchword", eslm.matchedItem);
                             //attribs.Add("reason", eslm.matchedReason);
                             message = getMessage(5040 + userOffset, ref attribs);
-                            createNothingSpecial = false;
+                            createSpecial = true;
                             AddToGreylist(userOffset, r.user, Program.getFormatMessage(16300, (String)attribs["article"], eslm.matchedItem));
                         }
 
@@ -1053,7 +1060,7 @@ namespace SWMTBot
                             //Is watched
                             //attribs.Add("reason", wlm.matchedReason);
                             message = getMessage(5030 + userOffset, ref attribs);
-                            createNothingSpecial = false;
+                            createSpecial = true;
                             AddToGreylist(userOffset, r.user, Program.getFormatMessage(16301, (String)attribs["article"]));
                         }
 
@@ -1061,15 +1068,15 @@ namespace SWMTBot
                         if ((userOffset == 2) || (userOffset == 0))
                             return;
 
-                        // If created by a user and nothing special
-                        if ((userOffset == 4) && (createNothingSpecial))
+                        // If created by an unlisted reguser and nothing special
+                        if ((userOffset == 4) && !createSpecial)
                             return;
 
                         // Else: create was special. So show it, continue, dont return!
                     }
                     else
                     { //Not new page; a simple edit
-                        bool editNothingSpecial = false;
+                        bool editSpecial = true;
 
                         if (r.szdiff >= editbig)
                         {
@@ -1088,18 +1095,22 @@ namespace SWMTBot
                             attribs.Add("sizeattrib", "");
                             attribs.Add("sizereset", "");
                             message = getMessage(5100 + userOffset, ref attribs);
-                            editNothingSpecial = true;
+                            editSpecial = false;
                         }
 
                         //If this is a blacklisted or anon or greylisted user, edit is always special
                         if ((userOffset == 1) || (userOffset == 6))
-                            editNothingSpecial = false;
+                            editSpecial = true;
 
                         //If the current usertype should always be shown, create is always special
                         //By default this is anonymous users (feedFilterUsersAnon=1)
                         //But feedFilterUsersReg or feedFilterUsersBot can be 1 aswell
                         if (feedFilterThisUser == 1)
-                            editNothingSpecial = false;
+                            editSpecial = true;
+
+                        // If edit by an admin or whitelisted person
+                        if ((userOffset == 2) || (userOffset == 0))
+                            editSpecial = false;
 
                         // Now check if user has edited a watched page
                         listMatch welm = listman.isWatchedArticle(r.title, r.project);
@@ -1108,14 +1119,14 @@ namespace SWMTBot
                             //Is watched
                             //attribs.Add("reason", welm.matchedReason); //Current Console.msgs provides reason field for edsum only
                             message = getMessage(5130 + userOffset, ref attribs);
-                            editNothingSpecial = false;
+                            editSpecial = true;
                         }
 
                         // Now check if user has actually blanked the page
                         if (((Project)prjlist[r.project]).rautosummBlank.IsMatch(r.comment))
                         {
                             message = getMessage(96010 + userOffset, ref attribs);
-                            editNothingSpecial = false;
+                            editSpecial = true;
                             AddToGreylist(userOffset, r.user, Program.getFormatMessage(16311, (String)attribs["article"]));
                         }
                         else //i.e., it won't be both a blank and a replace, we want to save some resources
@@ -1134,7 +1145,7 @@ namespace SWMTBot
                                     //This wiki probably doesn't have a profanity attribute
                                     message = getMessage(96030 + userOffset, ref attribs);
                                 }
-                                editNothingSpecial = false;
+                                editSpecial = true;
                             }
                         }
 
@@ -1146,16 +1157,21 @@ namespace SWMTBot
                             attribs.Add("watchword", elm.matchedItem);
                             //attribs.Add("reason", elm.matchedReason);
                             message = getMessage(95130 + userOffset, ref attribs);
-                            editNothingSpecial = false;
+                            editSpecial = true;
                             AddToGreylist(userOffset, r.user, Program.getFormatMessage(16310, r.comment, (String)attribs["article"]));
                         }
 
                         // If nothing special about the edit return
-                        if (editNothingSpecial)
+                        if (!editSpecial)
                             return;
                     }
                     break;
                 case RCEvent.EventType.move:
+                    // if moves are softhidden hide moves by admin, bot or whitelist
+                    if ((feedFilterEventMove == 2) && ((userOffset == 2) || (userOffset == 5) || (userOffset == 0)))
+                    {
+                        return;
+                    }
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
                     attribs.Add("fromname", ((Project)prjlist[r.project]).interwikiLink + r.title);
@@ -1274,11 +1290,11 @@ namespace SWMTBot
                     if (uwa.Success)
                         uMsg = 5610;
 
-                    // If normal and uploaded by an admin, bot or whitelisted person (TODO: unless watched or matches word)
+                    // If normal and uploaded by an admin, bot or whitelisted person always hide
                     if ((uMsg == 5600) && ((userOffset == 2) || (userOffset == 5) || (userOffset == 0)))
                         return;
 
-                    // if normal and uploads are softhidden and user is normal user or anon
+                    // if normal and uploads are softhidden hide normal user and anon aswell
                     if ((uMsg == 5600) && (feedFilterEventUpload == 2) && ((userOffset == 3) || (userOffset == 4)))
                         return;
 
