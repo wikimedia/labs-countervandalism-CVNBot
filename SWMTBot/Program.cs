@@ -58,13 +58,13 @@ namespace SWMTBot
         static string ircServerName;
         static int bufflen = 1400;
         static long maxlag = 600000000; // 60 seconds in 100-nanoseconds
-        
+
         /**
          * Feed filters
          *
          * These settings allow filtering of user types and event types
          * They are defined via the .ini file and loaded on top of the Main thread
-         * Possible values: 
+         * Possible values:
          *  1 "show"     (show and allow autolist) - default
          *  2 "softhide" (hide non-specials, show exceptions and allow autolist)
          *  3 "hardhide" (hide all but do autolist)
@@ -79,10 +79,10 @@ namespace SWMTBot
         static int feedFilterEventMinorEdit = 4;
         static int feedFilterEventUpload = 1;
         static int feedFilterEventDelete = 1;
-        
+
         // IsCubbie overrides feedfilters if true to only show uploads and ignore the rest
         static bool IsCubbie = false;
-        
+
         // Set this to true to stops the bot from checking the database when requesting a usertype
         //  and instead will only return 3 (anon) or 4 (user) based on a regex.
         // This speeds up the the flow incredibly (especially when using SQLite) and makes it possible
@@ -359,9 +359,9 @@ namespace SWMTBot
                             break;
                         case "CONFIG":
                             if (list == "BLEEP")
-		                        BotConfigMsg(reason);
+                                BotConfigMsg(reason);
                             break;
-                        
+
                         //Gracefully ignore unknown action types
                     }
                 }
@@ -401,6 +401,30 @@ namespace SWMTBot
 
             //logger.Info("Queued item");
         }
+
+        /// <summary>
+        /// Splitting messages by line breaks and in chucks if they're too long and forward to SendMessageF
+        /// </summary>
+        public static void SendMessageFMulti(SendType type, string destination, string message, bool IsDroppable, bool IsPriority)
+        {
+
+            if (message != "")
+            {
+                //Allow multiline
+                foreach (string line in message.Split(new char[1] { '\n' }))
+                {
+                    //Chunk messages that are too long
+                    foreach (string chunk in SWMTUtils.stringSplit(line, 400))
+                    {
+                        // Ignore "" and "
+                        if ((chunk.Trim() != "\"\"") && (chunk.Trim() != "\"")){
+                            SendMessageF(type, destination, chunk, IsDroppable, IsPriority);
+                        }
+                    }
+                }
+            }
+        }
+
 
         static void irc_OnPong(object sender, PongEventArgs e)
         {
@@ -704,8 +728,7 @@ namespace SWMTBot
                             result += p + " ";
                         }
                         result += "(Total: " + prjlist.Count.ToString() + " wikis)";
-                        foreach (string chunk in SWMTUtils.stringSplit(result, 400))
-                            SendMessageF(SendType.Message, e.Data.Channel, chunk, false, true);
+                        SendMessageFMulti(SendType.Message, e.Data.Channel, result, false, true);
                         break;
                     case "batchgetusers":
                         if (!hasPrivileges('@', ref e))
@@ -765,11 +788,7 @@ namespace SWMTBot
 
                     case "intel":
                         string intelResult = listman.GlobalIntel(extraParams);
-                        foreach (string chunk in intelResult.Split(new char[1] {'\n'}))
-                        {
-                            SendMessageF(SendType.Message, e.Data.Channel, chunk, false, true);
-                            Thread.Sleep(400);
-                        }
+                        SendMessageFMulti(SendType.Message, e.Data.Channel, intelResult, false, true);
                         break;
                     case "purge":
                         if (!hasPrivileges('@', ref e))
@@ -907,46 +926,46 @@ namespace SWMTBot
         public static void ReactToRCEvent(RCEvent r)
         {
             int feedFilterThis = 1;
-            
+
             // Feed filters -> Event
             // Peform these checks before even classifying the user
             // EventType is available right away, thus saving a db connection when settings are on ignore
                 if(r.eventtype == RCEvent.EventType.upload)
                     feedFilterThis = feedFilterEventUpload;
-                
+
                 if(r.eventtype == RCEvent.EventType.delete)
                     feedFilterThis = feedFilterEventDelete;
-                
+
                 if (IsCubbie && (r.eventtype != RCEvent.EventType.upload))
                     return;//If this IsCubbie, then ignore non-uploads
-                
-	            if (r.botflag && (feedFilterUsersBot == 4))
-	            	return;
-                
-	            if (r.minor && (feedFilterEventMinorEdit == 4))
-	            	return;
-                
+
+                if (r.botflag && (feedFilterUsersBot == 4))
+                    return;
+
+                if (r.minor && (feedFilterEventMinorEdit == 4))
+                    return;
+
                 if(feedFilterThis == 4)// 4 is "ignore"
                     return;
-            
+
             Hashtable attribs = new Hashtable();
             String message = "";
             int userOffset = (int)(listman.classifyEditor(r.user, r.project));
 
-            /* If the current event is by a bot user and it blocks (eg. bot admin) and 
+            /* If the current event is by a bot user and it blocks (eg. bot admin) and
                bot edits are ignored (default) then the user will not be blacklisted */
             /* TODO: Add new userOffset for botadmin ? */
 
             // Feed filters -> Users
                 if(userOffset == 3)
                     feedFilterThis = feedFilterUsersAnon;
-                
+
                 if(userOffset == 4)
                     feedFilterThis = feedFilterUsersReg;
-                
+
                 if(userOffset == 5)
                     feedFilterThis = feedFilterUsersBot;
-                
+
                 if(feedFilterThis == 4)// 4 is "ignore"
                     return;
 
@@ -1048,7 +1067,7 @@ namespace SWMTBot
                             return;
 
                         // If else: user is on blacklist, or, user is on greylisted, or feedFilter setting made it special
-                            // show, continue, dont return! 
+                            // show, continue, dont return!
                     }
                     else
                     { //Not new page; a simple edit
@@ -1262,11 +1281,11 @@ namespace SWMTBot
                     // If normal and uploaded by an admin, bot or whitelisted person (TODO: unless watched or matches word)
                     if ((uMsg == 5600) && ((userOffset == 2) || (userOffset == 5) || (userOffset == 0)))
                         return;
-                        
+
                     // if normal and uploads are softhidden and user is normal user or anon
                     if ((uMsg == 5600) && (feedFilterEventUpload == 2) && ((userOffset == 3) || (userOffset == 4)))
                         return;
-                    
+
                     // If our message is 95620, we might need to truncate r.comment
                     if (uMsg == 95620)
                     {
@@ -1313,39 +1332,38 @@ namespace SWMTBot
                     message = getMessage(5902, ref attribs);
                     break;
             }
-            
+
             if (feedFilterThis == 3)
             {
-                //autolistings have been done throughout ReactToRCEvent()
-                //if hardhide, just dont send the message now
+                // Autolistings have been done throughout ReactToRCEvent()
+                // If this message triggered hardhide, we're done now
+                // Hide message:
                 message = "";
             }
 
-            if (message != "")
-            {
-                //Allow multiline
-                foreach (string line in message.Split(new char[1] { '\n' }))
-                {
-                    //Chunk messages that are too long
-                    foreach (string chunk in SWMTUtils.stringSplit(line, 400))
-                    {
-                        if ((chunk.Trim() != "\"\"") && (chunk.Trim() != "\""))
-                            SendMessageF(SendType.Message, FeedChannel, chunk, true, false);
-                    }
-                }
-            }
+            SendMessageFMulti(SendType.Message, FeedChannel, message, true, false);
+
         }
-        
+
         public static void BotConfigMsg(string destChannel)
         {
-        
-	        string settingsmessage = "runs version: " + version + " in " + FeedChannel + "; settings: editblank:" + editblank + ", editbig:" + editbig + ", newbig:" + newbig + ", newsmall:" + newsmall + ", feedFilterUsersAnon:" + feedFilterUsersAnon + ", feedFilterUsersReg:" + feedFilterUsersReg + ", feedFilterUsersBot:" + feedFilterUsersBot + ", feedFilterEventUpload:" + feedFilterEventUpload + ", feedFilterEventDelete:" + feedFilterEventDelete;
-	        settingsmessage += IsCubbie ? ", IsCubbie:true" : ", IsCubbie:false";
-	        settingsmessage += disableClassifyEditor ? ", disableClassifyEditor:true" : ", disableClassifyEditor:false";
-	
-	        foreach (string chunk in SWMTUtils.stringSplit(settingsmessage, 400))
-	            SendMessageF(SendType.Action, destChannel, chunk, false, true);
-        
+
+            string settingsmessage = "runs version: " + version + " in " + FeedChannel + "; settings"
+                + ": editblank:" + editblank
+                + ", editbig:" + editbig
+                + ", newbig:" + newbig
+                + ", newsmall:" + newsmall
+                + ", feedFilterUsersAnon:" + feedFilterUsersAnon
+                + ", feedFilterUsersReg:" + feedFilterUsersReg
+                + ", feedFilterUsersBot:" + feedFilterUsersBot
+                + ", feedFilterEventUpload:" + feedFilterEventUpload
+                + ", feedFilterEventMinorEdit:" + feedFilterEventMinorEdit
+                + ", feedFilterEventDelete:" + feedFilterEventDelete;
+            settingsmessage += IsCubbie ? ", IsCubbie:true" : ", IsCubbie:false";
+            settingsmessage += disableClassifyEditor ? ", disableClassifyEditor:true" : ", disableClassifyEditor:false;";
+
+            SendMessageFMulti(SendType.Action, destChannel, settingsmessage, false, true);
+
         }
 
         public static void Exit()
