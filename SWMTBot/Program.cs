@@ -925,7 +925,8 @@ namespace SWMTBot
         /// <param name="r"></param>
         public static void ReactToRCEvent(RCEvent r)
         {
-            int feedFilterThis = 1;
+            int feedFilterThisEvent = 1;
+            int feedFilterThisUser = 1;
 
             // Feed filters -> Event
             // Peform these checks before even classifying the user
@@ -1328,7 +1329,7 @@ namespace SWMTBot
                     break;
             }
 
-            if (feedFilterEventThis == 3 || feedFilterUserThis == 3)
+            if (feedFilterThisEvent == 3 || feedFilterThisUser == 3)
             {
                 // Autolistings have been done throughout ReactToRCEvent()
                 // If this message triggered hardhide, we're done now
