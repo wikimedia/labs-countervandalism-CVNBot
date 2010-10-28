@@ -24,7 +24,7 @@ namespace SWMTBot
 
     class Program
     {
-        const string version = "1.20beta (r43+ working copy) optimizing feedFilters";
+        const string version = "1.20beta";
 
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
