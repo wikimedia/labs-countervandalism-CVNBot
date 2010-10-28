@@ -1368,9 +1368,10 @@ namespace SWMTBot
                 + ", feedFilterUsersAnon:" + feedFilterUsersAnon
                 + ", feedFilterUsersReg:" + feedFilterUsersReg
                 + ", feedFilterUsersBot:" + feedFilterUsersBot
-                + ", feedFilterEventUpload:" + feedFilterEventUpload
                 + ", feedFilterEventMinorEdit:" + feedFilterEventMinorEdit
-                + ", feedFilterEventDelete:" + feedFilterEventDelete;
+                + ", feedFilterEventMove:" + feedFilterEventMove
+                + ", feedFilterEventDelete:" + feedFilterEventDelete
+                + ", feedFilterEventUpload:" + feedFilterEventUpload;
             settingsmessage += IsCubbie ? ", IsCubbie:true" : ", IsCubbie:false";
             settingsmessage += disableClassifyEditor ? ", disableClassifyEditor:true" : ", disableClassifyEditor:false;";
 
