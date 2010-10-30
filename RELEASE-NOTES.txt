@@ -25,6 +25,8 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
 * RCEvent now extracts botflag aswell. Making it possible to detect (and return)
   botedits in ReactToRCEvent without a database connection (ie.
   calling classifyEditor). This decreases delay/lag on busy wikis noticeably.
+* Adding Console.msgs and sqlite3.dll as Content includes. No longer have to be
+  moved manually before the app can be run.
 
 === New features in 1.20.0 ===
 

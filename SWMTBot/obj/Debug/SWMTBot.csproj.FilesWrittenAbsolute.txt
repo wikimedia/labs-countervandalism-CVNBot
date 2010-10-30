@@ -5,3 +5,9 @@
 /Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/SWMTBot.exe
 /Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/obj/Debug/SWMTBot.exe
 /Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/obj/Debug/SWMTBot.exe.mdb
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/Projects.xml
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/-sample.ini
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/.exe.config
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/.sample.ini
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/Console.msgs
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Debug/sqlite3.dll
