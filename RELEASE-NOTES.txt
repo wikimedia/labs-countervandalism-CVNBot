@@ -66,8 +66,8 @@ The old deprecated {ipcat} attribute (which previously was manually set to an
 empty string) has been removed from the Program and Console.msgs.
 Also message 05902 is added for modifyprotect log type.
 Make sure that if you use an altered version of Console.msgs you view the 
-difference between this release's Console.msgs your release in FishEye
-and add/change lines accordingly.
+difference between this release's Console.msgs and the one from your release
+in FishEye and add/change lines the same way.
 
 Lists.sqlite and SWMTBot.ini remain unchanged and are totally compatible.
 They don't need any upgrading.
@@ -83,7 +83,7 @@ So summarized:
 * Quit the bot
 * If you have a custom Console.msgs get diff in FishEye and do the same,
   otherwise just replace that file with the new version
-* Replace all other files except for Projects.xml and SWMTBot.ini
+* Replace all other files except for Projects.xml, Lists.sqlite and SWMTBot.ini
 * After restarting run batchreload to update Projects.xml
 * Enjoy!
 
