@@ -1,0 +1,10 @@
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Release/log4net.dll
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Release/Meebey.SmartIrc4net.dll
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Release/Mono.Data.SqliteClient.dll
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Release/Projects.xml
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Release/Console.msgs
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Release/sqlite3.dll
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Release/SWMTBot.exe.mdb
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/bin/Release/SWMTBot.exe
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/obj/Release/SWMTBot.exe
+/Users/grizzmac/Public/SVN/p_swmtbot/SWMTBot/obj/Release/SWMTBot.exe.mdb
