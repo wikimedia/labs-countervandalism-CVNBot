@@ -1,6 +1,5 @@
 = SWMTBot release notes =
 
-
 == SWMTBot 1.20.0 ==
 
 THIS IS NOT A RELEASE YET
@@ -9,15 +8,14 @@ Those wishing to use the trunk code instead of a stable release can obtain
 it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
 
 === Changes in 1.20.0 ===
-
 * "the end of time" is now controlled by Console.msgs to allow translation
 * newuser/newuser2 event gets a 'talkurl' attribute.
 * Delete event gets a 'url' attribute.
 * Actions now have a clean-attribute without prefixes ('c' + attrname) besides
   the regular one, for more flexibility in the layout of the messages
   So [[${editor}]] renders "[[xx:User:Foo]]") and ${ceditor} renders "Foo".
-* (bug 15) Add 'talkurl' attribute for block and unblock event.
-* (bug 31) Support for protect/unprotect log type and the (new) modifyprotect.
+* (JIRA SWMTBOT-15) Add 'talkurl' attribute for block and unblock event.
+* (JIRA SWMTBOT-31) Support for protect/unprotect log type and the (new) modifyprotect.
 * Added SWMTBot.exe.config to the SVN. For some reason it was on the botserver
   but never made it here (this file is required to get the output of log4net.
   ie. to terminal or run.log file).
@@ -29,30 +27,28 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
   moved manually before the app can be run.
 
 === New features in 1.20.0 ===
-
-* (bug 12) Trim whitespace around parameter when dealing with ListManager.
-* (bug 29) New feed filters added: feedFilterUsersAnon, feedFilterUsersReg
+* (JIRA SWMTBOT-12) Trim whitespace around parameter when dealing with ListManager.
+* (JIRA SWMTBOT-29) New feed filters added: feedFilterUsersAnon, feedFilterUsersReg
   feedFilterUsersBot, feedFilterEventMinorEdit, feedFilterEventEdit, 
   feedFilterEventNewpage, feedFilterEventMove, feedFilterEventDelete, 
   feedFilterEventNewuser, feedFilterEventUpload and feedFilterEventProtect.
   These can be set in SWMTBot.ini to 1, 2, 3 or 4.
   Check the bug ticket and code comments for more info.
-* (bug 30) New option to prevent dbconnection in ListManager.ClassifyEditor
+* (JIRA SWMTBOT-30) New option to prevent dbconnection in ListManager.ClassifyEditor
   Can now be done by adding setting disableClassifyEditor in SWMTBot.ini.
-* (bug 27) New command "config" for getting the customizable .ini settings
+* (JIRA SWMTBOT-27) New command "config" for getting the customizable .ini settings
   optional parameter 'all' to broadcast it (like "count" does by default)
   causing all other bots in the same channel to also show their configs.
 
 === Bug fixes in 1.20.0 ===
-
 * SWMTUtils.wikiEncode() now encodes exclamation mark aswell (some IRC clients
   cut off links that ends with it).
-* (bug 11) added missing clean-attributes for EventType edit and newpage 
-* (bug 16) Remove deprecated {ipcat}.
+* (JIRA SWMTBOT-11) added missing clean-attributes for EventType edit and newpage 
+* (JIRA SWMTBOT-16) Remove deprecated {ipcat}.
 * added "patrol" (mark as patrolled) and "review" (FlaggedRevs/PendingChanges)
   as an empty switchcase in RCReader->rcirc_OnChannelMessage to clear out some
   unnecessary WARNs about unhandled log types.
-* (bug 6) Pagetitles containing a slash were not reported
+* (JIRA SWMTBOT-6) Pagetitles containing a slash were not reported
   and cause a WARN in log.
 * nsEnglish[4] and nsEnglish[5] have been changed from "Wikipedia" to "Project"
   to fix the bug where one could watchlist project-ns page of a non-WP project,
@@ -90,13 +86,16 @@ So summarized:
 
 For notes on 1.19.0 and older releases, see HISTORY
 
-
 === Online documentation ===
 
-Documentation for both users and channel operators is currently available
-on Meta :
+Documentation for both users and channel operators is available
+on the Countervandalism Netork wiki:
 
-  http://meta.wikimedia.org/wiki/SWMTBot
+  http://countervandalism.net//wiki/SWMTBot
+
+Bugs and other feedback may be reported to our project on Toolserver JIRA:
+
+	https://jira.toolserver.org/browse/SWMTBOT
 
 
 === IRC help ===
