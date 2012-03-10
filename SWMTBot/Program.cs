@@ -1224,8 +1224,8 @@ namespace SWMTBot
                         IDbConnection rcdbcon = (IDbConnection)new SqliteConnection(listman.connectionString);
                         rcdbcon.Open();
                         if ((r.blockLength.ToLower() != "indefinite") && (r.blockLength.ToLower() != "infinite"))
-                        {                                                               //345,600 seconds = 96 hours
-                            int listLen = Convert.ToInt32(SWMTUtils.ParseDateTimeLength(r.blockLength, 345600) * 2.5);
+                        {                                                               // 2,678,400 seconds = 744 hours = 31 days
+                            int listLen = Convert.ToInt32(SWMTUtils.ParseDateTimeLength(r.blockLength, 2678400) * 2.5);
                             string blComment = "Autoblacklist: " + r.comment + " on " + r.project;
                             message += "\n" + listman.addUserToList(r.title.Split(new char[1] { ':' }, 2)[1], "" //Global bl
                                 , ListManager.UserType.blacklisted, r.user, blComment , listLen, ref rcdbcon);

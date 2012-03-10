@@ -25,6 +25,7 @@ it from source control: https://svn.toolserver.org/svnroot/p_swmtbot
   calling classifyEditor). This decreases delay/lag on busy wikis noticeably.
 * Adding Console.msgs and sqlite3.dll as Content includes. No longer have to be
   moved manually before the app can be run.
+* Default blacklist duration raised from 96 hours (4 days) to 744 hours (31 days).
 
 === New features in 1.20.0 ===
 * (JIRA SWMTBOT-12) Trim whitespace around parameter when dealing with ListManager.

@@ -481,9 +481,9 @@ namespace SWMTBot
                     string cmd = lc.Groups["cmd"].Captures[0].Value.ToLower();
                     string item = lc.Groups["item"].Captures[0].Value.Trim();
                     int len;
-                    //Set length defaults: for all but blacklist, this is 0 (indefinite). For blacklist, is 96 hours.
+                    // Set length defaults: except for blacklist (listtype=1), the default is 0 (indefinite)
                     if (listtype == 1)
-                        len = 345600; //= 96 hours for blacklist
+                        len = 2678400; // 2,678,400 seconds = 744 hours = 31 days
                     else
                         len = 0;
                     if (lc.Groups["len"].Success)
