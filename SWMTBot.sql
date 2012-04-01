@@ -32,8 +32,6 @@ CREATE TABLE `users` (
   `expiry` bigint(64) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE UNIQUE INDEX users_name ON users (name);
-
 
 -- --------------------------------------------------------
 
