@@ -16,10 +16,6 @@ CREATE TABLE `items` (
   `expiry` bigint(64) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
---
--- Dumping data for table `items`
---
-
 
 -- --------------------------------------------------------
 
@@ -38,10 +34,6 @@ CREATE TABLE `users` (
 
 CREATE UNIQUE INDEX users_name ON users (name);
 
---
--- Dumping data for table `users`
---
-
 
 -- --------------------------------------------------------
 
@@ -56,7 +48,3 @@ CREATE TABLE `watchlist` (
   `reason` varchar(80) DEFAULT NULL,
   `expiry` bigint(64) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
---
--- Dumping data for table `watchlist`
---
