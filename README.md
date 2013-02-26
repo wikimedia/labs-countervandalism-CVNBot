@@ -27,15 +27,26 @@ For more information on SemVer, please visit http://semver.org/.
 Build
 ----------
 The software is written in C# and originally created as a Visual Studio Project.
-To build the project, we recommend using `xbuild`. To do so, first install
-Mono and GTK#. Then install MonoDevelop:
+We use `mono` to run the executable and `xbuild` to build the executable.
 
+Standalone installers (you'll need both Mono and MonoDevelop. The latter includes `xbuild`):
 * [mono-project.com](http://www.go-mono.com/mono-downloads/download.html) (For
   MacOSX: Choose Runtime / Mono Framework MRE)
 * [monodevelop.com/Download](http://monodevelop.com/Download)
 
+Or, if using `apt-get`, use one of these:
+* [`mono-develop`](http://packages.debian.org/search?keywords=mono-devel) (`mono`)
+* [`mono-complete`](http://packages.debian.org/search?keywords=mono-complete) (`mono`+`xbuild`)
+
+Once mono is installed, build the project:
+
 ```bash
 countervandalism/CVNBot/src/CVNBot:$ xbuild CVNBot.csproj
+```
+
+Once built, you can run it (see [Installation](https://github.com/countervandalism/CVNBot/wiki/Documentation#wiki-install) for more info on how to properly install it for actual usage, don't run it from the Debug directory in production):
+```bash
+countervandalism/CVNBot/src/CVNBot/bin/Debug:$ mono CVNBot.exe
 ```
 
 
