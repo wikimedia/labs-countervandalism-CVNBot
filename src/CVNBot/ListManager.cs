@@ -8,7 +8,7 @@ using System.IO;
 using System.Threading;
 using log4net;
 
-namespace SWMTBot
+namespace CVNBot
 {
     struct listMatch
     {
@@ -35,7 +35,7 @@ namespace SWMTBot
 
         private Timer garbageCollector;
  
-        private static ILog logger = LogManager.GetLogger("SWMTBot.ListManager");
+        private static ILog logger = LogManager.GetLogger("CVNBot.ListManager");
 
         public void initDBConnection(string filename)
         {
@@ -471,7 +471,7 @@ namespace SWMTBot
             //cmdParams are given like so:
             //  add Tangotango[ x=96][ r=Terrible vandal]
             //  add Tangotango test account x=89
-            //  del Tangotango r=No longer needed (r is not handled by SWMTBot, but accept anyway)
+            //  del Tangotango r=No longer needed (r is not handled by CVNBot, but accept anyway)
 
             Match lc = rlistCmd.Match(cmdParams);
             if (lc.Success)
@@ -843,7 +843,7 @@ namespace SWMTBot
                     ourdbcon = (IDbConnection)new SqliteConnection(connectionString);
                     ourdbcon.Open();
 
-                    string list = SWMTUtils.getRawDocument("http://" + projectName
+                    string list = CVNBotUtils.getRawDocument("http://" + projectName
                         + ".org/w/index.php?title=Special:Listusers&group=" + getGroup + "&limit=5000&offset=0");
 
                     //Now parse the list: 
@@ -852,7 +852,7 @@ namespace SWMTBot
                     Match lusers = adminLine.Match(sr.Substring(0, sr.IndexOf("</ul>")));
                     while (lusers.Success)
                     {
-                        addUserToList(lusers.Groups[1].Captures[0].Value, projectName, getGroupUT, "SWMTBot"
+                        addUserToList(lusers.Groups[1].Captures[0].Value, projectName, getGroupUT, "CVNBot"
                             , "Auto-download from wiki", 0, ref ourdbcon); //Add the user to the list, using our own DB connection to write
                         lusers = lusers.NextMatch();
                     }

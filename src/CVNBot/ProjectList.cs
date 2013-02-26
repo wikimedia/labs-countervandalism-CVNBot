@@ -6,11 +6,11 @@ using System.IO;
 using System.Threading;
 using log4net;
 
-namespace SWMTBot
+namespace CVNBot
 {
     class ProjectList : SortedList
     {
-        private ILog logger = LogManager.GetLogger("SWMTBot.ProjectList");
+        private ILog logger = LogManager.GetLogger("CVNBot.ProjectList");
 
         public string fnProjectsXML;
         public string currentBatchReloadChannel = "";

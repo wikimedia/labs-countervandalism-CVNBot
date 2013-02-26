@@ -1,5 +1,5 @@
 -- 
--- MySQL Database structure for SWMTBot (expiremental)
+-- MySQL Database structure for CVNBot (expiremental)
 --
 
 -- --------------------------------------------------------

@@ -1,11 +1,11 @@
 # Messages used by the bot, note all messages should be 5 digit number with leading zeroes
-# Note: this file is for SWMTBot, and is not compatible with CVUBot
+# Note: this file is for CVNBot.
 #
 # ${var} = variables to be substituted
 # %cnn[,nn] = mIRC colour nn,nn
 # %b = Toggle bolding
 #
-# 0 = Reporting (largely compatible with CVUBot) / 9 = SWMTBot-only reporting / 1 = Formatted / 2 = Interface
+# 0 = Reporting (largely compatible with CVUBot) / 9 = CVNBot-only reporting / 1 = Formatted / 2 = Interface
 00000=2.03
 
 00020=Anonymous user
@@ -236,5 +236,5 @@
 20002=Only the bad new username, bad new article title and bad edit summary lists can be tested
 20003=You need to specify a username
 20004=Cannot guess interwiki prefix. Please specify one (e.g., en:) in the last optional parameter.
-20005=Please see [[m:User:Tangotango/SWMTBot/Manual]] for a description of commands.
+20005=Documentation: https://github.com/countervandalism/CVNBot/wiki/Documentation#wiki-commands
 20006=the end of time

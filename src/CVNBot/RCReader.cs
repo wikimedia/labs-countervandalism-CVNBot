@@ -6,7 +6,7 @@ using System.Threading;
 using System.Text.RegularExpressions;
 using log4net;
 
-namespace SWMTBot
+namespace CVNBot
 {
     struct RCEvent
     {
@@ -50,7 +50,7 @@ namespace SWMTBot
         static Regex rszDiff = new Regex(@"\(([\+\-])([0-9]+)\)");
         static Regex rflagMN = new Regex(@"[MN]{0,2}");
 
-        private static ILog logger = LogManager.GetLogger("SWMTBot.RCReader");
+        private static ILog logger = LogManager.GetLogger("CVNBot.RCReader");
 
         public void initiateConnection()
         {
@@ -79,7 +79,7 @@ namespace SWMTBot
             }
             try
             {
-                rcirc.Login(Program.botNick, "SWMTBot", 4, "SWMTBot");
+                rcirc.Login(Program.botNick, "CVNBot", 4, "CVNBot");
 
                 foreach (string prj in Program.prjlist.Keys)
                 {
@@ -140,7 +140,7 @@ namespace SWMTBot
             lastMessage = DateTime.Now;
 
             //Same as RCParser.py->parseRCmsg()
-            string strippedmsg = stripBold.Replace(stripColours.Replace(SWMTUtils.replaceStrMax(e.Data.Message, '\x03', '\x04', 14), "\x03"), "");
+            string strippedmsg = stripBold.Replace(stripColours.Replace(CVNBotUtils.replaceStrMax(e.Data.Message, '\x03', '\x04', 14), "\x03"), "");
             string[] fields = strippedmsg.Split(new char[1] { '\x03' }, 15);
             if (fields.Length == 15)
             {
@@ -381,7 +381,7 @@ namespace SWMTBot
                                 rce.title = Project.translateNamespace(rce.project, mrm.Groups["item1"].Captures[0].Value);
                                 rce.movedTo = Project.translateNamespace(rce.project, mrm.Groups["item2"].Captures[0].Value);
                                 //We use the unused blockLength field to store our "moved from" URL
-                                rce.blockLength = ((Project)Program.prjlist[rce.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(mrm.Groups["item1"].Captures[0].Value);
+                                rce.blockLength = ((Project)Program.prjlist[rce.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(mrm.Groups["item1"].Captures[0].Value);
                                 try
                                 {
                                     rce.comment = mrm.Groups["comment"].Captures[0].Value;
@@ -396,7 +396,7 @@ namespace SWMTBot
                                     rce.title = Project.translateNamespace(rce.project, mm.Groups["item1"].Captures[0].Value);
                                     rce.movedTo = Project.translateNamespace(rce.project, mm.Groups["item2"].Captures[0].Value);
                                     //We use the unused blockLength field to store our "moved from" URL
-                                    rce.blockLength = ((Project)Program.prjlist[rce.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(mm.Groups["item1"].Captures[0].Value);
+                                    rce.blockLength = ((Project)Program.prjlist[rce.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(mm.Groups["item1"].Captures[0].Value);
                                     try
                                     {
                                         rce.comment = mm.Groups["comment"].Captures[0].Value;

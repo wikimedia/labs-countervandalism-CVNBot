@@ -6,17 +6,17 @@ using System.Xml;
 using System.Text.RegularExpressions;
 using log4net;
 
-namespace SWMTBot
+namespace CVNBot
 {
     class Project
     {
-        private static ILog logger = LogManager.GetLogger("SWMTBot.Project");
+        private static ILog logger = LogManager.GetLogger("CVNBot.Project");
         
         public string projectName;
         public string interwikiLink;
         public string rooturl; //Format: http://en.wikipedia.org/
 
-        //See RCParser.py
+        // Based on RCParser.py of CVUBot
         string restoreRegex;
         string deleteRegex;
         string protectRegex;
@@ -31,8 +31,7 @@ namespace SWMTBot
         string unblockRegex;
         string rollbackRegex;
         string undoRegex;
-        //New user accounts are detected by their flags
-        //New to SWMTBot:
+        // New in CVNBot, not in CVUBot:
         string autosummBlank;
         string autosummReplace;
 
@@ -177,7 +176,7 @@ namespace SWMTBot
         {
             if (!snamespacesAlreadySet)
             {
-                snamespaces = SWMTUtils.getRawDocument(rooturl + "w/api.php?action=query&meta=siteinfo&siprop=namespaces&format=xml");
+                snamespaces = CVNBotUtils.getRawDocument(rooturl + "w/api.php?action=query&meta=siteinfo&siprop=namespaces&format=xml");
                 if (snamespaces == "")
                     throw new Exception("Can't load list of namespaces from " + rooturl);
             }
@@ -241,7 +240,7 @@ namespace SWMTBot
         void generateRegex(string mwMessageTitle, int reqCount, ref string destRegex, bool nonStrict)
         {
             //Get raw wikitext
-            string mwMessage = SWMTUtils.getRawDocument(rooturl + "w/index.php?title=" + mwMessageTitle + "&action=raw&usemsgcache=yes");
+            string mwMessage = CVNBotUtils.getRawDocument(rooturl + "w/index.php?title=" + mwMessageTitle + "&action=raw&usemsgcache=yes");
 
             //Now gently coax that into a regex
             foreach (char c in rechars)

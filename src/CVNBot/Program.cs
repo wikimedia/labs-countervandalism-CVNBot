@@ -11,7 +11,7 @@ using log4net;
 //Logging:
 [assembly: log4net.Config.XmlConfigurator(Watch = true)]
 
-namespace SWMTBot
+namespace CVNBot
 {
     class QueuedMessage
     {
@@ -32,7 +32,7 @@ namespace SWMTBot
         public static ListManager listman = new ListManager();
         public static SortedList msgs = new SortedList();
         public static SortedList mainConfig = new SortedList();
-        private static ILog logger = LogManager.GetLogger("SWMTBot.Program");
+        private static ILog logger = LogManager.GetLogger("CVNBot.Program");
 
         //Flood protection objects
         static Queue fcQueue = new Queue();
@@ -107,7 +107,7 @@ namespace SWMTBot
             Thread.GetDomain().UnhandledException += new UnhandledExceptionEventHandler(Application_UnhandledException);
 
             string mainConfigFN = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
-                + Path.DirectorySeparatorChar + "SWMTBot.ini";
+                + Path.DirectorySeparatorChar + "CVNBot.ini";
 
             logger.Info("Loading main configuration from "+mainConfigFN);
             using (StreamReader sr = new StreamReader(mainConfigFN))
@@ -428,7 +428,7 @@ namespace SWMTBot
                 foreach (string line in message.Split(new char[1] { '\n' }))
                 {
                     //Chunk messages that are too long
-                    foreach (string chunk in SWMTUtils.stringSplit(line, 400))
+                    foreach (string chunk in CVNBotUtils.stringSplit(line, 400))
                     {
                         // Ignore "" and "
                         if ((chunk.Trim() != "\"\"") && (chunk.Trim() != "\"")){
@@ -926,10 +926,10 @@ namespace SWMTBot
             {
                 IDbConnection rcdbcon = (IDbConnection)new SqliteConnection(listman.connectionString);
                 rcdbcon.Open();
-                listman.addUserToList(username, "", ListManager.UserType.greylisted, "SWMTBot", reason, 1, ref rcdbcon);
+                listman.addUserToList(username, "", ListManager.UserType.greylisted, "CVNBot", reason, 1, ref rcdbcon);
                 rcdbcon.Close();
                 rcdbcon = null;
-                Broadcast("GL", "ADD", username, 900, reason, "SWMTBot"); //Greylist for 900 seconds = 15 mins * 60 secs
+                Broadcast("GL", "ADD", username, 900, reason, "CVNBot"); //Greylist for 900 seconds = 15 mins * 60 secs
             }
         }
 
@@ -1212,7 +1212,7 @@ namespace SWMTBot
                     attribs.Add("cblockname", r.title.Split(new char[1] { ':' }, 2)[1]);
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + SWMTUtils.wikiEncode(r.title.Split(new char[1] { ':' }, 2)[1]));
+                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.title.Split(new char[1] { ':' }, 2)[1]));
                     attribs.Add("length", r.blockLength);
                     attribs.Add("reason", r.comment);
                     message = getMessage(5400, ref attribs);
@@ -1225,7 +1225,7 @@ namespace SWMTBot
                         rcdbcon.Open();
                         if ((r.blockLength.ToLower() != "indefinite") && (r.blockLength.ToLower() != "infinite"))
                         {                                                               // 2,678,400 seconds = 744 hours = 31 days
-                            int listLen = Convert.ToInt32(SWMTUtils.ParseDateTimeLength(r.blockLength, 2678400) * 2.5);
+                            int listLen = Convert.ToInt32(CVNBotUtils.ParseDateTimeLength(r.blockLength, 2678400) * 2.5);
                             string blComment = "Autoblacklist: " + r.comment + " on " + r.project;
                             message += "\n" + listman.addUserToList(r.title.Split(new char[1] { ':' }, 2)[1], "" //Global bl
                                 , ListManager.UserType.blacklisted, r.user, blComment , listLen, ref rcdbcon);
@@ -1240,7 +1240,7 @@ namespace SWMTBot
                     attribs.Add("cblockname", r.title.Split(new char[1] { ':' }, 2)[1]);
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + SWMTUtils.wikiEncode(r.user));
+                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.user));
                     attribs.Add("reason", r.comment);
                     message = getMessage(5700, ref attribs);
                     break;
@@ -1249,15 +1249,15 @@ namespace SWMTBot
                     attribs.Add("ceditor", r.user);
                     attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
                     attribs.Add("carticle", r.title);
-                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
+                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     attribs.Add("reason", r.comment);
                     message = getMessage(05300, ref attribs);
                     break;
                 case RCEvent.EventType.newuser:
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + SWMTUtils.wikiEncode(r.user));
-                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + SWMTUtils.wikiEncode(r.user));
+                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + CVNBotUtils.wikiEncode(r.user));
+                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.user));
                     listMatch bnuMatch = listman.matchesList(r.user, 11);
                     if (bnuMatch.Success && feedFilterThisEvent == 1)
                     {
@@ -1277,8 +1277,8 @@ namespace SWMTBot
                     attribs.Add("ccreator", r.user);
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.title);
                     attribs.Add("ceditor", r.title);
-                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + SWMTUtils.wikiEncode(r.user));
-                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + SWMTUtils.wikiEncode(r.user));
+                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + CVNBotUtils.wikiEncode(r.user));
+                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.user));
                     listMatch bnuMatch2 = listman.matchesList(r.user, 11);
                     if (bnuMatch2.Success)
                     {
@@ -1339,7 +1339,7 @@ namespace SWMTBot
                     attribs.Add("uploaditem", ((Project)prjlist[r.project]).interwikiLink + r.title);
                     attribs.Add("cuploaditem", r.title);
                     attribs.Add("reason", r.comment);
-                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
+                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = getMessage(userOffset + uMsg, ref attribs);
                     break;
                 case RCEvent.EventType.protect:
@@ -1349,7 +1349,7 @@ namespace SWMTBot
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
                     //'url' in protect is broken, it also contains " [move=sysop] (indefinite)" etc.
-                    //attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
+                    //attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = getMessage(5900, ref attribs);
                     break;
                 case RCEvent.EventType.unprotect:
@@ -1359,7 +1359,7 @@ namespace SWMTBot
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
                     //'url' in unprotect is fine, it's just the pagetitle
-                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
+                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = getMessage(5901, ref attribs);
                     break;
                 case RCEvent.EventType.modifyprotect:
@@ -1369,7 +1369,7 @@ namespace SWMTBot
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
                     //'url' in modifyprotect is broken, it also contains " [move=sysop] (indefinite)" etc.
-                    //attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + SWMTUtils.wikiEncode(r.title));
+                    //attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = getMessage(5902, ref attribs);
                     break;
             }

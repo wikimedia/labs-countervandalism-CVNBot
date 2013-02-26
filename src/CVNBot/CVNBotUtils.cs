@@ -6,9 +6,9 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Web;
 
-namespace SWMTBot
+namespace CVNBot
 {
-    static class SWMTUtils
+    static class CVNBotUtils
     {
         static Regex rStripper = new Regex(@"(,|and)");
         static Regex rSpaces = new Regex(@"\s{2,}");
@@ -120,7 +120,7 @@ namespace SWMTBot
             try
             {
                 HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-                req.UserAgent = "Mozilla/5.0 (compatible; SWMTBot/1.0)";
+                req.UserAgent = "Mozilla/5.0 (en-US) CVNBot/1.0 (like SWMTBot) More info: https://github.com/countervandalism/CVNBot";
 
                 HttpWebResponse res = (HttpWebResponse)req.GetResponse();
 

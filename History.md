@@ -32,7 +32,7 @@
   moved manually before the app can be run.
 * Default blacklist duration raised from 96 hours (4 days) to 744
   hours (31 days).
-* `SWMTUtils.wikiEncode()` now encodes exclamation mark aswell (some IRC
+* `CVNBotUtils.wikiEncode()` now encodes exclamation mark aswell (some IRC
   clients don't include it in the link unless).
 * The deprecated `{ipcat}` parameter in messsages has been removed.
 * Added "patrol" (mark as patrolled) and "review" (FlaggedRevs/PendingChanges)
