@@ -256,7 +256,7 @@ namespace CVNBot
             }
 
             // Finally, if we're still here, user is either user or anon
-            if ((ipv4.Match(username).Success)||(ipv6.Match(username).Success))
+            if ((ipv4.Match(username).Success) || (ipv6.Match(username).Success))
                 return Program.getFormatMessage(16005, username);
             else
                 return Program.getFormatMessage(16006, username);
@@ -737,7 +737,7 @@ namespace CVNBot
             }
 
             // Finally, if we're still here, user is either user or anon
-            if ((ipv4.Match(username).Success)||(ipv6.Match(username).Success))
+            if ((ipv4.Match(username).Success) || (ipv6.Match(username).Success))
                 return UserType.anon;
             else
                 return UserType.user;
