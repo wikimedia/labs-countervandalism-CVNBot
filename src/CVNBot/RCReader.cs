@@ -162,7 +162,7 @@ namespace CVNBot
                 rce.movedTo = "";
                 rce.project = e.Data.Channel.Substring(1);
                 rce.title = Project.translateNamespace(rce.project, fields[2]);
-                rce.url = fields[6].Replace("/w/index.php?diff=", "/?diff=");
+                rce.url = fields[6];
                 rce.user = fields[10];
                 //At the moment, fields[14] contains IRC colour codes. For plain edits, remove just the \x03's. For logs, remove using the regex.
                 Match titlemo = ((Project)Program.prjlist[rce.project]).rSpecialLogRegex.Match(fields[2]);
