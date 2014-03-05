@@ -1257,6 +1257,7 @@ namespace CVNBot
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
                     attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + CVNBotUtils.wikiEncode(r.user));
+                    attribs.Add("caurl", "https://meta.wikimedia.org/wiki/Special:CentralAuth/" + CVNBotUtils.wikiEncode(r.user));
                     attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.user));
                     listMatch bnuMatch = listman.matchesList(r.user, 11);
                     if (bnuMatch.Success && feedFilterThisEvent == 1)
