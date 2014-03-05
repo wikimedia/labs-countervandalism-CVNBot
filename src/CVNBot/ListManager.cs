@@ -21,6 +21,7 @@ namespace CVNBot
     {
         public enum UserType { admin = 2, whitelisted = 0, blacklisted = 1, bot = 5, user = 4, anon = 3, greylisted = 6 }
         static Regex ipv4 = new Regex(@"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b");
+        static Regex ipv6 = new Regex(@"\b(?:[0-9A-F]{1,4}:){7}[0-9A-F]{1,4}\b");
         static Regex adminLine = new Regex("<li><a href=\"/wiki/.*?\" title=\".*?\">(.*?)</a>");
         static Regex rlistCmd = new Regex(@"^(?<cmd>add|del|show|test) (?<item>.+?)(?: p=(?<project>\S+?))?(?: x=(?<len>\d{1,4}))?(?: r=(?<reason>.+?))?$"
             , RegexOptions.IgnoreCase);
@@ -255,7 +256,7 @@ namespace CVNBot
             }
 
             // Finally, if we're still here, user is either user or anon
-            if (ipv4.Match(username).Success)
+            if ((ipv4.Match(username).Success) || (ipv6.Match(username).Success))
                 return Program.getFormatMessage(16005, username);
             else
                 return Program.getFormatMessage(16006, username);
@@ -736,7 +737,7 @@ namespace CVNBot
             }
 
             // Finally, if we're still here, user is either user or anon
-            if (ipv4.Match(username).Success)
+            if ((ipv4.Match(username).Success) || (ipv6.Match(username).Success))
                 return UserType.anon;
             else
                 return UserType.user;
