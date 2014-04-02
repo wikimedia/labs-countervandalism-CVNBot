@@ -44,7 +44,7 @@ Once mono is installed, build the project:
 countervandalism/CVNBot/src/CVNBot:$ xbuild CVNBot.csproj
 ```
 
-Once built, you can run it (see [Installation](https://github.com/countervandalism/CVNBot/wiki/Documentation#wiki-install) for more info on how to properly install it for actual usage, don't run it from the Debug directory in production):
+Once built, you can run it (see [Installation](https://github.com/countervandalism/CVNBot/wiki/Documentation#installation) for more info on how to properly install it for actual usage, don't run it from the Debug directory in production):
 ```bash
 countervandalism/CVNBot/src/CVNBot/bin/Debug:$ mono CVNBot.exe
 ```
