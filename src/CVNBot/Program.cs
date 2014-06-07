@@ -90,6 +90,8 @@ namespace CVNBot
 
         // IsCubbie overrides feedfilters if true to only show uploads and ignore the rest
         static bool IsCubbie = false;
+        // Use https as protocol in output feeds.
+        public static bool forceHttps = false;
 
         // Set this to true to stops the bot from checking the database when requesting a usertype
         //  and instead will only return 3 (anon) or 4 (user) based on a regex.
@@ -135,6 +137,7 @@ namespace CVNBot
             newsmall = Int32.Parse((string)mainConfig["newsmall"]);
             prjlist.fnProjectsXML = (string)mainConfig["projects"];
             IsCubbie = mainConfig.ContainsKey("IsCubbie");
+            forceHttps = mainConfig.ContainsKey("forceHttps");
             disableClassifyEditor = mainConfig.ContainsKey("disableClassifyEditor");
             feedFilterUsersAnon = mainConfig.ContainsKey("feedFilterUsersAnon") ? Int32.Parse((string)mainConfig["feedFilterUsersAnon"]) : 1;
             feedFilterUsersReg = mainConfig.ContainsKey("feedFilterUsersReg") ? Int32.Parse((string)mainConfig["feedFilterUsersReg"]) : 2;
@@ -1212,7 +1215,7 @@ namespace CVNBot
                     attribs.Add("cblockname", r.title.Split(new char[1] { ':' }, 2)[1]);
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.title.Split(new char[1] { ':' }, 2)[1]));
+                    attribs.Add("talkurl", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.title.Split(new char[1] { ':' }, 2)[1]));
                     attribs.Add("length", r.blockLength);
                     attribs.Add("reason", r.comment);
                     message = getMessage(5400, ref attribs);
@@ -1240,7 +1243,7 @@ namespace CVNBot
                     attribs.Add("cblockname", r.title.Split(new char[1] { ':' }, 2)[1]);
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.user));
+                    attribs.Add("talkurl", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.user));
                     attribs.Add("reason", r.comment);
                     message = getMessage(5700, ref attribs);
                     break;
@@ -1249,16 +1252,16 @@ namespace CVNBot
                     attribs.Add("ceditor", r.user);
                     attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
                     attribs.Add("carticle", r.title);
-                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(r.title));
+                    attribs.Add("url", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     attribs.Add("reason", r.comment);
                     message = getMessage(05300, ref attribs);
                     break;
                 case RCEvent.EventType.newuser:
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + CVNBotUtils.wikiEncode(r.user));
+                    attribs.Add("blockurl", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/Special:Blockip/" + CVNBotUtils.wikiEncode(r.user));
                     attribs.Add("caurl", "https://meta.wikimedia.org/wiki/Special:CentralAuth/" + CVNBotUtils.wikiEncode(r.user));
-                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.user));
+                    attribs.Add("talkurl", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.user));
                     listMatch bnuMatch = listman.matchesList(r.user, 11);
                     if (bnuMatch.Success && feedFilterThisEvent == 1)
                     {
@@ -1278,8 +1281,8 @@ namespace CVNBot
                     attribs.Add("ccreator", r.user);
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.title);
                     attribs.Add("ceditor", r.title);
-                    attribs.Add("blockurl", ((Project)prjlist[r.project]).rooturl + "wiki/Special:Blockip/" + CVNBotUtils.wikiEncode(r.user));
-                    attribs.Add("talkurl", ((Project)prjlist[r.project]).rooturl + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.user));
+                    attribs.Add("blockurl", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/Special:Blockip/" + CVNBotUtils.wikiEncode(r.user));
+                    attribs.Add("talkurl", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/User_talk:" + CVNBotUtils.wikiEncode(r.user));
                     listMatch bnuMatch2 = listman.matchesList(r.user, 11);
                     if (bnuMatch2.Success)
                     {
@@ -1340,7 +1343,7 @@ namespace CVNBot
                     attribs.Add("uploaditem", ((Project)prjlist[r.project]).interwikiLink + r.title);
                     attribs.Add("cuploaditem", r.title);
                     attribs.Add("reason", r.comment);
-                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(r.title));
+                    attribs.Add("url", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = getMessage(userOffset + uMsg, ref attribs);
                     break;
                 case RCEvent.EventType.protect:
@@ -1350,7 +1353,7 @@ namespace CVNBot
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
                     //'url' in protect is broken, it also contains " [move=sysop] (indefinite)" etc.
-                    //attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(r.title));
+                    //attribs.Add("url", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = getMessage(5900, ref attribs);
                     break;
                 case RCEvent.EventType.unprotect:
@@ -1360,7 +1363,7 @@ namespace CVNBot
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
                     //'url' in unprotect is fine, it's just the pagetitle
-                    attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(r.title));
+                    attribs.Add("url", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = getMessage(5901, ref attribs);
                     break;
                 case RCEvent.EventType.modifyprotect:
@@ -1370,7 +1373,7 @@ namespace CVNBot
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
                     //'url' in modifyprotect is broken, it also contains " [move=sysop] (indefinite)" etc.
-                    //attribs.Add("url", ((Project)prjlist[r.project]).rooturl + "wiki/" + CVNBotUtils.wikiEncode(r.title));
+                    //attribs.Add("url", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = getMessage(5902, ref attribs);
                     break;
             }
