@@ -1,3 +1,11 @@
+1.21.0 / 2015-09-07
+==================
+* RCReader: Don't strip "/w/index.php" from urls.
+* ListManager: Support IPv6 to detect anonymous users.
+* Program: Add "caurl" message attribute. (CentralAuth link)
+* Config: New "forceHttps" option to use HTTPS as protocol in the RCFeed.
+* Project: Enforce HTTPS for rooturl.
+* All: Resolved compiler warnings for unused variables.
 
 1.20.0 / 2012-07-13
 ==================

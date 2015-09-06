@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("CVNBot")]
-[assembly: AssemblyCopyright("Copyright (c) 2006-2012 Countervandalism Network and other contributors.")]
+[assembly: AssemblyCopyright("Copyright (c) 2006-2015 Countervandalism Network and other contributors.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
