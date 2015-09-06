@@ -166,6 +166,8 @@ namespace CVNBot
                     case "autosummReplace": autosummReplace = parentnode.ChildNodes[i].InnerText; break;
                 }
             }
+            // Overwrite in case non-HTTPS url is stored
+            rooturl = Regex.Replace(rooturl, "^http:", "https:");
             // Always get namespaces before generating regexen
             getNamespaces(true);
             // Regenerate regexen

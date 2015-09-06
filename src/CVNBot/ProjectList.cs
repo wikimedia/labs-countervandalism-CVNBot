@@ -107,7 +107,7 @@ namespace CVNBot
             Project prj = new Project();
             prj.projectName = projectName;
             prj.interwikiLink = interwiki;
-            prj.rooturl = "http://" + projectName + ".org/";
+            prj.rooturl = "https://" + projectName + ".org/";
             prj.retrieveWikiDetails();
             this.Add(projectName, prj);
             //Join the new channel:
