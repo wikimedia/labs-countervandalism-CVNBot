@@ -35,7 +35,7 @@ namespace CVNBot
         public string connectionString = "";
 
         private Timer garbageCollector;
- 
+
         private static ILog logger = LogManager.GetLogger("CVNBot.ListManager");
 
         public void initDBConnection(string filename)
@@ -134,7 +134,7 @@ namespace CVNBot
 
         string friendlyList(UserType ut)
         {
-            return friendlyList((int)ut);      
+            return friendlyList((int)ut);
         }
 
         public string addUserToList(string name, string project, UserType type, string adder, string reason, int expiry, ref IDbConnection connector)
@@ -318,7 +318,7 @@ namespace CVNBot
                 lock (dbtoken)
                     dbCmd.ExecuteNonQuery();
                 return Program.getFormatMessage(16103, showItemOnList(item, itemType));
-            }    
+            }
         }
 
         public string showItemOnList(string item, int itemType)
@@ -635,7 +635,7 @@ namespace CVNBot
                 return (string)Program.msgs["20003"];
 
             ArrayList results = new ArrayList();
-                
+
             try
             {
                 IDbCommand cmd = dbcon.CreateCommand();
@@ -673,7 +673,7 @@ namespace CVNBot
         public UserType classifyEditor(string username, string project)
         {
             if(!Program.disableClassifyEditor){
-            
+
                 IDbCommand cmd = dbcon.CreateCommand();
 
 	            if (project != "")
@@ -713,7 +713,7 @@ namespace CVNBot
 	                }
 	                idr3.Close();
 	            }
-	
+
 	            // Next, if we're still here, check if user is globally whitelisted or blacklisted
 	            cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''")
 	                + "' AND project = '' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
@@ -795,7 +795,7 @@ namespace CVNBot
                 }
                 idr.Close();
             }
-            
+
             // Obviously, did not match anything
             lm.Success = false;
             lm.matchedItem = "";
@@ -847,7 +847,7 @@ namespace CVNBot
                     string list = CVNBotUtils.getRawDocument("http://" + projectName
                         + ".org/w/index.php?title=Special:Listusers&group=" + getGroup + "&limit=5000&offset=0");
 
-                    //Now parse the list: 
+                    //Now parse the list:
                     /* _1568: FIX: MW error */
                     string sr = list.Substring(list.IndexOf("<ul>") + 4);
                     Match lusers = adminLine.Match(sr.Substring(0, sr.IndexOf("</ul>")));
@@ -924,7 +924,7 @@ namespace CVNBot
                 foreach (DictionaryEntry de in Program.prjlist)
                 {
                     // Get admins
-                    currentGetThreadWiki = (string)de.Key;                   
+                    currentGetThreadWiki = (string)de.Key;
                     currentGetThreadMode = "sysop";
                     Thread myThread = new Thread(new ThreadStart(addGroupToList));
                     myThread.Start();

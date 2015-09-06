@@ -189,7 +189,7 @@ namespace CVNBot
 
                             //Message as of June 5, 2007 on test.wikipedia
                             //[[Special:Log/newusers]] create2  * Tangotango * created account for User:Sockpuppy
-                            
+
                             //Old? :
                             //[[Special:Log/newusers]] create2  * Srikeit *  created account for User:Srikeit Test: [[User talk:Srikeit Test|Talk]] | [[Special:Contributions/Srikeit Test|contribs]] | [[Special:Blockip/Srikeit Test|block]]
                             //Check the flag

@@ -11,7 +11,7 @@ namespace CVNBot
     class Project
     {
         private static ILog logger = LogManager.GetLogger("CVNBot.Project");
-        
+
         public string projectName;
         public string interwikiLink;
         public string rooturl; //Format: http://en.wikipedia.org/
@@ -71,7 +71,7 @@ namespace CVNBot
             rdeleteRegex = new Regex(deleteRegex);
             rprotectRegex = new Regex(protectRegex);
             runprotectRegex = new Regex(unprotectRegex);
-            
+
             // modifyprotectRegex was recently added, may not exist in Projects.xml yet
             // fall back to protectregex (to avoid failure) and WARN that reload is needed
             if (modifyprotectRegex == null)
@@ -96,14 +96,14 @@ namespace CVNBot
 
             rCreate2Regex = new Regex( namespaces["2"]+@":(.*): \[\[" );
         }
-        
+
         public string dumpProjectDetails()
         {
             StringWriter output = new StringWriter();
 
             XmlTextWriter dump = new XmlTextWriter(output);
             dump.WriteStartElement("project");
-            
+
             dump.WriteElementString("projectName", projectName);
             dump.WriteElementString("interwikiLink", interwikiLink);
             dump.WriteElementString("rooturl", rooturl);
@@ -165,10 +165,10 @@ namespace CVNBot
                     case "autosummBlank": autosummBlank = parentnode.ChildNodes[i].InnerText; break;
                     case "autosummReplace": autosummReplace = parentnode.ChildNodes[i].InnerText; break;
                 }
-            } 
-            //Always get namespaces before generating regexen
+            }
+            // Always get namespaces before generating regexen
             getNamespaces(true);
-            //Regenerate regexen
+            // Regenerate regexen
             generateRegexen();
         }
 
@@ -199,7 +199,7 @@ namespace CVNBot
         {
             //Find out what the localized Special: (ID -1) namespace is, and create a regex
             getNamespaces(false);
-            
+
             SpecialLogRegex = namespaces["-1"] + @":.+?/(.+)";
 
             // Location of message, number of required parameters, reference to regex, allow lazy
@@ -232,7 +232,7 @@ namespace CVNBot
             generateRegex("MediaWiki:Autosumm-replace", 1, ref autosummReplace, true);
 
             generateRegexen();
-        }        
+        }
 
         /*
          * Equivalent to function getre in RCParser.py
@@ -279,11 +279,11 @@ namespace CVNBot
                     if (reqCount >= 2)
                     {
                         if (!mwMessage.Contains(@"(?<item2>.+?)") && !nonStrict)
-                            throw new Exception("Regex " + mwMessageTitle + " requires two or more items but item2 not found in "+mwMessage); 
+                            throw new Exception("Regex " + mwMessageTitle + " requires two or more items but item2 not found in "+mwMessage);
                     }
                 }
             }
-            
+
             destRegex = mwMessage;
         }
 
@@ -322,7 +322,7 @@ namespace CVNBot
             if (originalTitle.Contains(":"))
             {
                 string nsEnglish;
-                
+
 		        // *Don't change these* unless it's a stopping bug. These names are made part of the title
 		        // in the watchlist and items database. (ie. don't change Image to File unless Image is broken)
 		        // When they do need to be changed, make sure to make note in the RELEASE-NOTES that databases

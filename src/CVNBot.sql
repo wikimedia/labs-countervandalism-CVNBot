@@ -1,4 +1,4 @@
--- 
+--
 -- MySQL Database structure for CVNBot (expiremental)
 --
 
