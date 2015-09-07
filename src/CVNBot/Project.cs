@@ -25,12 +25,8 @@ namespace CVNBot
         string uploadRegex;
         string moveRegex;
         string moveredirRegex;
-        string renameuserRegex;
-        string rightsRegex;
         string blockRegex;
         string unblockRegex;
-        string rollbackRegex;
-        string undoRegex;
         // New in CVNBot, not in CVUBot:
         string autosummBlank;
         string autosummReplace;
@@ -43,12 +39,8 @@ namespace CVNBot
         public Regex ruploadRegex;
         public Regex rmoveRegex;
         public Regex rmoveredirRegex;
-        public Regex rrenameuserRegex;
-        public Regex rrightsRegex;
         public Regex rblockRegex;
         public Regex runblockRegex;
-        public Regex rrollbackRegex;
-        public Regex rundoRegex;
         public Regex rautosummBlank;
         public Regex rautosummReplace;
 
@@ -83,12 +75,8 @@ namespace CVNBot
             ruploadRegex = new Regex(uploadRegex);
             rmoveRegex = new Regex(moveRegex);
             rmoveredirRegex = new Regex(moveredirRegex);
-            rrenameuserRegex = new Regex(renameuserRegex);
-            rrightsRegex = new Regex(rightsRegex);
             rblockRegex = new Regex(blockRegex);
             runblockRegex = new Regex(unblockRegex);
-            rrollbackRegex = new Regex(rollbackRegex);
-            rundoRegex = new Regex(undoRegex);
             rautosummBlank = new Regex(autosummBlank);
             rautosummReplace = new Regex(autosummReplace);
 
@@ -118,12 +106,8 @@ namespace CVNBot
             dump.WriteElementString("uploadRegex", uploadRegex);
             dump.WriteElementString("moveRegex", moveRegex);
             dump.WriteElementString("moveredirRegex", moveredirRegex);
-            dump.WriteElementString("renameuserRegex", renameuserRegex);
-            dump.WriteElementString("rightsRegex", rightsRegex);
             dump.WriteElementString("blockRegex", blockRegex);
             dump.WriteElementString("unblockRegex", unblockRegex);
-            dump.WriteElementString("rollbackRegex", rollbackRegex);
-            dump.WriteElementString("undoRegex", undoRegex);
             dump.WriteElementString("autosummBlank", autosummBlank);
             dump.WriteElementString("autosummReplace", autosummReplace);
 
@@ -156,12 +140,8 @@ namespace CVNBot
                     case "uploadRegex": uploadRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "moveRegex": moveRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "moveredirRegex": moveredirRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "renameuserRegex": renameuserRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "rightsRegex": rightsRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "blockRegex": blockRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "unblockRegex": unblockRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "rollbackRegex": rollbackRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "undoRegex": undoRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "autosummBlank": autosummBlank = parentnode.ChildNodes[i].InnerText; break;
                     case "autosummReplace": autosummReplace = parentnode.ChildNodes[i].InnerText; break;
                 }
@@ -205,11 +185,9 @@ namespace CVNBot
             SpecialLogRegex = namespaces["-1"] + @":.+?/(.+)";
 
             // Location of message, number of required parameters, reference to regex, allow lazy
+            // Retrieve messages for all the required events and generate regexen for them
 
-            //Retrieve messages for all the required events and generate regexen for them
             generateRegex("MediaWiki:Undeletedarticle", 1, ref restoreRegex, false);
-            //ms.wt is missing the all important $1: what was undeleted. Can't support this, so no lazifying:
-            //Link: http://ms.wiktionary.org/w/index.php?title=MediaWiki:Undeletedarticle&action=edit :
             generateRegex("MediaWiki:Deletedarticle", 1, ref deleteRegex, false);
             generateRegex("MediaWiki:Protectedarticle", 1, ref protectRegex, false);
             generateRegex("MediaWiki:Unprotectedarticle", 1, ref unprotectRegex, false);
@@ -217,20 +195,16 @@ namespace CVNBot
             generateRegex("MediaWiki:Uploadedimage", 0, ref uploadRegex, false);
             generateRegex("MediaWiki:1movedto2", 2, ref moveRegex, false);
             generateRegex("MediaWiki:1movedto2_redir", 2, ref moveredirRegex, false);
-            //mg.wp is missing details. However, not using it yet, so ignore:
-            generateRegex("MediaWiki:Renameuserlog", 2, ref renameuserRegex, true);
-            generateRegex("MediaWiki:Bureaucratlogentry", 0, ref rightsRegex, false);
-            //Sometimes $2, block length, is not included. Our functions fall back to "96 hours" if this is the case:
-            //Some newer messages (e.g. http://lmo.wikipedia.org/wiki/MediaWiki:Blocklogentry have a third item, $3: "anononly,nocreate,autoblock", for example.
-            //This may conflict with $2 detection.
-            //Trying (changed 2 -> 3) to see if length of time will be correctly detected using just this method:
+            // blockRegex is nonStrict because some wikis override the message without including $2 (block length).
+            // RCReader will fall back to "96 hours" if this is the case.
+            // Some newer messages (e.g. http://lmo.wikipedia.org/wiki/MediaWiki:Blocklogentry) have a third item, $3
+            // ("anononly,nocreate,autoblock"). This may conflict with $2 detection.
+            // Trying (changed 2 -> 3) to see if length of time will be correctly detected using just this method:
             generateRegex("MediaWiki:Blocklogentry", 3, ref blockRegex, true);
             generateRegex("MediaWiki:Unblocklogentry", 0, ref unblockRegex, false);
-            //Sometimes the details of the rollback are not included. We're not using this message, so ignore:
-            generateRegex("MediaWiki:Revertpage", 2, ref rollbackRegex, true);
-            generateRegex("MediaWiki:Undo-summary", 2, ref undoRegex, false);
             generateRegex("MediaWiki:Autosumm-blank", 0, ref autosummBlank, false);
-            //Some large wikis are not including the "profanity" in their messages (privacy measure?)
+            // autosummReplace is nonStrict because some large wikis don't include the "profanity" in their
+            // messages (privacy measure?)
             generateRegex("MediaWiki:Autosumm-replace", 1, ref autosummReplace, true);
 
             generateRegexen();
