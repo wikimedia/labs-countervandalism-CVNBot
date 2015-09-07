@@ -265,7 +265,7 @@ namespace CVNBot
 
             try
             {
-                Regex r = new Regex(mwMessage);
+                new Regex(mwMessage);
             }
             catch (Exception e)
             {

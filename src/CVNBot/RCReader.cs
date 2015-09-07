@@ -46,9 +46,7 @@ namespace CVNBot
         static Regex stripColours = new Regex(@"\x04\d{0,2}\*?");
         static Regex stripColours2 = new Regex(@"\x03\d{0,2}");
         static Regex stripBold = new Regex(@"\x02");
-        static Regex fullString = new Regex(@"^\x03" + @"14\[\[\x03" + @"07(?<title>.+?)\x03" + @"14\]\]\x03" + @"4 (?<flag>.*?)\x03" + @"10 \x03" + @"02(?<url>.*)\x03 \x03" + @"5\*\x03 \x03" + @"03(?<user>.*?)\x03 \x03" + @"5\*\x03 (?<szdiff>.*?) \x03" + @"10(?<comment>.*)\x03$");
         static Regex rszDiff = new Regex(@"\(([\+\-])([0-9]+)\)");
-        static Regex rflagMN = new Regex(@"[MN]{0,2}");
 
         private static ILog logger = LogManager.GetLogger("CVNBot.RCReader");
 

@@ -290,7 +290,7 @@ namespace CVNBot
         {
             try
             {
-                Regex testRegex = new Regex(item);
+                new Regex(item);
             }
             catch (Exception e)
             {
