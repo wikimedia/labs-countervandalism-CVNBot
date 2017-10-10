@@ -3,7 +3,7 @@ using System.Collections;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Data;
-using Mono.Data.SqliteClient;
+using Mono.Data.Sqlite;
 using System.IO;
 using System.Threading;
 using log4net;

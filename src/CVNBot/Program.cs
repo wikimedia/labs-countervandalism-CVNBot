@@ -5,7 +5,7 @@ using System.Threading;
 using System.Text.RegularExpressions;
 using System.IO;
 using System.Data;
-using Mono.Data.SqliteClient;
+using Mono.Data.Sqlite;
 using log4net;
 
 //Logging:

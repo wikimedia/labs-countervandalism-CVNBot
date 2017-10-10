@@ -37,7 +37,7 @@ Or, if using `apt-get`, use one of these:
 * [`mono-develop`](https://packages.debian.org/search?keywords=mono-devel) (`mono`)
 * [`mono-complete`](https://packages.debian.org/search?keywords=mono-complete) (`mono`+`xbuild`)
 
-Currently supported versions of Mono: **3.2.x**
+Currently supported versions of Mono: **4.6.x**
 
 Once mono is installed, build the project:
 
