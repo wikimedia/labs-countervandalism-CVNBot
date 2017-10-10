@@ -926,7 +926,7 @@ namespace CVNBot
             if ((userOffset == 1) || (userOffset == 4) || (userOffset == 3) || (userOffset == 6))
             {
                 listman.addUserToList(username, "", ListManager.UserType.greylisted, "CVNBot", reason, 1);
-                Broadcast("GL", "ADD", username, 900, reason, "CVNBot"); //Greylist for 900 seconds = 15 mins * 60 secs
+                Broadcast("GL", "ADD", username, 900, reason, "CVNBot"); //Greylist for 900 seconds = 15 mins
             }
         }
 

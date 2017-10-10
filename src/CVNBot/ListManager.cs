@@ -107,13 +107,13 @@ namespace CVNBot
         /// </summary>
         /// <param name="expiry">When expiry is</param>
         /// <returns></returns>
-        string parseExpiryDate(string expiry)
+        string parseExpiryDate(long expiry)
         {
-            if (expiry == "0")
+            if (expiry == 0)
                 return (string)Program.msgs["20006"];
             else
             {
-                DateTime dt = new DateTime(Convert.ToInt64(expiry));
+                DateTime dt = new DateTime(expiry);
                 return dt.ToUniversalTime().ToString("HH:mm, d MMMM yyyy");
             }
         }
@@ -211,7 +211,7 @@ namespace CVNBot
                         if ((idr.GetInt32(0) == 2) || (idr.GetInt32(0) == 5)) //Is admin or bot on this project?
                         {
                             string res = Program.getFormatMessage(16004, username, project, friendlyList(idr.GetInt32(0))
-                                , idr.GetString(1), parseExpiryDate(idr.GetString(3)), idr.GetString(2));
+                                , idr.GetString(1), parseExpiryDate(idr.GetInt64(3)), idr.GetString(2));
                             idr.Close();
                             return res;
                         }
@@ -229,7 +229,7 @@ namespace CVNBot
                 if (idr3.Read())
                 {
                     string result2 = Program.getFormatMessage(16106, username
-                        , parseExpiryDate(idr3.GetString(1)), idr3.GetString(0));
+                        , parseExpiryDate(idr3.GetInt64(1)), idr3.GetString(0));
                     idr3.Close();
                     return result2;
                 }
@@ -247,7 +247,7 @@ namespace CVNBot
                     if ((idr2.GetInt32(0) == 0) || (idr2.GetInt32(0) == 1)) //Is on blacklist or whitelist?
                     {
                         string result = Program.getFormatMessage(16004, username, friendlyProject(""), friendlyList(idr2.GetInt32(0))
-                                , idr2.GetString(1), parseExpiryDate(idr2.GetString(3)), idr2.GetString(2));
+                                , idr2.GetString(1), parseExpiryDate(idr2.GetInt64(3)), idr2.GetString(2));
                         idr2.Close();
                         return result;
                     }
@@ -333,7 +333,7 @@ namespace CVNBot
                 if (idr.Read())
                 {
                     string result = Program.getFormatMessage(16007, item, friendlyList(itemType), idr.GetString(0),
-                        parseExpiryDate(idr.GetString(2)), idr.GetString(1));
+                        parseExpiryDate(idr.GetInt64(2)), idr.GetString(1));
                     idr.Close();
                     return result;
                 }
@@ -422,7 +422,7 @@ namespace CVNBot
                 if (idr.Read())
                 {
                     string result = Program.getFormatMessage(16004, item, friendlyProject(project), friendlyList(10),
-                        idr.GetString(0), parseExpiryDate(idr.GetString(2)), idr.GetString(1));
+                        idr.GetString(0), parseExpiryDate(idr.GetInt64(2)), idr.GetString(1));
                     idr.Close();
                     return result;
                 }
@@ -647,7 +647,7 @@ namespace CVNBot
                     while (idr.Read())
                     {
                         results.Add(Program.getFormatMessage(16002, friendlyProject(idr.GetString(0)), friendlyList(idr.GetInt32(1))
-                            , idr.GetString(2), parseExpiryDate(idr.GetString(4)), idr.GetString(3)));
+                            , idr.GetString(2), parseExpiryDate(idr.GetInt64(4)), idr.GetString(3)));
                     }
                     idr.Close();
                 }
