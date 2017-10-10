@@ -40,7 +40,6 @@ namespace CVNBot
     {
         public IrcClient rcirc = new IrcClient();
         public DateTime lastMessage = DateTime.Now;
-        public string lastError = "";
 
         // RC parsing regexen
         static Regex stripColours = new Regex(@"\x04\d{0,2}\*?");
@@ -56,15 +55,13 @@ namespace CVNBot
 
             logger.Info("RCReader thread started");
 
-            //Set up RCReader
+            // Set up RCReader
             rcirc.Encoding = System.Text.Encoding.UTF8;
             rcirc.AutoReconnect = true;
-            //rcirc.AutoRejoin = true;
+            rcirc.AutoRejoin = true;
+
             rcirc.OnChannelMessage += new IrcEventHandler(rcirc_OnChannelMessage);
             rcirc.OnConnected += new EventHandler(rcirc_OnConnected);
-            rcirc.OnQueryMessage += new IrcEventHandler(rcirc_OnQueryMessage);
-            rcirc.OnDisconnected += new EventHandler(rcirc_OnDisconnected);
-            rcirc.OnConnectionError += new EventHandler(rcirc_OnConnectionError);
 
             try
             {
@@ -72,9 +69,10 @@ namespace CVNBot
             }
             catch (ConnectionException e)
             {
-                lastError = "Connection error: " + e.Message;
+                logger.Warn( "Connection error: " + e.Message );
                 return;
             }
+
             try
             {
                 rcirc.Login(Program.botNick, "CVNBot", 4, "CVNBot");
@@ -85,46 +83,15 @@ namespace CVNBot
                     rcirc.RfcJoin("#" + prj);
                 }
 
-                //Enter loop
+                // Enter loop
                 rcirc.Listen();
+                // when Listen() returns the IRC session is over
                 rcirc.Disconnect();
             }
             catch (ConnectionException)
             {
-                //Apparently this is handled, so we don't need to catch it
+                // Final disconnect may throw, ignore.
                 return;
-            }
-        }
-
-        void rcirc_OnConnectionError(object sender, EventArgs e)
-        {
-            //Let's try to catch those awkward disposal exceptions
-            //If it ain't a legitimate disconnection (i.e., if it wasn't ordered)
-            if (rcirc.AutoReconnect)
-            {
-                logger.Error("Caught connection error in RCReader class, restarting...");
-                Program.Restart();
-            }
-        }
-
-        void rcirc_OnDisconnected(object sender, EventArgs e)
-        {
-            if (rcirc.AutoReconnect)
-            {
-                //Was an unexpected disconnection
-                logger.Warn("RCReader has been disconnected, attempting reconnection");
-                rcirc.Reconnect();
-            }
-        }
-
-        void rcirc_OnQueryMessage(object sender, IrcEventArgs e)
-        {
-            //This is for the emergency restarter
-            if (e.Data.Message == Program.botNick + ":" + (string)Program.mainConfig["botpass"] + " restart")
-            {
-                logger.Warn("Emergency restart ordered by " + e.Data.Nick);
-                Program.PartIRC("Emergency restart ordered by " + e.Data.Nick);
-                Program.Restart();
             }
         }
 
@@ -137,7 +104,7 @@ namespace CVNBot
         {
             lastMessage = DateTime.Now;
 
-            //Same as RCParser.py->parseRCmsg()
+            // Based on RCParser.py->parseRCmsg()
             string strippedmsg = stripBold.Replace(stripColours.Replace(CVNBotUtils.replaceStrMax(e.Data.Message, '\x03', '\x04', 14), "\x03"), "");
             string[] fields = strippedmsg.Split(new char[1] { '\x03' }, 15);
             if (fields.Length == 15)
@@ -148,9 +115,9 @@ namespace CVNBot
             else
             {
                 //Console.WriteLine("Ignored: " + e.Data.Message);
-                return; //Probably really long article title or something that got cut off; we can't handle these
+                //Probably really long article title or something that got cut off; we can't handle these
+                return;
             }
-            //END
 
             try
             {

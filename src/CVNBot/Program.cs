@@ -448,8 +448,6 @@ namespace CVNBot
             sentLength = 0;
             dontSendNow = false;
             sendlock.Set();
-            //logger.Info("Got pong: " + e.Data.RawMessage);
-            irc.LastPongReceived = DateTime.Now; //Hacked SmartIrc4net
         }
 
         /// <summary>
@@ -524,7 +522,6 @@ namespace CVNBot
                 {
                     // Ping the server and wait for a reply
                     irc.RfcPing(ircServerName); //Removed Priority.Critical
-                    irc.LastPingSent = DateTime.Now; //Hacked SmartIrc4net
                     sendlock.Reset();
                     dontSendNow = true;
                     //logger.Info("Waiting for artificial PONG");

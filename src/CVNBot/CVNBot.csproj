@@ -58,7 +58,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\log4net.dll</HintPath>
     </Reference>
-    <Reference Include="Meebey.SmartIrc4net, Version=0.4.0.34161, Culture=neutral">
+    <Reference Include="Meebey.SmartIrc4net, Version=1.1, Culture=neutral">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Meebey.SmartIrc4net.dll</HintPath>
     </Reference>
