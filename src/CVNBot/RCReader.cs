@@ -13,7 +13,7 @@ namespace CVNBot
         public enum EventType
         {
             delete, restore, upload, block, unblock, edit, protect, unprotect,
-            move, rollback, newuser, import, renameuser, makebot, unknown, newuser2, autocreate,
+            move, rollback, newuser, import, unknown, newuser2, autocreate,
             modifyprotect
         }
 
@@ -413,26 +413,8 @@ namespace CVNBot
                             //rce.eventtype = RCEvent.EventType.import;
                             return; //Not interested today
                         //break;
-                        case "renameuser":
-                            //A user got renamed
-                            //rce.eventtype = RCEvent.EventType.renameuser;
-                            return; //Not interested today
-                        //break;
-                        case "makebot":
-                            //New bot on the block
-                            //rce.eventtype = RCEvent.EventType.makebot;
-                            return; //Not interested today
-                        //break;
-                        case "patrol":
-                            //Marked as patrolled
-                            return; //Not interested today
-                        //break;
-                        case "review":
-                            //FlaggedRevisions or PendingChanges action
-                            return; //Not interested today
-                        //break;
                         default:
-                            logger.Warn("Unhandled log type: " + logType + " in " + rce.project + ": " + e.Data.Message);
+                            //logger.Warn("Unhandled log type: " + logType + " in " + rce.project + ": " + e.Data.Message);
                             //Don't react to event
                             return;
                     }
