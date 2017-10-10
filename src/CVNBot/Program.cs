@@ -384,6 +384,7 @@ namespace CVNBot
                 }
                 catch (Exception ex)
                 {
+                    logger.Error("Failed to handle broadcast command", ex);
                     BroadcastDD("ERROR", "BC_ERROR", ex.Message, e.Data.Message);
                 }
             }
