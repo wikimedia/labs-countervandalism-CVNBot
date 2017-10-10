@@ -314,13 +314,13 @@ namespace CVNBot
                             switch (list)
                             {
                                 case "WL":
-                                    listman.addUserToList(item, "", ListManager.UserType.whitelisted, adder, reason, len, ref listman.dbcon);
+                                    listman.addUserToList(item, "", ListManager.UserType.whitelisted, adder, reason, len);
                                     break;
                                 case "BL":
-                                    listman.addUserToList(item, "", ListManager.UserType.blacklisted, adder, reason, len, ref listman.dbcon);
+                                    listman.addUserToList(item, "", ListManager.UserType.blacklisted, adder, reason, len);
                                     break;
                                 case "GL":
-                                    listman.addUserToList(item, "", ListManager.UserType.greylisted, adder, reason, len, ref listman.dbcon);
+                                    listman.addUserToList(item, "", ListManager.UserType.greylisted, adder, reason, len);
                                     break;
                                 case "BNU":
                                     listman.addItemToList(item, 11, adder, reason, len);
@@ -924,11 +924,7 @@ namespace CVNBot
             //Only if blacklisted, anon, user, or already greylisted
             if ((userOffset == 1) || (userOffset == 4) || (userOffset == 3) || (userOffset == 6))
             {
-                IDbConnection rcdbcon = (IDbConnection)new SqliteConnection(listman.connectionString);
-                rcdbcon.Open();
-                listman.addUserToList(username, "", ListManager.UserType.greylisted, "CVNBot", reason, 1, ref rcdbcon);
-                rcdbcon.Close();
-                rcdbcon = null;
+                listman.addUserToList(username, "", ListManager.UserType.greylisted, "CVNBot", reason, 1);
                 Broadcast("GL", "ADD", username, 900, reason, "CVNBot"); //Greylist for 900 seconds = 15 mins * 60 secs
             }
         }
@@ -1220,19 +1216,14 @@ namespace CVNBot
                     if (listman.classifyEditor(r.title.Split(new char[1] { ':' }, 2)[1], r.project) != ListManager.UserType.bot)
                     {
                         //If this isn't an indefinite/infinite block, add to blacklist
-                        //Since we're in the RCReader thread, and we'll be writing to the db, we better open a new connection
-                        IDbConnection rcdbcon = (IDbConnection)new SqliteConnection(listman.connectionString);
-                        rcdbcon.Open();
                         if ((r.blockLength.ToLower() != "indefinite") && (r.blockLength.ToLower() != "infinite"))
                         {                                                               // 2,678,400 seconds = 744 hours = 31 days
                             int listLen = Convert.ToInt32(CVNBotUtils.ParseDateTimeLength(r.blockLength, 2678400) * 2.5);
                             string blComment = "Autoblacklist: " + r.comment + " on " + r.project;
                             message += "\n" + listman.addUserToList(r.title.Split(new char[1] { ':' }, 2)[1], "" //Global bl
-                                , ListManager.UserType.blacklisted, r.user, blComment , listLen, ref rcdbcon);
+                                , ListManager.UserType.blacklisted, r.user, blComment , listLen);
                             Broadcast("BL", "ADD", r.title.Split(new char[1] { ':' }, 2)[1], listLen, blComment, r.user);
                         }
-                        rcdbcon.Close();
-                        rcdbcon = null;
                     }
                     break;
                 case RCEvent.EventType.unblock:

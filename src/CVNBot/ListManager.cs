@@ -137,7 +137,7 @@ namespace CVNBot
             return friendlyList((int)ut);
         }
 
-        public string addUserToList(string name, string project, UserType type, string adder, string reason, int expiry, ref IDbConnection connector)
+        public string addUserToList(string name, string project, UserType type, string adder, string reason, int expiry)
         {
             // Check if user is already on a list
             UserType originalType = classifyEditor(name, project);
@@ -145,7 +145,7 @@ namespace CVNBot
             if (originalType == type)
             {
                 // Original type was same as new type; update list with new details
-                IDbCommand cmd = connector.CreateCommand();
+                IDbCommand cmd = dbcon.CreateCommand();
                 cmd.CommandText = "UPDATE users SET adder = '" + adder.Replace("'", "''") + "', reason = '"
                     + reason.Replace("'", "''") + "', expiry = '" + getExpiryDate(expiry)
                     + "' WHERE name = '" + name.Replace("'", "''") + "' AND project = '" + project
@@ -159,7 +159,7 @@ namespace CVNBot
                 || ((originalType == UserType.greylisted) && (type == UserType.blacklisted))) //Also allow adding greylisted users to the blacklist
             {
                 // User was originally unlisted or is on non-conflicting list
-                IDbCommand cmd = connector.CreateCommand();
+                IDbCommand cmd = dbcon.CreateCommand();
                 cmd.CommandText = "INSERT INTO users (name, project, type, adder, reason, expiry) VALUES ('" + name.Replace("'", "''")
                     + "','" + project + "','" + ((int)type).ToString() + "','" + adder.Replace("'", "''")
                     + "','" + reason.Replace("'", "''") + "','" + getExpiryDate(expiry) + "')";
@@ -507,20 +507,20 @@ namespace CVNBot
                             {
                                 case 0: //Whitelist
                                     Program.Broadcast("WL", "ADD", item, len, reason, user);
-                                    return addUserToList(item, "", UserType.whitelisted, user, reason, len, ref dbcon);
+                                    return addUserToList(item, "", UserType.whitelisted, user, reason, len);
                                 case 1: //Blacklist
                                     Program.Broadcast("BL", "ADD", item, len, reason, user);
-                                    return addUserToList(item, "", UserType.blacklisted, user, reason, len, ref dbcon);
+                                    return addUserToList(item, "", UserType.blacklisted, user, reason, len);
                                 case 6: //Greylist
                                     return "You cannot directly add users to the greylist";
                                 case 2: //Adminlist
                                     if (project == "")
                                         return (string)Program.msgs["20001"];
-                                    return addUserToList(item, project, UserType.admin, user, reason, len, ref dbcon);
+                                    return addUserToList(item, project, UserType.admin, user, reason, len);
                                 case 5: //Botlist
                                     if (project == "")
                                         return (string)Program.msgs["20001"];
-                                    return addUserToList(item, project, UserType.bot, user, reason, len, ref dbcon);
+                                    return addUserToList(item, project, UserType.bot, user, reason, len);
                                 case 10: //Watchlist
                                     if (project == "")
                                         Program.Broadcast("CVP", "ADD", item, len, reason, user);
@@ -834,15 +834,10 @@ namespace CVNBot
 
             logger.Info("Downloading list of " + getGroup + "s from " + projectName);
 
-            IDbConnection ourdbcon = null;
-
             try
             {
                 lock (dbtoken)
                 {
-                    //Open a new DB connection for this thread
-                    ourdbcon = (IDbConnection)new SqliteConnection(connectionString);
-                    ourdbcon.Open();
 
                     string list = CVNBotUtils.getRawDocument("http://" + projectName
                         + ".org/w/index.php?title=Special:Listusers&group=" + getGroup + "&limit=5000&offset=0");
@@ -854,7 +849,7 @@ namespace CVNBot
                     while (lusers.Success)
                     {
                         addUserToList(lusers.Groups[1].Captures[0].Value, projectName, getGroupUT, "CVNBot"
-                            , "Auto-download from wiki", 0, ref ourdbcon); //Add the user to the list, using our own DB connection to write
+                            , "Auto-download from wiki", 0);
                         lusers = lusers.NextMatch();
                     }
                     logger.Info("Added all " + getGroup + "s from " + projectName);
@@ -863,12 +858,6 @@ namespace CVNBot
             catch (Exception e)
             {
                 logger.Error("Unable to get list of " + getGroup + "s from " + projectName + ": " + e.Message);
-            }
-            finally
-            {
-                //Clean up our own DB connection
-                ourdbcon.Close();
-                ourdbcon = null;
             }
         }
 
