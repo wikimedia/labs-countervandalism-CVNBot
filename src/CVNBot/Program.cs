@@ -169,11 +169,11 @@ namespace CVNBot
             listman.initDBConnection((string)mainConfig["lists"]);
 
             logger.Info("Setting up main IRC client");
-            //Set up freenode IRC client
+            // Set up freenode IRC client
             irc.Encoding = System.Text.Encoding.UTF8;
             irc.SendDelay = 300;
-            //irc.AutoReconnect = true;
-            //irc.AutoRejoin = true;
+            irc.AutoReconnect = true;
+            irc.AutoRejoin = true;
             irc.ActiveChannelSyncing = true;
             irc.OnChannelMessage += new IrcEventHandler(irc_OnChannelMessage);
             irc.OnChannelNotice += new IrcEventHandler(irc_OnChannelNotice);
