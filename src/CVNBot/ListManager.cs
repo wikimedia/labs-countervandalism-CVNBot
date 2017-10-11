@@ -686,12 +686,12 @@ namespace CVNBot
 	                    IDataReader idr = cmd.ExecuteReader();
 	                    if (idr.Read())
 	                    {
-	                        switch (idr.GetString(0))
+	                        switch (idr.GetInt32(0))
 	                        {
-	                            case "2":
+	                            case 2:
 	                                idr.Close();
 	                                return UserType.admin;
-	                            case "5":
+	                            case 5:
 	                                idr.Close();
 	                                return UserType.bot;
 	                        }
@@ -722,12 +722,12 @@ namespace CVNBot
 	                IDataReader idr2 = cmd.ExecuteReader();
 	                if (idr2.Read())
 	                {
-	                    switch (idr2.GetString(0))
+	                    switch (idr2.GetInt32(0))
 	                    {
-	                        case "0":
+	                        case 0:
 	                            idr2.Close();
 	                            return UserType.whitelisted;
-	                        case "1":
+	                        case 1:
 	                            idr2.Close();
 	                            return UserType.blacklisted;
 	                    }
