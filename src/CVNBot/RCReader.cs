@@ -228,6 +228,7 @@ namespace CVNBot
                             }
                             catch (ArgumentOutOfRangeException aoore)
                             {
+                                logger.Error("Failed to handle RCEvent.log.block", aoore);
                                 Program.BroadcastDD("ERROR", "RCR_AOORE_2", aoore.Message, e.Data.Channel + "/" + e.Data.Message);
                             }
                             break;
@@ -409,12 +410,14 @@ namespace CVNBot
                 }
                 catch (Exception exce)
                 {
+                    logger.Error("Failed to handle RCEvent", exce);
                     Program.BroadcastDD("ERROR", "ReactorException", exce.Message, e.Data.Channel + " " + e.Data.Message);
                 }
             }
             catch (ArgumentOutOfRangeException eor)
             {
-                //Broadcast this for Distributed Debugging
+                // Broadcast this for Distributed Debugging
+                logger.Error("Failed to process incoming message", eor);
                 Program.BroadcastDD("ERROR", "RCR_AOORE", eor.Message, e.Data.Channel + "/" + e.Data.Message
                     + "Fields: " + fields.ToString());
             }
