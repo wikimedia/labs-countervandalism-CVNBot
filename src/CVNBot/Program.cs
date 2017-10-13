@@ -111,7 +111,6 @@ namespace CVNBot
             string mainConfigFN = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
                 + Path.DirectorySeparatorChar + "CVNBot.ini";
 
-            logger.Info("Loading main configuration from "+mainConfigFN);
             using (StreamReader sr = new StreamReader(mainConfigFN))
             {
                 String line;
@@ -151,6 +150,12 @@ namespace CVNBot
             feedFilterEventNewuser = mainConfig.ContainsKey("feedFilterEventNewuser") ? Int32.Parse((string)mainConfig["feedFilterEventNewuser"]) : 1;
             feedFilterEventUpload = mainConfig.ContainsKey("feedFilterEventUpload") ? Int32.Parse((string)mainConfig["feedFilterEventUpload"]) : 1;
             feedFilterEventProtect = mainConfig.ContainsKey("feedFilterEventProtect") ? Int32.Parse((string)mainConfig["feedFilterEventProtect"]) : 1;
+
+            // Include bot nick in all logs from any thread.
+            // Especially useful when running mulitple CVNBot instances that
+            // log to the same syslog.
+            log4net.GlobalContext.Properties["Nick"] = botNick;
+            logger.Info("Loaded main configuration from " + mainConfigFN);
 
             botCmd = new Regex("^" + botNick + @" (\s*(?<command>\S*))(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
 
