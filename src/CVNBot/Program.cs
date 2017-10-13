@@ -661,10 +661,14 @@ namespace CVNBot
                         //Reloads wiki data for a project
                         if (!hasPrivileges('@', ref e))
                             return;
+                        if (!prjlist.ContainsKey(cmdParams[0]))
+                        {
+                            SendMessageF(SendType.Message, e.Data.Channel, "Project " + cmdParams[0] + " is not loaded", false, true);
+                            return;
+                        }
+
                         try
                         {
-                            if (!prjlist.ContainsKey(cmdParams[0]))
-                                throw new Exception("Project " + cmdParams[0] + " is not loaded");
 
                             ((Project)prjlist[cmdParams[0]]).retrieveWikiDetails();
                             SendMessageF(SendType.Message, e.Data.Channel, "Reloaded project " + cmdParams[0], false, false);
