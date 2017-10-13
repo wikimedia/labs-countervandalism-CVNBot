@@ -232,8 +232,7 @@ namespace CVNBot
             catch (Exception e)
             {
                 // this should not happen by just in case we handle it nicely
-                logger.Fatal("Error occurred in Main IRC try clause! Message: " + e.Message);
-                logger.Fatal("Exception: " + e.StackTrace);
+                logger.Fatal("Error occurred in Main IRC try clause!", e);
                 Exit();
             }
         }
@@ -661,6 +660,7 @@ namespace CVNBot
                         //Reloads wiki data for a project
                         if (!hasPrivileges('@', ref e))
                             return;
+
                         if (!prjlist.ContainsKey(cmdParams[0]))
                         {
                             SendMessageF(SendType.Message, e.Data.Channel, "Project " + cmdParams[0] + " is not loaded", false, true);
