@@ -1,0 +1,10 @@
+sudo: false
+dist: trusty
+language: csharp
+mono:
+  # Debian has v4.6.2.7 for Debian 9 Stretch
+  - 4.6.2
+script:
+  - cd src/CVNBot
+  - xbuild CVNBot.csproj /p:Configuration=Release
+  - xbuild CVNBot.csproj /p:Configuration=Debug
