@@ -772,6 +772,22 @@ namespace CVNBot
             return lm;
         }
 
+        public bool matchesPattern(string input, string pattern) {
+            try
+            {
+                if (Regex.IsMatch(input, pattern, RegexOptions.IgnoreCase))
+                {
+                    return true;
+                }
+            } catch (Exception ex)
+            {
+                logger.Warn("Found invalid pattern: " + pattern, ex);
+                Program.BroadcastDD("ERROR", "LMGNR_REGEX", ex.Message, input);
+            }
+
+            return false;
+        }
+
         public listMatch matchesList(string title, int list)
         {
             listMatch lm = new listMatch();
@@ -784,7 +800,7 @@ namespace CVNBot
                 IDataReader idr = cmd.ExecuteReader();
                 while (idr.Read())
                 {
-                    if (Regex.IsMatch(title, idr.GetString(0), RegexOptions.IgnoreCase))
+                    if (matchesPattern(title, idr.GetString(0)))
                     {
                         lm.Success = true;
                         lm.matchedItem = idr.GetString(0);
