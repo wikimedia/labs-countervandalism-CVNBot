@@ -940,74 +940,79 @@ namespace CVNBot
             int feedFilterThisUser = 1;
 
             // Feed filters -> Event
-            // Peform these checks before even classifying the user
+            // Perform these checks before even classifying the user
             // EventType is available right away, thus saving a db connection when setting is on 4 ('ignore')
-                if (r.minor)
-                    feedFilterThisEvent = feedFilterEventMinorEdit;
+            if (r.minor)
+                feedFilterThisEvent = feedFilterEventMinorEdit;
 
-                if (r.eventtype == RCEvent.EventType.edit && !r.newpage)
-                    feedFilterThisEvent = feedFilterEventEdit;
+            if (r.eventtype == RCEvent.EventType.edit && !r.newpage)
+                feedFilterThisEvent = feedFilterEventEdit;
 
-                if (r.eventtype == RCEvent.EventType.edit && r.newpage)
-                    feedFilterThisEvent = feedFilterEventNewpage;
+            if (r.eventtype == RCEvent.EventType.edit && r.newpage)
+                feedFilterThisEvent = feedFilterEventNewpage;
 
-                if (r.eventtype == RCEvent.EventType.move)
-                    feedFilterThisEvent = feedFilterEventMove;
+            if (r.eventtype == RCEvent.EventType.move)
+                feedFilterThisEvent = feedFilterEventMove;
 
-                if (r.eventtype == RCEvent.EventType.delete)
-                    feedFilterThisEvent = feedFilterEventDelete;
+            if (r.eventtype == RCEvent.EventType.delete)
+                feedFilterThisEvent = feedFilterEventDelete;
 
-                if (r.eventtype == RCEvent.EventType.block || r.eventtype == RCEvent.EventType.unblock)
-                    feedFilterThisEvent = feedFilterEventBlock;
+            if (r.eventtype == RCEvent.EventType.block || r.eventtype == RCEvent.EventType.unblock)
+                feedFilterThisEvent = feedFilterEventBlock;
 
-                if (r.eventtype == RCEvent.EventType.newuser || r.eventtype == RCEvent.EventType.newuser2 || r.eventtype == RCEvent.EventType.autocreate)
-                    feedFilterThisEvent = feedFilterEventNewuser;
+            if (r.eventtype == RCEvent.EventType.newuser || r.eventtype == RCEvent.EventType.newuser2 || r.eventtype == RCEvent.EventType.autocreate)
+                feedFilterThisEvent = feedFilterEventNewuser;
 
-                if (r.eventtype == RCEvent.EventType.upload)
-                    feedFilterThisEvent = feedFilterEventUpload;
+            if (r.eventtype == RCEvent.EventType.upload)
+                feedFilterThisEvent = feedFilterEventUpload;
 
-                if (r.eventtype == RCEvent.EventType.protect || r.eventtype == RCEvent.EventType.unprotect || r.eventtype == RCEvent.EventType.modifyprotect)
-                    feedFilterThisEvent = feedFilterEventProtect;
+            if (r.eventtype == RCEvent.EventType.protect || r.eventtype == RCEvent.EventType.unprotect || r.eventtype == RCEvent.EventType.modifyprotect)
+                feedFilterThisEvent = feedFilterEventProtect;
 
-                if (feedFilterThisEvent == 4)// 4 is "ignore"
-                    return;
+            if (feedFilterThisEvent == 4)
+                // 4 means "ignore"
+                return;
 
-                if (IsCubbie && (r.eventtype != RCEvent.EventType.upload))
-                    return;//If this IsCubbie, then ignore non-uploads
+            if (IsCubbie && (r.eventtype != RCEvent.EventType.upload))
+                //If this IsCubbie, then ignore all non-uploads
+                return;
 
-                if (r.botflag && (feedFilterUsersBot == 4))
-                    return;
+            if (r.botflag && (feedFilterUsersBot == 4))
+                return;
 
             Hashtable attribs = new Hashtable();
             String message = "";
             int userOffset = (int)(listman.classifyEditor(r.user, r.project));
 
-            /* If the current event is by a bot user and it blocks (eg. bot admin) and
-               bot edits are ignored (default) then the user will not be blacklisted */
-            /* TODO: Add new userOffset for botadmin ? */
+            // FIXME: If the current event is by a bot user and it blocks (eg. bot admin) and
+            // bot edits are ignored (default) then the user will not be blacklisted
+            // TODO: Add new userOffset for botadmin?
 
             // Feed filters -> Users
-                if(userOffset == 3)
-                    feedFilterThisUser = feedFilterUsersAnon;
+            if(userOffset == 3)
+                feedFilterThisUser = feedFilterUsersAnon;
 
-                if(userOffset == 4)
-                    feedFilterThisUser = feedFilterUsersReg;
+            if(userOffset == 4)
+                feedFilterThisUser = feedFilterUsersReg;
 
-                if(userOffset == 5)
-                    feedFilterThisUser = feedFilterUsersBot;
+            if(userOffset == 5)
+                feedFilterThisUser = feedFilterUsersBot;
 
-                if(feedFilterThisUser == 4)// 4 is "ignore"
-                    return;
+            if(feedFilterThisUser == 4)// 4 is "ignore"
+                return;
 
             switch (r.eventtype)
             {
+                // This case handles:
+                // - New page creations
+                // - Page edits
                 case RCEvent.EventType.edit:
-                    //This case handles: New pages, Edited pages
                     String diffsize;
                     if (r.szdiff >= 0)
                         diffsize = "+" + r.szdiff.ToString();
                     else
                         diffsize = r.szdiff.ToString();
+
                     attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
                     attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
@@ -1016,19 +1021,29 @@ namespace CVNBot
                     attribs.Add("url", r.url);
                     attribs.Add("reason", r.comment);
 
+                    // This block handles: New page creations
                     if (r.newpage)
                     {
-                        bool createSpecial = true;
+                        bool createSpecial = false;
 
-                        // First, just check sizes, and assign default messages in case nothing else is at fault
+                        // New pages created by an admin or whitelisted user
+                        if ((userOffset == 2) || (userOffset == 0))
+                            // Ignore event
+                            return;
+
+                        // Initialise the "sizeattrib" and "sizereset" attributes, which are used
+                        // by all messages, including the later messages for listman-matches.
+                        // The message keys assigned here may be used as a fallback.
                         if (r.szdiff >= newbig)
                         {
+                            createSpecial = true;
                             attribs.Add("sizeattrib", getMessage(100, ref attribs));
                             attribs.Add("sizereset", getMessage(102, ref attribs));
                             message = getMessage(5010 + userOffset, ref attribs);
                         }
                         else if (r.szdiff <= newsmall)
                         {
+                            createSpecial = true;
                             attribs.Add("sizeattrib", getMessage(101, ref attribs));
                             attribs.Add("sizereset", getMessage(103, ref attribs));
                             message = getMessage(5020 + userOffset, ref attribs);
@@ -1038,152 +1053,163 @@ namespace CVNBot
                             attribs.Add("sizeattrib", "");
                             attribs.Add("sizereset", "");
                             message = getMessage(5000 + userOffset, ref attribs);
-                            createSpecial = false;
                         }
 
-                        //If this is a blacklisted or greylisted user, create is always special
-                        if ((userOffset == 1) || (userOffset == 6))
-                            createSpecial = true;
+                        // The remaining checks go descending order of priority.
+                        // The first match wins.
+                        // - Article is on watchlist
+                        // - Page title matches a BNA pattern
+                        // - Edit summary matches a BES pattern
 
-                        //If the current usertype should always be shown, create is always special
-                        //By default this is anonymous users (feedFilterUsersAnon=1)
-                        //But feedFilterUsersReg or feedFilterUsersBot can be 1 aswell
-                        if (feedFilterThisUser == 1)
-                            createSpecial = true;
-
-                        // Now check if the edit summary matches BES
-                        listMatch lm = listman.matchesList(r.comment, 20);
-                        if (lm.Success)
-                        {
-                            //Matches BES
-                            attribs.Add("watchword", lm.matchedItem);
-                            //attribs.Add("reason", lm.matchedReason);
-                            message = getMessage(95040 + userOffset, ref attribs);
-                            createSpecial = true;
-                            AddToGreylist(userOffset, r.user, Program.getFormatMessage(16300, (String)attribs["article"], lm.matchedItem));
-                        }
-
-                        // Now check if this page title matches BNA
-                        listMatch eslm = listman.matchesList(r.title, 12);
-                        if (eslm.Success)
-                        {
-                            //Matches BNA
-                            attribs.Add("watchword", eslm.matchedItem);
-                            //attribs.Add("reason", eslm.matchedReason);
-                            message = getMessage(5040 + userOffset, ref attribs);
-                            createSpecial = true;
-                            AddToGreylist(userOffset, r.user, Program.getFormatMessage(16300, (String)attribs["article"], eslm.matchedItem));
-                        }
-
-                        // Now check if user has created a watched page
+                        // Is the article on the watchlist?
                         listMatch wlm = listman.isWatchedArticle(r.title, r.project);
                         if (wlm.Success)
                         {
-                            //Is watched
-                            //attribs.Add("reason", wlm.matchedReason);
+                            // Matches watchlist (CVP)
                             message = getMessage(5030 + userOffset, ref attribs);
-                            createSpecial = true;
                             AddToGreylist(userOffset, r.user, Program.getFormatMessage(16301, (String)attribs["article"]));
+                            break;
                         }
 
-                        // If created by an admin or whitelisted person
-                        if ((userOffset == 2) || (userOffset == 0))
-                            return;
+                        // Does the page title match a BNA pattern?
+                        listMatch eslm = listman.matchesList(r.title, 12);
+                        if (eslm.Success)
+                        {
+                            // Matches BNA
+                            attribs.Add("watchword", eslm.matchedItem);
+                            message = getMessage(5040 + userOffset, ref attribs);
+                            AddToGreylist(userOffset, r.user, Program.getFormatMessage(16300, (String)attribs["article"], eslm.matchedItem));
+                            break;
+                        }
 
-                        // If created by an unlisted reguser and nothing special
+                        // Does the edit summary match a BES pattern?
+                        listMatch lm = listman.matchesList(r.comment, 20);
+                        if (lm.Success)
+                        {
+                            // Matches BES
+                            attribs.Add("watchword", lm.matchedItem);
+                            message = getMessage(95040 + userOffset, ref attribs);
+                            AddToGreylist(userOffset, r.user, Program.getFormatMessage(16300, (String)attribs["article"], lm.matchedItem));
+                            break;
+                        }
+
+                        // If we're still here that means
+                        // - the create didn't get ignored by adminlist or whitelist
+                        // - the create didn't match any watch patterns
+                        // Now, if any of the following is true, we'll must report it.
+                        // - Create by blacklisted user
+                        // - Create by greylisted user
+                        // - Current usertype is configured to always report
+                        //   (By default this is for anonymous users, via feedFilterUsersAnon=1,
+                        //   but feedFilterUsersReg or feedFilterUsersBot could also be set to 1)
+                        if ((userOffset == 1) || (userOffset == 6) || (feedFilterThisUser == 1))
+                            break;
+
+                        // Created by an unlisted reguser with non-special create size, ignore
                         if ((userOffset == 4) && !createSpecial)
                             return;
 
-                        // Else: create was special. So show it, continue, dont return!
+                        // Else: Create had special size, so let it shown (default), don't return!
                     }
+                    // This block handles: Page edits
                     else
-                    { //Not new page; a simple edit
-                        bool editSpecial = true;
+                    {
+                        bool editSpecial = false;
 
+                        // Edit by an admin or whitelisted user
+                        if ((userOffset == 2) || (userOffset == 0))
+                            // Ignore event
+                            return;
+
+                        // Initialise the "sizeattrib" and "sizereset" attributes, which are used
+                        // by all messages, including the later messages for listman-matches.
+                        // The message keys assigned here may be used as a fallback.
                         if (r.szdiff >= editbig)
                         {
                             attribs.Add("sizeattrib", getMessage(100, ref attribs));
                             attribs.Add("sizereset", getMessage(102, ref attribs));
                             message = getMessage(5110 + userOffset, ref attribs);
+                            editSpecial = true;
                         }
                         else if (r.szdiff <= editblank)
                         {
                             attribs.Add("sizeattrib", getMessage(101, ref attribs));
                             attribs.Add("sizereset", getMessage(103, ref attribs));
                             message = getMessage(5120 + userOffset, ref attribs);
+                            editSpecial = true;
                         }
                         else
                         {
                             attribs.Add("sizeattrib", "");
                             attribs.Add("sizereset", "");
                             message = getMessage(5100 + userOffset, ref attribs);
-                            editSpecial = false;
                         }
 
-                        //If this is a blacklisted or anon or greylisted user, edit is always special
-                        if ((userOffset == 1) || (userOffset == 6))
-                            editSpecial = true;
+                        // The remaining checks go descending order of priority.
+                        // The first match wins.
+                        // - Edit summary matches a BES pattern
+                        // - Edit blanked the page
+                        // - Edit replaced the page
+                        // - Article is on watchlist
 
-                        //If the current usertype should always be shown, create is always special
-                        //By default this is anonymous users (feedFilterUsersAnon=1)
-                        //But feedFilterUsersReg or feedFilterUsersBot can be 1 aswell
-                        if (feedFilterThisUser == 1)
-                            editSpecial = true;
-
-                        // If edit by an admin or whitelisted person
-                        if ((userOffset == 2) || (userOffset == 0))
-                            editSpecial = false;
-
-                        // Now check if user has edited a watched page
-                        listMatch welm = listman.isWatchedArticle(r.title, r.project);
-                        if (welm.Success)
-                        {
-                            //Is watched
-                            //attribs.Add("reason", welm.matchedReason); //Current Console.msgs provides reason field for edsum only
-                            message = getMessage(5130 + userOffset, ref attribs);
-                            editSpecial = true;
-                        }
-
-                        // Now check if user has actually blanked the page
-                        if (((Project)prjlist[r.project]).rautosummBlank.IsMatch(r.comment))
-                        {
-                            message = getMessage(96010 + userOffset, ref attribs);
-                            editSpecial = true;
-                            AddToGreylist(userOffset, r.user, Program.getFormatMessage(16311, (String)attribs["article"]));
-                        }
-                        else //i.e., it won't be both a blank and a replace, we want to save some resources
-                        {
-                            Match rplm = ((Project)prjlist[r.project]).rautosummReplace.Match(r.comment);
-                            if (rplm.Success)
-                            {
-                                //It's a replace :(
-                                try
-                                {
-                                    attribs.Add("profanity", rplm.Groups["item1"].Captures[0].Value);
-                                    message = getMessage(96020 + userOffset, ref attribs);
-                                }
-                                catch (ArgumentOutOfRangeException)
-                                {
-                                    //This wiki probably doesn't have a profanity attribute
-                                    message = getMessage(96030 + userOffset, ref attribs);
-                                }
-                                editSpecial = true;
-                            }
-                        }
-
-                        // Now check if the edit summary matches BES
+                        // Does the edit summary match a BES pattern?
                         listMatch elm = listman.matchesList(r.comment, 20);
                         if (elm.Success)
                         {
-                            //Matches BES
+                            // Matches BES
                             attribs.Add("watchword", elm.matchedItem);
-                            //attribs.Add("reason", elm.matchedReason);
                             message = getMessage(95130 + userOffset, ref attribs);
-                            editSpecial = true;
                             AddToGreylist(userOffset, r.user, Program.getFormatMessage(16310, r.comment, (String)attribs["article"]));
+                            break;
                         }
 
-                        // If nothing special about the edit return
+                        // Did the user user blank the page?
+                        if (((Project)prjlist[r.project]).rautosummBlank.IsMatch(r.comment))
+                        {
+                            message = getMessage(96010 + userOffset, ref attribs);
+                            AddToGreylist(userOffset, r.user, Program.getFormatMessage(16311, (String)attribs["article"]));
+                            break;
+                        }
+
+                        Match rplm = ((Project)prjlist[r.project]).rautosummReplace.Match(r.comment);
+                        if (rplm.Success)
+                        {
+                            // The user replaced the page.
+                            try
+                            {
+                                attribs.Add("profanity", rplm.Groups["item1"].Captures[0].Value);
+                                message = getMessage(96020 + userOffset, ref attribs);
+                            }
+                            catch (ArgumentOutOfRangeException)
+                            {
+                                // This wiki probably doesn't have a profanity attribute
+                                message = getMessage(96030 + userOffset, ref attribs);
+                            }
+                            break;
+                        }
+
+                        // Is the article on the watchlist?
+                        listMatch welm = listman.isWatchedArticle(r.title, r.project);
+                        if (welm.Success)
+                        {
+                            // Matches watchlist (CVP)
+                            message = getMessage(5130 + userOffset, ref attribs);
+                            break;
+                        }
+
+                        // If we're still here that means
+                        // - the edit didn't get ignored by adminlist or whitelist
+                        // - the edit didn't match any watch patterns
+                        // Now, if any of the following is true, we must still report it.
+                        // - Edit by blacklisted user
+                        // - Edit by greylisted user
+                        // - Current usertype is configured to always report
+                        //   (By default this is for anonymous users, via feedFilterUsersAnon=1,
+                        //   but feedFilterUsersReg or feedFilterUsersBot could also be set to 1)
+                        if ((userOffset == 1) || (userOffset == 6) || (feedFilterThisUser == 1))
+                            break;
+
+                        // If nothing special about the edit, return to ignore
                         if (!editSpecial)
                             return;
                     }
