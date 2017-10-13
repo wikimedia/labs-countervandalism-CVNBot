@@ -200,15 +200,52 @@ namespace CVNBot
                             }
                             break;
                         case "block":
-                            try
+                            // Example message from October 2017 on #en.wikipedia:
+                            // > [[Special:Log/block]] reblock  * Yamla *  changed block settings for [[User:Jeb BushDid911]] (account creation blocked, email disabled, cannot edit own talk page) with an expiry time of indefinite: {{uw-ublock}}
+                            //
+                            // Example message from October 2017 on #en.wikipedia
+                            // > [[Special:Log/block]] reblock  * DeltaQuad *  changed block settings for [[User:208.111.64.0/19]] (anon. only, account creation blocked) with an expiry time of 06:21, February 2, 2019: {{colocationwebhost}}
+                            if (fields[4].Contains("unblock"))
                             {
-                                //Could be a block or unblock; need to parse regex
+                                Match ubm = ((Project)Program.prjlist[rce.project]).runblockRegex.Match(rce.comment);
+                                if (ubm.Success)
+                                {
+                                    rce.eventtype = RCEvent.EventType.unblock;
+                                    rce.title = ubm.Groups["item1"].Captures[0].Value;
+                                    try
+                                    {
+                                        rce.comment = ubm.Groups["comment"].Captures[0].Value;
+                                    }
+                                    catch (ArgumentOutOfRangeException) { }
+                                }
+                                else
+                                {
+                                    logger.Warn("Unmatched block/unblock type in " + rce.project + ": " + e.Data.Message);
+                                    return;
+                                }
+                            }
+                            else if (fields[4].Contains("reblock")) {
+                                Match rbm = ((Project)Program.prjlist[rce.project]).rreblockRegex.Match(rce.comment);
+                                if (rbm.Success)
+                                {
+                                    // Treat reblock the same as a new block for simplicity
+                                    rce.eventtype = RCEvent.EventType.block;
+                                    rce.title = rbm.Groups["item1"].Captures[0].Value;
+                                }
+                                else
+                                {
+                                    logger.Warn("Unmatched block/reblock type in " + rce.project + ": " + e.Data.Message);
+                                    return;
+                                }
+                            } else {
                                 Match bm = ((Project)Program.prjlist[rce.project]).rblockRegex.Match(rce.comment);
                                 if (bm.Success)
                                 {
                                     rce.eventtype = RCEvent.EventType.block;
                                     rce.title = bm.Groups["item1"].Captures[0].Value;
-                                    rce.blockLength = "24 hours"; //Set default value in case our Regex has fallen back to laziness
+                                    // Assume default value of 24 hours in case the on-wiki message override
+                                    // is missing expiry ($2) from its interface messag
+                                    rce.blockLength = "24 hours";
                                     try
                                     {
                                         rce.blockLength = bm.Groups["item2"].Captures[0].Value;
@@ -222,33 +259,13 @@ namespace CVNBot
                                 }
                                 else
                                 {
-                                    Match ubm = ((Project)Program.prjlist[rce.project]).runblockRegex.Match(rce.comment);
-                                    if (ubm.Success)
-                                    {
-                                        rce.eventtype = RCEvent.EventType.unblock;
-                                        rce.title = ubm.Groups["item1"].Captures[0].Value;
-                                        try
-                                        {
-                                            rce.comment = ubm.Groups["comment"].Captures[0].Value;
-                                        }
-                                        catch (ArgumentOutOfRangeException) { }
-                                    }
-                                    else
-                                    {
-                                        //All failed; is block but regex does not match
-                                        logger.Warn("Unmatched block type in " + rce.project + ": " + e.Data.Message);
-                                        return;
-                                    }
+                                    logger.Warn("Unmatched block type in " + rce.project + ": " + e.Data.Message);
+                                    return;
                                 }
-                            }
-                            catch (ArgumentOutOfRangeException aoore)
-                            {
-                                logger.Error("Failed to handle RCEvent.log.block", aoore);
-                                Program.BroadcastDD("ERROR", "RCR_AOORE_2", aoore.Message, e.Data.Channel + "/" + e.Data.Message);
                             }
                             break;
                         case "protect":
-                            //Could be a protect, modifyprotect or unprotect; need to parse regex
+                            // Could be a protect, modifyprotect or unprotect; need to parse regex
                             Match pm = ((Project)Program.prjlist[rce.project]).rprotectRegex.Match(rce.comment);
                             Match modpm = ((Project)Program.prjlist[rce.project]).rmodifyprotectRegex.Match(rce.comment);
                             Match upm = ((Project)Program.prjlist[rce.project]).runprotectRegex.Match(rce.comment);
@@ -292,12 +309,11 @@ namespace CVNBot
                             }
                             break;
                         case "rights":
-                            //Is rights
-                            return; //Not interested today
-                        //break;
+                            // Ignore event
+                            return;
+                            //break;
                         case "delete":
-                            //Could be a delete or restore; need to parse regex
-                            //_1568: ADDED: Support for deletions, now reported in rc stream
+                            // Could be a delete or restore; need to parse regex
                             Match dm = ((Project)Program.prjlist[rce.project]).rdeleteRegex.Match(rce.comment);
                             if (dm.Success)
                             {
@@ -324,15 +340,13 @@ namespace CVNBot
                                 }
                                 else
                                 {
-                                    // could be 'revision' (change visibility of revision) or something else
-                                    // ignore for now, not supported not interested
-                                    //logger.Warn("Unmatched delete type in " + rce.project + ": " + e.Data.Message);
+                                    // Could be 'revision' (change visibility of revision) or something else
+                                    // Ignore event
                                     return;
                                 }
                             }
                             break;
                         case "upload":
-                            //Is an upload
                             Match um = ((Project)Program.prjlist[rce.project]).ruploadRegex.Match(rce.comment);
                             if (um.Success)
                             {
@@ -346,9 +360,8 @@ namespace CVNBot
                             }
                             else
                             {
-                            	// could be 'overwrite' (upload new version) or something else
-                                // ignore for now, not supported not interested
-                                //logger.Warn("Unmatched upload in " + rce.project + ": " + e.Data.Message);
+                                // Could be 'overwrite' (upload new version) or something else
+                                // Ignore event
                                 return;
                             }
                             break;
@@ -392,16 +405,15 @@ namespace CVNBot
                             }
                             break;
                         case "import":
-                            //Is an import
                             //rce.eventtype = RCEvent.EventType.import;
-                            return; //Not interested today
-                        //break;
+                            // Ignore event
+                            return;
+                            //break;
                         default:
-                            //logger.Warn("Unhandled log type: " + logType + " in " + rce.project + ": " + e.Data.Message);
-                            //Don't react to event
+                            // Ignore event
                             return;
                     }
-                    //These flags don't apply to log events, but must be initialized
+                    // These flags don't apply to log events, but must be initialized
                     rce.minor = false;
                     rce.newpage = false;
                     rce.botflag = false;

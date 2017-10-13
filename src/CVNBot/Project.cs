@@ -14,9 +14,8 @@ namespace CVNBot
 
         public string projectName;
         public string interwikiLink;
-        public string rooturl; //Format: http://en.wikipedia.org/
+        public string rooturl; // Format: http://en.wikipedia.org/
 
-        // Based on RCParser.py of CVUBot
         string restoreRegex;
         string deleteRegex;
         string protectRegex;
@@ -27,7 +26,7 @@ namespace CVNBot
         string moveredirRegex;
         string blockRegex;
         string unblockRegex;
-        // New in CVNBot, not in CVUBot:
+        string reblockRegex;
         string autosummBlank;
         string autosummReplace;
 
@@ -41,6 +40,7 @@ namespace CVNBot
         public Regex rmoveredirRegex;
         public Regex rblockRegex;
         public Regex runblockRegex;
+        public Regex rreblockRegex;
         public Regex rautosummBlank;
         public Regex rautosummReplace;
 
@@ -64,12 +64,12 @@ namespace CVNBot
             rprotectRegex = new Regex(protectRegex);
             runprotectRegex = new Regex(unprotectRegex);
 
-            // modifyprotectRegex was recently added, may not exist in Projects.xml yet
-            // fall back to protectregex (to avoid failure) and WARN that reload is needed
+            // modifyprotectRegex: Added in v1.20
+            // Fallback if missing from older project.
             if (modifyprotectRegex == null)
             {
                 modifyprotectRegex = protectRegex;
-                logger.Warn("generateRegexen: modifyprotectRegex is null. Please try a reload for this wiki to populate it.");
+                logger.Warn("generateRegexen: modifyprotectRegex is missing. Please reload this wiki.");
             }
             rmodifyprotectRegex = new Regex(modifyprotectRegex);
             ruploadRegex = new Regex(uploadRegex);
@@ -77,6 +77,12 @@ namespace CVNBot
             rmoveredirRegex = new Regex(moveredirRegex);
             rblockRegex = new Regex(blockRegex);
             runblockRegex = new Regex(unblockRegex);
+            // modifyprotectRegex: Added in v1.22
+            // Fallback if missing from older project.
+            if (reblockRegex == null) {
+                reblockRegex = "^$";
+            }
+            rreblockRegex = new Regex(reblockRegex);
             rautosummBlank = new Regex(autosummBlank);
             rautosummReplace = new Regex(autosummReplace);
 
@@ -108,6 +114,7 @@ namespace CVNBot
             dump.WriteElementString("moveredirRegex", moveredirRegex);
             dump.WriteElementString("blockRegex", blockRegex);
             dump.WriteElementString("unblockRegex", unblockRegex);
+            dump.WriteElementString("reblockRegex", reblockRegex);
             dump.WriteElementString("autosummBlank", autosummBlank);
             dump.WriteElementString("autosummReplace", autosummReplace);
 
@@ -142,6 +149,7 @@ namespace CVNBot
                     case "moveredirRegex": moveredirRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "blockRegex": blockRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "unblockRegex": unblockRegex = parentnode.ChildNodes[i].InnerText; break;
+                    case "reblockRegex": reblockRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "autosummBlank": autosummBlank = parentnode.ChildNodes[i].InnerText; break;
                     case "autosummReplace": autosummReplace = parentnode.ChildNodes[i].InnerText; break;
                 }
@@ -196,12 +204,13 @@ namespace CVNBot
             generateRegex("MediaWiki:1movedto2", 2, ref moveRegex, false);
             generateRegex("MediaWiki:1movedto2_redir", 2, ref moveredirRegex, false);
             // blockRegex is nonStrict because some wikis override the message without including $2 (block length).
-            // RCReader will fall back to "96 hours" if this is the case.
-            // Some newer messages (e.g. http://lmo.wikipedia.org/wiki/MediaWiki:Blocklogentry) have a third item, $3
-            // ("anononly,nocreate,autoblock"). This may conflict with $2 detection.
+            // RCReader will fall back to "24 hours" if this is the case.
+            // Some newer messages (e.g. https://lmo.wikipedia.org/wiki/MediaWiki:Blocklogentry) have a third item,
+            // $3 ("anononly,nocreate,autoblock"). This may conflict with $2 detection.
             // Trying (changed 2 -> 3) to see if length of time will be correctly detected using just this method:
             generateRegex("MediaWiki:Blocklogentry", 3, ref blockRegex, true);
             generateRegex("MediaWiki:Unblocklogentry", 0, ref unblockRegex, false);
+            generateRegex("MediaWiki:Reblock-logentry", 3, ref reblockRegex, false);
             generateRegex("MediaWiki:Autosumm-blank", 0, ref autosummBlank, false);
             // autosummReplace is nonStrict because some large wikis don't include the "profanity" in their
             // messages (privacy measure?)
@@ -228,7 +237,7 @@ namespace CVNBot
             mwMessage = mwMessage.Replace("$2", "(?:.+?)");
             mwMessage = mwMessage.Replace("$3", "(?:.+?)");
             mwMessage = mwMessage.Replace("$", @"\$");
-            mwMessage = "^" + mwMessage + @"(?:: (?<comment>.*?))?$"; //Special:Log comments are preceded by a colon
+            mwMessage = "^" + mwMessage + @"(?:: (?<comment>.*?))?$"; // Special:Log comments are preceded by a colon
 
             //Dirty code: Block log exceptions!
             if (mwMessageTitle == "MediaWiki:Blocklogentry")
@@ -246,17 +255,14 @@ namespace CVNBot
                 throw new Exception("Failed to test-generate regex " + mwMessage + " for " + mwMessageTitle + "; " + e.Message);
             }
 
-            if (reqCount > 0)
+            if (reqCount >= 1)
             {
-                if (reqCount >= 1)
+                if (!mwMessage.Contains(@"(?<item1>.+?)") && !nonStrict)
+                    throw new Exception("Regex " + mwMessageTitle + " requires one or more items but item1 not found in "+mwMessage);
+                if (reqCount >= 2)
                 {
-                    if (!mwMessage.Contains(@"(?<item1>.+?)") && !nonStrict)
-                        throw new Exception("Regex " + mwMessageTitle + " requires one or more items but item1 not found in "+mwMessage);
-                    if (reqCount >= 2)
-                    {
-                        if (!mwMessage.Contains(@"(?<item2>.+?)") && !nonStrict)
-                            throw new Exception("Regex " + mwMessageTitle + " requires two or more items but item2 not found in "+mwMessage);
-                    }
+                    if (!mwMessage.Contains(@"(?<item2>.+?)") && !nonStrict)
+                        throw new Exception("Regex " + mwMessageTitle + " requires two or more items but item2 not found in "+mwMessage);
                 }
             }
 
