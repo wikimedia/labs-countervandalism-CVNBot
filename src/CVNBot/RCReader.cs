@@ -105,6 +105,22 @@ namespace CVNBot
             lastMessage = DateTime.Now;
 
             // Based on RCParser.py->parseRCmsg()
+            // Example message from 2017-10-13 from #en.wikipedia
+            // 01> #00314 [[
+            // 02> #00307 Special:Log/newusers
+            // 03> #00314 ]]
+            // 04> #0034   create2
+            // 05> #00310
+            // 06> #00302
+            // 07> #003
+            // 08> #0035  *
+            // 09> #003
+            // 10> #00303 Ujju.19788
+            // 11> #003
+            // 12> #0035  *
+            // 13> #003
+            // 14> #00310 created new account User:Upendhare
+            // 15> #003
             string strippedmsg = stripBold.Replace(stripColours.Replace(CVNBotUtils.replaceStrMax(e.Data.Message, '\x03', '\x04', 14), "\x03"), "");
             string[] fields = strippedmsg.Split(new char[1] { '\x03' }, 15);
             if (fields.Length == 15)
@@ -114,8 +130,7 @@ namespace CVNBot
             }
             else
             {
-                //Console.WriteLine("Ignored: " + e.Data.Message);
-                //Probably really long article title or something that got cut off; we can't handle these
+                // Probably really long article title or something that got cut off; we can't handle these
                 return;
             }
 
@@ -150,22 +165,22 @@ namespace CVNBot
                     switch (logType)
                     {
                         case "newusers":
-                            //Could be a user creating their own account, or a user creating a sockpuppet
+                            // Could be a user creating their own account, or a user creating a sockpuppet
 
-                            //Message as of June 5, 2007 on test.wikipedia
-                            //[[Special:Log/newusers]] create2  * Tangotango * created account for User:Sockpuppy
+                            // Example message as of 2016-11-02 on #nl.wikipedia (with log comment after colon)
+                            // > [[Speciaal:Log/newusers]] create2  * BRPots *  created new account Gebruiker:BRPwiki: eerder fout gemaakt
+                            // Example message as of 2016-11-02 on #nl.wikipedia (without log comment)
+                            // > [[Speciaal:Log/newusers]] create2  * Sherani koster *  created new account Gebruiker:Rani farah koster
 
-                            //Old? :
-                            //[[Special:Log/newusers]] create2  * Srikeit *  created account for User:Srikeit Test: [[User talk:Srikeit Test|Talk]] | [[Special:Contributions/Srikeit Test|contribs]] | [[Special:Blockip/Srikeit Test|block]]
-                            //Check the flag
-                            if (fields[4].Contains("create2")) //For some reason create2 shows up as " create2"
+                            // Example message as of 2017-10-13 on #en.wikipedia:
+                            // > [[Special:Log/newusers]] create2  * Ujju.19788 *  created new account User:Upendhare
+                            if (fields[4].Contains("create2"))
                             {
                                 Match mc2 = ((Project)Program.prjlist[rce.project]).rCreate2Regex.Match(rce.comment);
                                 if (mc2.Success)
                                 {
                                     rce.title = mc2.Groups[1].Captures[0].Value;
                                     rce.eventtype = RCEvent.EventType.newuser2;
-                                    //logger.Info("create2 event detected, and mc2 success");
                                 }
                                 else
                                 {

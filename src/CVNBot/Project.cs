@@ -82,7 +82,7 @@ namespace CVNBot
 
             rSpecialLogRegex = new Regex(SpecialLogRegex);
 
-            rCreate2Regex = new Regex( namespaces["2"]+@":(.*): \[\[" );
+            rCreate2Regex = new Regex( namespaces["2"]+@":([^:]+)" );
         }
 
         public string dumpProjectDetails()
