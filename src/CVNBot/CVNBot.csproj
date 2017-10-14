@@ -1,18 +1,13 @@
-﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="15.0">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform>AnyCPU</Platform>
     <ProductVersion>9.0.21022</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{905060CD-5426-4B97-A186-19967E671A9C}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CVNBot</RootNamespace>
     <AssemblyName>CVNBot</AssemblyName>
-    <ManifestCertificateThumbprint>AF7238C605D3BAC83196B70FA0308F6C5B91F713</ManifestCertificateThumbprint>
-    <ManifestKeyFile>CVNBot_TemporaryKey.pfx</ManifestKeyFile>
-    <GenerateManifests>true</GenerateManifests>
-    <SignManifests>true</SignManifests>
     <IsWebBootstrapper>false</IsWebBootstrapper>
     <TargetZone>LocalIntranet</TargetZone>
     <FileUpgradeFlags>
@@ -86,13 +81,16 @@
     </Content>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <Content Include="..\Debug\CVNBot.exe.config">
+    <Content Include="..\CVNBot.exe.debug.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>CVNBot.exe.config</Link>
+    </Content>
     </Content>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)' == 'Release' ">
-    <Content Include="..\Release\CVNBot.exe.config">
+    <Content Include="..\CVNBot.exe.release.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>CVNBot.exe.config</Link>
     </Content>
   </ItemGroup>
   <ItemGroup>

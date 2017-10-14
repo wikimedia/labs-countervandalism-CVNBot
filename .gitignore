@@ -1,2 +1,3 @@
-src/CVNBot/bin
-src/CVNBot/obj
+/src/CVNBot/bin
+/src/CVNBot/obj
+*.userprefs
