@@ -1,16 +1,15 @@
 using System;
 using System.Collections;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Data;
-using Mono.Data.Sqlite;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 using log4net;
+using Mono.Data.Sqlite;
 
 namespace CVNBot
 {
-    struct listMatch
+    struct ListMatch
     {
         public bool Success;
         public string matchedItem;
@@ -20,30 +19,32 @@ namespace CVNBot
     class ListManager
     {
         public enum UserType { admin = 2, whitelisted = 0, blacklisted = 1, bot = 5, user = 4, anon = 3, greylisted = 6 }
+
+        public IDbConnection dbcon;
+        public string connectionString = "";
+
+        public string currentGetBatchChannel = ""; // Used for the batch function
+
         static Regex ipv4 = new Regex(@"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b");
         static Regex ipv6 = new Regex(@"\b(?:[0-9A-F]{1,4}:){7}[0-9A-F]{1,4}\b");
         static Regex adminLine = new Regex("<li><a href=\"/wiki/.*?\" title=\".*?\">(.*?)</a>");
         static Regex rlistCmd = new Regex(@"^(?<cmd>add|del|show|test) (?<item>.+?)(?: p=(?<project>\S+?))?(?: x=(?<len>\d{1,4}))?(?: r=(?<reason>.+?))?$"
             , RegexOptions.IgnoreCase);
 
-        private Object dbtoken = new Object();
-        private static string currentGetThreadWiki = ""; //Used to pass data to the configGetAdmins/configGetBots threads
-        private static string currentGetThreadMode = ""; //Same as above
-        public string currentGetBatchChannel = ""; //Used for the batch function
+        readonly Object dbtoken = new Object();
+        static string currentGetThreadWiki = ""; // Used to pass data to the configGetAdmins/configGetBots threads
+        static string currentGetThreadMode = ""; // Same as above
 
-        public IDbConnection dbcon;
-        public string connectionString = "";
+        Timer garbageCollector;
 
-        private Timer garbageCollector;
+        static readonly ILog logger = LogManager.GetLogger("CVNBot.ListManager");
 
-        private static ILog logger = LogManager.GetLogger("CVNBot.ListManager");
-
-        public void initDBConnection(string filename)
+        public void InitDBConnection(string filename)
         {
             FileInfo fi = new FileInfo(filename);
             bool alreadyExists = fi.Exists;
             connectionString = "URI=file:" + filename + ",version=3";
-            dbcon = (IDbConnection)new SqliteConnection(connectionString);
+            dbcon = new SqliteConnection(connectionString);
             dbcon.Open();
             if (!alreadyExists)
             {
@@ -58,15 +59,15 @@ namespace CVNBot
             }
 
             // Start the expired item garbage collector
-            TimerCallback gcDelegate = new TimerCallback(collectGarbage);
+            TimerCallback gcDelegate = new TimerCallback(CollectGarbage);
             garbageCollector = new Timer(gcDelegate, null, 10000, 7200000); //Start first collection in 10 secs; then, every two hours
         }
 
-        void collectGarbage(object stateInfo)
+        void CollectGarbage(object stateInfo)
         {
             //logger.Info("Tim is throwing out expired items");
             int total = 0;
-            IDbConnection timdbcon = (IDbConnection)new SqliteConnection(connectionString);
+            IDbConnection timdbcon = new SqliteConnection(connectionString);
             timdbcon.Open();
             IDbCommand timcmd = timdbcon.CreateCommand();
             lock (dbtoken)
@@ -83,7 +84,7 @@ namespace CVNBot
             logger.Info("Tim threw away " + total.ToString() + " items");
         }
 
-        public void closeDBConnection()
+        public void CloseDBConnection()
         {
             dbcon.Close();
             dbcon = null;
@@ -94,12 +95,11 @@ namespace CVNBot
         /// </summary>
         /// <param name="expiry">How many seconds in the future to set expiry to</param>
         /// <returns></returns>
-        string getExpiryDate(int expiry)
+        string GetExpiryDate(int expiry)
         {
             if (expiry == 0)
                 return "0";
-            else
-                return DateTime.Now.AddSeconds(expiry).Ticks.ToString();
+            return DateTime.Now.AddSeconds(expiry).Ticks.ToString();
         }
 
         /// <summary>
@@ -107,81 +107,76 @@ namespace CVNBot
         /// </summary>
         /// <param name="expiry">When expiry is</param>
         /// <returns></returns>
-        string parseExpiryDate(long expiry)
+        string ParseExpiryDate(long expiry)
         {
             if (expiry == 0)
                 return (string)Program.msgs["20006"];
-            else
-            {
-                DateTime dt = new DateTime(expiry);
-                return dt.ToUniversalTime().ToString("HH:mm, d MMMM yyyy");
-            }
+            DateTime dt = new DateTime(expiry);
+            return dt.ToUniversalTime().ToString("HH:mm, d MMMM yyyy");
         }
 
-        string friendlyProject(string project)
+        string FriendlyProject(string project)
         {
             if (project == "")
                 return "global";
-            else
-                return project;
+
+            return project;
         }
 
-        string friendlyList(int listType)
+        string FriendlyList(int listType)
         {
             int msgCode = 17000 + listType;
             return (string)Program.msgs[msgCode.ToString()];
         }
 
-        string friendlyList(UserType ut)
+        string FriendlyList(UserType ut)
         {
-            return friendlyList((int)ut);
+            return FriendlyList((int)ut);
         }
 
-        public string addUserToList(string name, string project, UserType type, string adder, string reason, int expiry)
+        public string AddUserToList(string name, string project, UserType type, string adder, string reason, int expiry)
         {
             // Check if user is already on a list
-            UserType originalType = classifyEditor(name, project);
+            UserType originalType = ClassifyEditor(name, project);
 
             if (originalType == type)
             {
                 // Original type was same as new type; update list with new details
                 IDbCommand cmd = dbcon.CreateCommand();
                 cmd.CommandText = "UPDATE users SET adder = '" + adder.Replace("'", "''") + "', reason = '"
-                    + reason.Replace("'", "''") + "', expiry = '" + getExpiryDate(expiry)
+                    + reason.Replace("'", "''") + "', expiry = '" + GetExpiryDate(expiry)
                     + "' WHERE name = '" + name.Replace("'", "''") + "' AND project = '" + project
                     + "' AND type ='" + ((int)originalType).ToString() + "'";
-                lock(dbtoken)
+                lock (dbtoken)
                     cmd.ExecuteNonQuery();
-                return Program.getFormatMessage(16104, showUserOnList(name, project));
+                return Program.GetFormatMessage(16104, ShowUserOnList(name, project));
             }
-                                                //If adding to greylist, we can accept a new entry, as they may overlap
-            else if ((originalType == UserType.anon) || (originalType == UserType.user) || (type == UserType.greylisted)
-                || ((originalType == UserType.greylisted) && (type == UserType.blacklisted))) //Also allow adding greylisted users to the blacklist
+            // Also allow adding greylisted users to the blacklist
+            // If adding to greylist, we can accept a new entry, as they may overlap
+            if ((originalType == UserType.anon) || (originalType == UserType.user) || (type == UserType.greylisted)
+                            || ((originalType == UserType.greylisted) && (type == UserType.blacklisted)))
             {
                 // User was originally unlisted or is on non-conflicting list
                 IDbCommand cmd = dbcon.CreateCommand();
                 cmd.CommandText = "INSERT INTO users (name, project, type, adder, reason, expiry) VALUES ('" + name.Replace("'", "''")
                     + "','" + project + "','" + ((int)type).ToString() + "','" + adder.Replace("'", "''")
-                    + "','" + reason.Replace("'", "''") + "','" + getExpiryDate(expiry) + "')";
+                    + "','" + reason.Replace("'", "''") + "','" + GetExpiryDate(expiry) + "')";
                 lock (dbtoken)
                     cmd.ExecuteNonQuery();
-                return Program.getFormatMessage(16103, showUserOnList(name, project));
+                return Program.GetFormatMessage(16103, ShowUserOnList(name, project));
             }
-            else
-            {
-                // User was originally on some kind of list
-                return Program.getFormatMessage(16102, name, friendlyList(originalType), friendlyList(type));
-            }
+            // User was originally on some kind of list
+            return Program.GetFormatMessage(16102, name, FriendlyList(originalType), FriendlyList(type));
         }
 
-        public string delUserFromList(string name, string project, UserType uType)
+        public string DelUserFromList(string name, string project, UserType uType)
         {
             // Check if user is already on a list
-            UserType originalType = classifyEditor(name, project);
+            UserType originalType = ClassifyEditor(name, project);
 
             if (originalType != uType)
             {
-                return Program.getFormatMessage(16009, name, friendlyProject(project), friendlyList(uType));
+                return Program.GetFormatMessage(16009, name, FriendlyProject(project), FriendlyList(uType));
             }
 
             IDbCommand cmd = dbcon.CreateCommand();
@@ -190,10 +185,10 @@ namespace CVNBot
             lock (dbtoken)
                 cmd.ExecuteNonQuery();
 
-            return Program.getFormatMessage(16101, name, friendlyProject(project), friendlyList(originalType));
+            return Program.GetFormatMessage(16101, name, FriendlyProject(project), FriendlyList(originalType));
         }
 
-        public string showUserOnList(string username, string project)
+        public string ShowUserOnList(string username, string project)
         {
             IDbCommand cmd = dbcon.CreateCommand();
 
@@ -210,8 +205,8 @@ namespace CVNBot
                     {
                         if ((idr.GetInt32(0) == 2) || (idr.GetInt32(0) == 5)) //Is admin or bot on this project?
                         {
-                            string res = Program.getFormatMessage(16004, username, project, friendlyList(idr.GetInt32(0))
-                                , idr.GetString(1), parseExpiryDate(idr.GetInt64(3)), idr.GetString(2));
+                            string res = Program.GetFormatMessage(16004, username, project, FriendlyList(idr.GetInt32(0))
+                                , idr.GetString(1), ParseExpiryDate(idr.GetInt64(3)), idr.GetString(2));
                             idr.Close();
                             return res;
                         }
@@ -228,8 +223,8 @@ namespace CVNBot
                 IDataReader idr3 = cmd.ExecuteReader();
                 if (idr3.Read())
                 {
-                    string result2 = Program.getFormatMessage(16106, username
-                        , parseExpiryDate(idr3.GetInt64(1)), idr3.GetString(0));
+                    string result2 = Program.GetFormatMessage(16106, username
+                        , ParseExpiryDate(idr3.GetInt64(1)), idr3.GetString(0));
                     idr3.Close();
                     return result2;
                 }
@@ -246,8 +241,8 @@ namespace CVNBot
                 {
                     if ((idr2.GetInt32(0) == 0) || (idr2.GetInt32(0) == 1)) //Is on blacklist or whitelist?
                     {
-                        string result = Program.getFormatMessage(16004, username, friendlyProject(""), friendlyList(idr2.GetInt32(0))
-                                , idr2.GetString(1), parseExpiryDate(idr2.GetInt64(3)), idr2.GetString(2));
+                        string result = Program.GetFormatMessage(16004, username, FriendlyProject(""), FriendlyList(idr2.GetInt32(0))
+                                , idr2.GetString(1), ParseExpiryDate(idr2.GetInt64(3)), idr2.GetString(2));
                         idr2.Close();
                         return result;
                     }
@@ -257,12 +252,11 @@ namespace CVNBot
 
             // Finally, if we're still here, user is either user or anon
             if ((ipv4.Match(username).Success) || (ipv6.Match(username).Success))
-                return Program.getFormatMessage(16005, username);
-            else
-                return Program.getFormatMessage(16006, username);
+                return Program.GetFormatMessage(16005, username);
+            return Program.GetFormatMessage(16006, username);
         }
 
-        bool isItemOnList(string item, int itemType)
+        bool IsItemOnList(string item, int itemType)
         {
             IDbCommand cmd = dbcon.CreateCommand();
             cmd.CommandText = "SELECT item FROM items WHERE item='" + item.Replace("'", "''")
@@ -286,11 +280,11 @@ namespace CVNBot
         /// <param name="reason">The reason</param>
         /// <param name="expiry">The expiry time, in hours</param>
         /// <returns>The string to return to the client</returns>
-        public string addItemToList(string item, int itemType, string adder, string reason, int expiry)
+        public string AddItemToList(string item, int itemType, string adder, string reason, int expiry)
         {
             try
             {
-                new Regex(item);
+                Regex.Match("", item);
             }
             catch (Exception e)
             {
@@ -299,29 +293,27 @@ namespace CVNBot
 
             IDbCommand dbCmd = dbcon.CreateCommand();
             // First, check if item is already on the same list
-            if (isItemOnList(item, itemType))
+            if (IsItemOnList(item, itemType))
             {
                 // Item is already on the same list, need to update
                 dbCmd.CommandText = "UPDATE items SET adder='" + adder.Replace("'", "''") + "', reason='"
-                    + reason.Replace("'", "''") + "', expiry='"+ getExpiryDate(expiry) +"' WHERE item='" + item.Replace("'", "''")
+                    + reason.Replace("'", "''") + "', expiry='" + GetExpiryDate(expiry) + "' WHERE item='" + item.Replace("'", "''")
                     + "' AND itemtype='" + itemType.ToString() + "'";
                 lock (dbtoken)
                     dbCmd.ExecuteNonQuery();
-                return Program.getFormatMessage(16104, showItemOnList(item, itemType));
+                return Program.GetFormatMessage(16104, ShowItemOnList(item, itemType));
             }
-            else
-            {
-                // Item is not on the list yet, can do simple insert
-                dbCmd.CommandText = "INSERT INTO items (item, itemtype, adder, reason, expiry) VALUES('" + item.Replace("'", "''")
-                    + "', '" + itemType.ToString() + "', '" + adder.Replace("'", "''") + "', '" + reason.Replace("'", "''")
-                    + "', '" + getExpiryDate(expiry) + "')";
-                lock (dbtoken)
-                    dbCmd.ExecuteNonQuery();
-                return Program.getFormatMessage(16103, showItemOnList(item, itemType));
-            }
+
+            // Item is not on the list yet, can do simple insert
+            dbCmd.CommandText = "INSERT INTO items (item, itemtype, adder, reason, expiry) VALUES('" + item.Replace("'", "''")
+                + "', '" + itemType.ToString() + "', '" + adder.Replace("'", "''") + "', '" + reason.Replace("'", "''")
+                + "', '" + GetExpiryDate(expiry) + "')";
+            lock (dbtoken)
+                dbCmd.ExecuteNonQuery();
+            return Program.GetFormatMessage(16103, ShowItemOnList(item, itemType));
         }
 
-        public string showItemOnList(string item, int itemType)
+        public string ShowItemOnList(string item, int itemType)
         {
             IDbCommand cmd = dbcon.CreateCommand();
             cmd.CommandText = "SELECT adder, reason, expiry FROM items WHERE item='" + item.Replace("'", "''")
@@ -332,85 +324,77 @@ namespace CVNBot
                 IDataReader idr = cmd.ExecuteReader();
                 if (idr.Read())
                 {
-                    string result = Program.getFormatMessage(16007, item, friendlyList(itemType), idr.GetString(0),
-                        parseExpiryDate(idr.GetInt64(2)), idr.GetString(1));
+                    string result = Program.GetFormatMessage(16007, item, FriendlyList(itemType), idr.GetString(0),
+                        ParseExpiryDate(idr.GetInt64(2)), idr.GetString(1));
                     idr.Close();
                     return result;
                 }
-                else
-                {
-                    idr.Close();
-                    return Program.getFormatMessage(16008, item, friendlyList(itemType));
-                }
+                idr.Close();
+                return Program.GetFormatMessage(16008, item, FriendlyList(itemType));
             }
         }
 
-        public string delItemFromList(string item, int itemType)
+        public string DelItemFromList(string item, int itemType)
         {
-            if (isItemOnList(item, itemType))
+            if (IsItemOnList(item, itemType))
             {
                 IDbCommand dbCmd = dbcon.CreateCommand();
                 dbCmd.CommandText = "DELETE FROM items WHERE item='" + item.Replace("'", "''")
                     + "' AND itemtype='" + itemType.ToString() + "'";
                 lock (dbtoken)
                     dbCmd.ExecuteNonQuery();
-                return Program.getFormatMessage(16105, item, friendlyList(itemType));
+                return Program.GetFormatMessage(16105, item, FriendlyList(itemType));
             }
-            else
-            {
-                return Program.getFormatMessage(16008, item, friendlyList(itemType));
-            }
+            return Program.GetFormatMessage(16008, item, FriendlyList(itemType));
         }
 
-        private string ucfirst(string input)
+        string Ucfirst(string input)
         {
             string temp = input.Substring(0, 1);
             return temp.ToUpper() + input.Remove(0, 1);
         }
 
-        public string addPageToWatchlist(string item, string project, string adder, string reason, int expiry)
+        public string AddPageToWatchlist(string item, string project, string adder, string reason, int expiry)
         {
             IDbCommand dbCmd = dbcon.CreateCommand();
             //First, if this is not a Wiktionary, uppercase the first letter
             if (!project.EndsWith("wiktionary"))
-                item = ucfirst(item);
+                item = Ucfirst(item);
 
             //If this is a local watchlist, translate the namespace
             if (project != "")
-                item = Project.translateNamespace(project, item);
+                item = Project.TranslateNamespace(project, item);
 
             // First, check if item is already on watchlist
-            if (isWatchedArticle(item, project).Success)
+            if (IsWatchedArticle(item, project).Success)
             {
                 // Item is already on same watchlist, need to update
                 dbCmd.CommandText = "UPDATE watchlist SET adder='" + adder.Replace("'", "''") + "', reason='"
-                    + reason.Replace("'", "''") + "', expiry='" + getExpiryDate(expiry) + "' WHERE article='" + item.Replace("'", "''")
+                    + reason.Replace("'", "''") + "', expiry='" + GetExpiryDate(expiry) + "' WHERE article='" + item.Replace("'", "''")
                     + "' AND project='" + project + "'";
                 lock (dbtoken)
                     dbCmd.ExecuteNonQuery();
-                return Program.getFormatMessage(16104, showPageOnWatchlist(item, project));
+                return Program.GetFormatMessage(16104, ShowPageOnWatchlist(item, project));
             }
-            else
-            {
-                // Item is not on the watchlist yet, can do simple insert
-                dbCmd.CommandText = "INSERT INTO watchlist (article, project, adder, reason, expiry) VALUES('" + item.Replace("'", "''")
-                    + "', '" + project + "', '" + adder.Replace("'", "''") + "', '" + reason.Replace("'", "''")
-                    + "', '" + getExpiryDate(expiry) + "')";
-                lock (dbtoken)
-                    dbCmd.ExecuteNonQuery();
-                return Program.getFormatMessage(16103, showPageOnWatchlist(item, project));
-            }
+
+            // Item is not on the watchlist yet, can do simple insert
+            dbCmd.CommandText = "INSERT INTO watchlist (article, project, adder, reason, expiry) VALUES('" + item.Replace("'", "''")
+                + "', '" + project + "', '" + adder.Replace("'", "''") + "', '" + reason.Replace("'", "''")
+                + "', '" + GetExpiryDate(expiry) + "')";
+            lock (dbtoken)
+                dbCmd.ExecuteNonQuery();
+            return Program.GetFormatMessage(16103, ShowPageOnWatchlist(item, project));
         }
 
-        public string showPageOnWatchlist(string item, string project)
+        public string ShowPageOnWatchlist(string item, string project)
         {
             //First, if this is not a wiktionary, uppercase the first letter
             if (!project.EndsWith("wiktionary"))
-                item = ucfirst(item);
+                item = Ucfirst(item);
 
             //If this is a local watchlist, translate the namespace
             if (project != "")
-                item = Project.translateNamespace(project, item);
+                item = Project.TranslateNamespace(project, item);
 
             IDbCommand cmd = dbcon.CreateCommand();
             cmd.CommandText = "SELECT adder, reason, expiry FROM watchlist WHERE article='" + item.Replace("'", "''")
@@ -421,42 +405,38 @@ namespace CVNBot
                 IDataReader idr = cmd.ExecuteReader();
                 if (idr.Read())
                 {
-                    string result = Program.getFormatMessage(16004, item, friendlyProject(project), friendlyList(10),
-                        idr.GetString(0), parseExpiryDate(idr.GetInt64(2)), idr.GetString(1));
+                    string result = Program.GetFormatMessage(16004, item, FriendlyProject(project), FriendlyList(10),
+                        idr.GetString(0), ParseExpiryDate(idr.GetInt64(2)), idr.GetString(1));
                     idr.Close();
                     return result;
                 }
-                else
-                {
-                    idr.Close();
-                    return Program.getFormatMessage(16009, item, friendlyProject(project), friendlyList(10));
-                }
+
+                idr.Close();
+                return Program.GetFormatMessage(16009, item, FriendlyProject(project), FriendlyList(10));
             }
         }
 
-        public string delPageFromWatchlist(string item, string project)
+        public string DelPageFromWatchlist(string item, string project)
         {
-            //First, if this is not a wiktionary, uppercase the first letter
+            // First, if this is not a wiktionary, uppercase the first letter
             if (!project.EndsWith("wiktionary"))
-                item = ucfirst(item);
+                item = Ucfirst(item);
 
-            //If this is a local watchlist, translate the namespace
+            // If this is a local watchlist, translate the namespace
             if (project != "")
-                item = Project.translateNamespace(project, item);
+                item = Project.TranslateNamespace(project, item);
 
-            if (isWatchedArticle(item, project).Success)
+            if (IsWatchedArticle(item, project).Success)
             {
                 IDbCommand dbCmd = dbcon.CreateCommand();
                 dbCmd.CommandText = "DELETE FROM watchlist WHERE article='" + item.Replace("'", "''")
                     + "' AND project='" + project + "'";
                 lock (dbtoken)
                     dbCmd.ExecuteNonQuery();
-                return Program.getFormatMessage(16101, item, friendlyProject(project), friendlyList(10));
+                return Program.GetFormatMessage(16101, item, FriendlyProject(project), FriendlyList(10));
             }
-            else
-            {
-                return Program.getFormatMessage(16009, item, friendlyProject(project), friendlyList(10));
-            }
+
+            return Program.GetFormatMessage(16009, item, FriendlyProject(project), FriendlyList(10));
         }
 
         /// <summary>
@@ -467,7 +447,7 @@ namespace CVNBot
         /// <param name="user">Name of the user (nick) carrying out this operation</param>
         /// <param name="cmdParams">Command parameters</param>
         /// <returns></returns>
-        public string handleListCommand(int listtype, string user, string cmdParams)
+        public string HandleListCommand(int listtype, string user, string cmdParams)
         {
             //cmdParams are given like so:
             //  add Tangotango[ x=96][ r=Terrible vandal]
@@ -507,33 +487,33 @@ namespace CVNBot
                             {
                                 case 0: //Whitelist
                                     Program.Broadcast("WL", "ADD", item, len, reason, user);
-                                    return addUserToList(item, "", UserType.whitelisted, user, reason, len);
+                                    return AddUserToList(item, "", UserType.whitelisted, user, reason, len);
                                 case 1: //Blacklist
                                     Program.Broadcast("BL", "ADD", item, len, reason, user);
-                                    return addUserToList(item, "", UserType.blacklisted, user, reason, len);
+                                    return AddUserToList(item, "", UserType.blacklisted, user, reason, len);
                                 case 6: //Greylist
                                     return "You cannot directly add users to the greylist";
                                 case 2: //Adminlist
                                     if (project == "")
                                         return (string)Program.msgs["20001"];
-                                    return addUserToList(item, project, UserType.admin, user, reason, len);
+                                    return AddUserToList(item, project, UserType.admin, user, reason, len);
                                 case 5: //Botlist
                                     if (project == "")
                                         return (string)Program.msgs["20001"];
-                                    return addUserToList(item, project, UserType.bot, user, reason, len);
+                                    return AddUserToList(item, project, UserType.bot, user, reason, len);
                                 case 10: //Watchlist
                                     if (project == "")
                                         Program.Broadcast("CVP", "ADD", item, len, reason, user);
-                                    return addPageToWatchlist(item, project, user, reason, len);
+                                    return AddPageToWatchlist(item, project, user, reason, len);
                                 case 11: //BNU
                                     Program.Broadcast("BNU", "ADD", item, len, reason, user);
-                                    return addItemToList(item, 11, user, reason, len);
+                                    return AddItemToList(item, 11, user, reason, len);
                                 case 12: //BNA
                                     Program.Broadcast("BNA", "ADD", item, len, reason, user);
-                                    return addItemToList(item, 12, user, reason, len);
+                                    return AddItemToList(item, 12, user, reason, len);
                                 case 20: //BES
                                     Program.Broadcast("BES", "ADD", item, len, reason, user);
-                                    return addItemToList(item, 20, user, reason, len);
+                                    return AddItemToList(item, 20, user, reason, len);
                                 default:
                                     return ""; //Should never be called, but compiler complains otherwise
                             }
@@ -542,34 +522,34 @@ namespace CVNBot
                             {
                                 case 0: //Whitelist
                                     Program.Broadcast("WL", "DEL", item, 0, reason, user);
-                                    return delUserFromList(item, "", UserType.whitelisted);
+                                    return DelUserFromList(item, "", UserType.whitelisted);
                                 case 1: //Blacklist
                                     Program.Broadcast("BL", "DEL", item, 0, reason, user);
-                                    return delUserFromList(item, "", UserType.blacklisted);
+                                    return DelUserFromList(item, "", UserType.blacklisted);
                                 case 6: //Greylist
                                     Program.Broadcast("GL", "DEL", item, 0, reason, user);
-                                    return delUserFromList(item, "", UserType.greylisted);
+                                    return DelUserFromList(item, "", UserType.greylisted);
                                 case 2: //Adminlist
                                     if (project == "")
                                         return (string)Program.msgs["20001"];
-                                    return delUserFromList(item, project, UserType.admin);
+                                    return DelUserFromList(item, project, UserType.admin);
                                 case 5: //Botlist
                                     if (project == "")
                                         return (string)Program.msgs["20001"];
-                                    return delUserFromList(item, project, UserType.bot);
+                                    return DelUserFromList(item, project, UserType.bot);
                                 case 10: //Watchlist
                                     if (project == "")
                                         Program.Broadcast("CVP", "DEL", item, len, reason, user);
-                                    return delPageFromWatchlist(item, project);
+                                    return DelPageFromWatchlist(item, project);
                                 case 11: //BNU
                                     Program.Broadcast("BNU", "DEL", item, 0, reason, user);
-                                    return delItemFromList(item, 11);
+                                    return DelItemFromList(item, 11);
                                 case 12: //BNA
                                     Program.Broadcast("BNA", "DEL", item, 0, reason, user);
-                                    return delItemFromList(item, 12);
+                                    return DelItemFromList(item, 12);
                                 case 20: //BES
                                     Program.Broadcast("BES", "DEL", item, 0, reason, user);
-                                    return delItemFromList(item, 20);
+                                    return DelItemFromList(item, 20);
                                 default:
                                     return ""; //Should never be called, but compiler complains otherwise
                             }
@@ -579,20 +559,20 @@ namespace CVNBot
                                 case 0: //Whitelist
                                 case 1: //Blacklist
                                 case 6: //Greylist
-                                    return showUserOnList(item, "");
+                                    return ShowUserOnList(item, "");
                                 case 2: //Adminlist
                                 case 5: //Botlist
                                     if (project == "")
                                         return (string)Program.msgs["20001"];
-                                    return showUserOnList(item, project);
+                                    return ShowUserOnList(item, project);
                                 case 10: //Watchlist
-                                    return showPageOnWatchlist(item, project);
+                                    return ShowPageOnWatchlist(item, project);
                                 case 11: //BNU
-                                    return showItemOnList(item, 11);
+                                    return ShowItemOnList(item, 11);
                                 case 12: //BNA
-                                    return showItemOnList(item, 12);
+                                    return ShowItemOnList(item, 12);
                                 case 20: //BES
-                                    return showItemOnList(item, 20);
+                                    return ShowItemOnList(item, 20);
                                 default:
                                     return ""; //Should never be called, but compiler complains otherwise
                             }
@@ -600,11 +580,11 @@ namespace CVNBot
                             switch (listtype)
                             {
                                 case 11: //BNU
-                                    return testItemOnList(item, 11);
+                                    return TestItemOnList(item, 11);
                                 case 12: //BNA
-                                    return testItemOnList(item, 12);
+                                    return TestItemOnList(item, 12);
                                 case 20: //BES
-                                    return testItemOnList(item, 20);
+                                    return TestItemOnList(item, 20);
                                 default:
                                     return (string)Program.msgs["20002"];
                             }
@@ -614,14 +594,12 @@ namespace CVNBot
                 }
                 catch (Exception e)
                 {
-                    logger.Error("Error in handleListCommand", e);
+                    logger.Error("Error while handling list command", e);
                     return "Sorry, an error occured while handling the list command: " + e.Message;
                 }
             }
-            else
-            {
-                return (string)Program.msgs["20000"];
-            }
+
+            return (string)Program.msgs["20000"];
         }
 
         /// <summary>
@@ -646,21 +624,21 @@ namespace CVNBot
                     IDataReader idr = cmd.ExecuteReader();
                     while (idr.Read())
                     {
-                        results.Add(Program.getFormatMessage(16002, friendlyProject(idr.GetString(0)), friendlyList(idr.GetInt32(1))
-                            , idr.GetString(2), parseExpiryDate(idr.GetInt64(4)), idr.GetString(3)));
+                        results.Add(Program.GetFormatMessage(16002, FriendlyProject(idr.GetString(0)), FriendlyList(idr.GetInt32(1))
+                            , idr.GetString(2), ParseExpiryDate(idr.GetInt64(4)), idr.GetString(3)));
                     }
                     idr.Close();
                 }
 
                 if (results.Count == 0)
-                    return Program.getFormatMessage(16001, username);
-                else
-                    return Program.getFormatMessage(16000, username, String.Join(" and ", (string[])results.ToArray(typeof(string))));
+                    return Program.GetFormatMessage(16001, username);
+
+                return Program.GetFormatMessage(16000, username, String.Join(" and ", (string[])results.ToArray(typeof(string))));
             }
             catch (Exception e)
             {
                 logger.Error("GlobalIntel failed", e);
-                return Program.getFormatMessage(16003, e.Message);
+                return Program.GetFormatMessage(16003, e.Message);
             }
         }
 
@@ -670,83 +648,84 @@ namespace CVNBot
         /// <param name="username">The username or IP address to classify</param>
         /// <param name="project">The project to look in; leave blank to check global lists</param>
         /// <returns></returns>
-        public UserType classifyEditor(string username, string project)
+        public UserType ClassifyEditor(string username, string project)
         {
-            if(!Program.disableClassifyEditor){
+            if (!Program.disableClassifyEditor)
+            {
 
                 IDbCommand cmd = dbcon.CreateCommand();
 
-	            if (project != "")
-	            {
-	                // First, check if user is an admin or bot on this particular wiki
-	                cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''") + "' AND project = '" + project
-	                    + "' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
-	                lock (dbtoken)
-	                {
-	                    IDataReader idr = cmd.ExecuteReader();
-	                    if (idr.Read())
-	                    {
-	                        switch (idr.GetInt32(0))
-	                        {
-	                            case 2:
-	                                idr.Close();
-	                                return UserType.admin;
-	                            case 5:
-	                                idr.Close();
-	                                return UserType.bot;
-	                        }
-	                    }
-	                    idr.Close();
-	                }
-	            }
+                if (project != "")
+                {
+                    // First, check if user is an admin or bot on this particular wiki
+                    cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''") + "' AND project = '" + project
+                        + "' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+                    lock (dbtoken)
+                    {
+                        IDataReader idr = cmd.ExecuteReader();
+                        if (idr.Read())
+                        {
+                            switch (idr.GetInt32(0))
+                            {
+                                case 2:
+                                    idr.Close();
+                                    return UserType.admin;
+                                case 5:
+                                    idr.Close();
+                                    return UserType.bot;
+                            }
+                        }
+                        idr.Close();
+                    }
+                }
 
-	            // Is user globally greylisted? (This takes precedence)
-	            cmd.CommandText = "SELECT reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
-	                + "' AND project = '' AND type = '6' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
-	            lock (dbtoken)
-	            {
-	                IDataReader idr3 = cmd.ExecuteReader();
-	                if (idr3.Read())
-	                {
-	                    idr3.Close();
-	                    return UserType.greylisted;
-	                }
-	                idr3.Close();
-	            }
+                // Is user globally greylisted? (This takes precedence)
+                cmd.CommandText = "SELECT reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
+                    + "' AND project = '' AND type = '6' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+                lock (dbtoken)
+                {
+                    IDataReader idr3 = cmd.ExecuteReader();
+                    if (idr3.Read())
+                    {
+                        idr3.Close();
+                        return UserType.greylisted;
+                    }
+                    idr3.Close();
+                }
 
-	            // Next, if we're still here, check if user is globally whitelisted or blacklisted
-	            cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''")
-	                + "' AND project = '' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
-	            lock (dbtoken)
-	            {
-	                IDataReader idr2 = cmd.ExecuteReader();
-	                if (idr2.Read())
-	                {
-	                    switch (idr2.GetInt32(0))
-	                    {
-	                        case 0:
-	                            idr2.Close();
-	                            return UserType.whitelisted;
-	                        case 1:
-	                            idr2.Close();
-	                            return UserType.blacklisted;
-	                    }
-	                }
-	                idr2.Close();
-	            }
+                // Next, if we're still here, check if user is globally whitelisted or blacklisted
+                cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''")
+                    + "' AND project = '' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+                lock (dbtoken)
+                {
+                    IDataReader idr2 = cmd.ExecuteReader();
+                    if (idr2.Read())
+                    {
+                        switch (idr2.GetInt32(0))
+                        {
+                            case 0:
+                                idr2.Close();
+                                return UserType.whitelisted;
+                            case 1:
+                                idr2.Close();
+                                return UserType.blacklisted;
+                        }
+                    }
+                    idr2.Close();
+                }
             }
 
             // Finally, if we're still here, user is either user or anon
             if ((ipv4.Match(username).Success) || (ipv6.Match(username).Success))
                 return UserType.anon;
-            else
-                return UserType.user;
+
+            return UserType.user;
         }
 
-        public listMatch isWatchedArticle(string title, string project)
+        public ListMatch IsWatchedArticle(string title, string project)
         {
-            listMatch lm = new listMatch();
-            lm.matchedItem = ""; //Unused
+            ListMatch lm = new ListMatch();
+            lm.matchedItem = ""; // Unused
             IDbCommand cmd = dbcon.CreateCommand();
 
             cmd.CommandText = "SELECT reason FROM watchlist WHERE article='" + title.Replace("'", "''")
@@ -772,14 +751,16 @@ namespace CVNBot
             return lm;
         }
 
-        public bool matchesPattern(string input, string pattern) {
+        public bool MatchesPattern(string input, string pattern)
+        {
             try
             {
                 if (Regex.IsMatch(input, pattern, RegexOptions.IgnoreCase))
                 {
                     return true;
                 }
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 logger.Warn("Found invalid pattern: " + pattern, ex);
                 Program.BroadcastDD("ERROR", "LMGNR_REGEX", ex.Message, input);
@@ -788,9 +769,9 @@ namespace CVNBot
             return false;
         }
 
-        public listMatch matchesList(string title, int list)
+        public ListMatch MatchesList(string title, int list)
         {
-            listMatch lm = new listMatch();
+            ListMatch lm = new ListMatch();
             IDbCommand cmd = dbcon.CreateCommand();
 
             cmd.CommandText = "SELECT item, reason FROM items WHERE itemtype='" + list.ToString() + "' AND ((expiry > '"
@@ -800,7 +781,7 @@ namespace CVNBot
                 IDataReader idr = cmd.ExecuteReader();
                 while (idr.Read())
                 {
-                    if (matchesPattern(title, idr.GetString(0)))
+                    if (MatchesPattern(title, idr.GetString(0)))
                     {
                         lm.Success = true;
                         lm.matchedItem = idr.GetString(0);
@@ -819,19 +800,19 @@ namespace CVNBot
             return lm;
         }
 
-        string testItemOnList(string title, int list)
+        string TestItemOnList(string title, int list)
         {
-            listMatch lm = matchesList(title, list);
+            ListMatch lm = MatchesList(title, list);
             if (lm.Success)
-                return Program.getFormatMessage(16200, title, lm.matchedItem, friendlyList(list), lm.matchedReason);
-            else
-                return Program.getFormatMessage(16201, title, friendlyList(list));
+                return Program.GetFormatMessage(16200, title, lm.matchedItem, FriendlyList(list), lm.matchedReason);
+
+            return Program.GetFormatMessage(16201, title, FriendlyList(list));
         }
 
         /// <summary>
         /// Downloads a list of admins/bots from wiki and adds them to the database (Run this in a separate thread)
         /// </summary>
-        void addGroupToList()
+        void AddGroupToList()
         {
             string projectName = currentGetThreadWiki;
             currentGetThreadWiki = "";
@@ -855,7 +836,7 @@ namespace CVNBot
                 lock (dbtoken)
                 {
 
-                    string list = CVNBotUtils.getRawDocument("http://" + projectName
+                    string list = CVNBotUtils.GetRawDocument("http://" + projectName
                         + ".org/w/index.php?title=Special:Listusers&group=" + getGroup + "&limit=5000&offset=0");
 
                     //Now parse the list:
@@ -864,7 +845,7 @@ namespace CVNBot
                     Match lusers = adminLine.Match(sr.Substring(0, sr.IndexOf("</ul>")));
                     while (lusers.Success)
                     {
-                        addUserToList(lusers.Groups[1].Captures[0].Value, projectName, getGroupUT, "CVNBot"
+                        AddUserToList(lusers.Groups[1].Captures[0].Value, projectName, getGroupUT, "CVNBot"
                             , "Auto-download from wiki", 0);
                         lusers = lusers.NextMatch();
                     }
@@ -877,7 +858,7 @@ namespace CVNBot
             }
         }
 
-        public string configGetAdmins(string cmdParams)
+        public string ConfigGetAdmins(string cmdParams)
         {
             if (currentGetThreadWiki != "")
                 return "The userlist fetcher is currently off on another errand.";
@@ -886,14 +867,14 @@ namespace CVNBot
             {
                 currentGetThreadWiki = cmdParams;
                 currentGetThreadMode = "sysop";
-                new Thread(new ThreadStart(addGroupToList)).Start();
+                new Thread(new ThreadStart(AddGroupToList)).Start();
                 return "Started admin userlist fetcher in separate thread";
             }
-            else
-                return "Project is unknown: " + cmdParams;
+
+            return "Project is unknown: " + cmdParams;
         }
 
-        public string configGetBots(string cmdParams)
+        public string ConfigGetBots(string cmdParams)
         {
             if (currentGetThreadWiki != "")
                 return "The userlist fetcher is currently off on another errand";
@@ -902,11 +883,11 @@ namespace CVNBot
             {
                 currentGetThreadWiki = cmdParams;
                 currentGetThreadMode = "bot";
-                new Thread(new ThreadStart(addGroupToList)).Start();
+                new Thread(new ThreadStart(AddGroupToList)).Start();
                 return "Started bot userlist fetcher in separate thread";
             }
-            else
-                return "Project is unknown: " + cmdParams;
+
+            return "Project is unknown: " + cmdParams;
         }
 
         public void BatchGetAllAdminsAndBots()
@@ -931,7 +912,7 @@ namespace CVNBot
                     // Get admins
                     currentGetThreadWiki = (string)de.Key;
                     currentGetThreadMode = "sysop";
-                    Thread myThread = new Thread(new ThreadStart(addGroupToList));
+                    Thread myThread = new Thread(new ThreadStart(AddGroupToList));
                     myThread.Start();
                     while (myThread.IsAlive)
                         Thread.Sleep(0);
@@ -941,7 +922,7 @@ namespace CVNBot
                     //Get bots
                     currentGetThreadWiki = (string)de.Key;
                     currentGetThreadMode = "bot";
-                    Thread myThread2 = new Thread(new ThreadStart(addGroupToList));
+                    Thread myThread2 = new Thread(new ThreadStart(AddGroupToList));
                     myThread2.Start();
                     while (myThread2.IsAlive)
                         Thread.Sleep(0);
@@ -966,13 +947,13 @@ namespace CVNBot
         /// </summary>
         /// <param name="cmdParams">The name of the project. Remember, it might not actually exist now.</param>
         /// <returns></returns>
-        public string purgeWikiData(string cmdParams)
+        public string PurgeWikiData(string cmdParams)
         {
             if (cmdParams.Contains("'"))
                 return "Sorry, invalid wiki name.";
 
             int total = 0;
-            IDbConnection timdbcon = (IDbConnection)new SqliteConnection(connectionString);
+            IDbConnection timdbcon = new SqliteConnection(connectionString);
             timdbcon.Open();
             IDbCommand timcmd = timdbcon.CreateCommand();
             lock (dbtoken)
@@ -984,7 +965,7 @@ namespace CVNBot
                 timdbcon.Close();
             }
             timdbcon = null;
-            string resultStr =  "Threw away " + total.ToString() + " items that were related to " + cmdParams;
+            string resultStr = "Threw away " + total.ToString() + " items that were related to " + cmdParams;
             logger.Info(resultStr);
             return resultStr;
         }

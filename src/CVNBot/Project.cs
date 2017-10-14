@@ -1,34 +1,19 @@
 using System;
 using System.Collections;
-using System.Text;
 using System.IO;
-using System.Xml;
 using System.Text.RegularExpressions;
+using System.Xml;
 using log4net;
 
 namespace CVNBot
 {
     class Project
     {
-        private static ILog logger = LogManager.GetLogger("CVNBot.Project");
+        static ILog logger = LogManager.GetLogger("CVNBot.Project");
 
         public string projectName;
         public string interwikiLink;
         public string rooturl; // Format: http://en.wikipedia.org/
-
-        string restoreRegex;
-        string deleteRegex;
-        string protectRegex;
-        string unprotectRegex;
-        string modifyprotectRegex;
-        string uploadRegex;
-        string moveRegex;
-        string moveredirRegex;
-        string blockRegex;
-        string unblockRegex;
-        string reblockRegex;
-        string autosummBlank;
-        string autosummReplace;
 
         public Regex rrestoreRegex;
         public Regex rdeleteRegex;
@@ -43,21 +28,33 @@ namespace CVNBot
         public Regex rreblockRegex;
         public Regex rautosummBlank;
         public Regex rautosummReplace;
-
-        public String SpecialLogRegex;
         public Regex rSpecialLogRegex;
-
         public Regex rCreate2Regex;
 
-        static char[] rechars = {'\\', '.' ,'(', ')', '[' , ']' ,'^' ,'*' ,'+' ,'?' ,'{' ,'}' ,'|' };
-
         public Hashtable namespaces;
+
+        string restoreRegex;
+        string deleteRegex;
+        string protectRegex;
+        string unprotectRegex;
+        string modifyprotectRegex;
+        string uploadRegex;
+        string moveRegex;
+        string moveredirRegex;
+        string blockRegex;
+        string unblockRegex;
+        string reblockRegex;
+        string autosummBlank;
+        string autosummReplace;
+        string specialLogRegex;
+
+        static char[] rechars = {'\\', '.' ,'(', ')', '[' , ']' ,'^' ,'*' ,'+' ,'?' ,'{' ,'}' ,'|' };
         string snamespaces;
 
         /// <summary>
         /// Generates Regex objects from regex strings in class. Always generate the namespace list before calling this!
         /// </summary>
-        void generateRegexen()
+        void GenerateRegexen()
         {
             rrestoreRegex = new Regex(restoreRegex);
             rdeleteRegex = new Regex(deleteRegex);
@@ -86,12 +83,12 @@ namespace CVNBot
             rautosummBlank = new Regex(autosummBlank);
             rautosummReplace = new Regex(autosummReplace);
 
-            rSpecialLogRegex = new Regex(SpecialLogRegex);
+            rSpecialLogRegex = new Regex(specialLogRegex);
 
             rCreate2Regex = new Regex( namespaces["2"]+@":([^:]+)" );
         }
 
-        public string dumpProjectDetails()
+        public string DumpProjectDetails()
         {
             StringWriter output = new StringWriter();
 
@@ -101,7 +98,7 @@ namespace CVNBot
             dump.WriteElementString("projectName", projectName);
             dump.WriteElementString("interwikiLink", interwikiLink);
             dump.WriteElementString("rooturl", rooturl);
-            dump.WriteElementString("speciallog", SpecialLogRegex);
+            dump.WriteElementString("speciallog", specialLogRegex);
             dump.WriteElementString("namespaces", snamespaces.Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", ""));
 
             dump.WriteElementString("restoreRegex", restoreRegex);
@@ -124,7 +121,7 @@ namespace CVNBot
             return output.ToString();
         }
 
-        public void readProjectDetails(string xml)
+        public void ReadProjectDetails(string xml)
         {
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(xml);
@@ -136,7 +133,7 @@ namespace CVNBot
                     case "projectName": projectName = parentnode.ChildNodes[i].InnerText; break;
                     case "interwikiLink": interwikiLink = parentnode.ChildNodes[i].InnerText; break;
                     case "rooturl": rooturl = parentnode.ChildNodes[i].InnerText; break;
-                    case "speciallog": SpecialLogRegex = parentnode.ChildNodes[i].InnerText; break;
+                    case "speciallog": specialLogRegex = parentnode.ChildNodes[i].InnerText; break;
                     case "namespaces": snamespaces = parentnode.ChildNodes[i].InnerText; break;
 
                     case "restoreRegex": restoreRegex = parentnode.ChildNodes[i].InnerText; break;
@@ -157,16 +154,16 @@ namespace CVNBot
             // Overwrite in case non-HTTPS url is stored
             rooturl = Regex.Replace(rooturl, "^http:", "https:");
             // Always get namespaces before generating regexen
-            getNamespaces(true);
+            GetNamespaces(true);
             // Regenerate regexen
-            generateRegexen();
+            GenerateRegexen();
         }
 
-        void getNamespaces(bool snamespacesAlreadySet)
+        void GetNamespaces(bool snamespacesAlreadySet)
         {
             if (!snamespacesAlreadySet)
             {
-                snamespaces = CVNBotUtils.getRawDocument(rooturl + "w/api.php?action=query&meta=siteinfo&siprop=namespaces&format=xml");
+                snamespaces = CVNBotUtils.GetRawDocument(rooturl + "w/api.php?action=query&meta=siteinfo&siprop=namespaces&format=xml");
                 if (snamespaces == "")
                     throw new Exception("Can't load list of namespaces from " + rooturl);
             }
@@ -185,47 +182,44 @@ namespace CVNBot
             logger.Info("getNamespaces: "+namespacesLogline);
         }
 
-        public void retrieveWikiDetails()
+        public void RetrieveWikiDetails()
         {
             //Find out what the localized Special: (ID -1) namespace is, and create a regex
-            getNamespaces(false);
+            GetNamespaces(false);
 
-            SpecialLogRegex = namespaces["-1"] + @":.+?/(.+)";
+            specialLogRegex = namespaces["-1"] + @":.+?/(.+)";
 
             // Location of message, number of required parameters, reference to regex, allow lazy
             // Retrieve messages for all the required events and generate regexen for them
 
-            generateRegex("MediaWiki:Undeletedarticle", 1, ref restoreRegex, false);
-            generateRegex("MediaWiki:Deletedarticle", 1, ref deleteRegex, false);
-            generateRegex("MediaWiki:Protectedarticle", 1, ref protectRegex, false);
-            generateRegex("MediaWiki:Unprotectedarticle", 1, ref unprotectRegex, false);
-            generateRegex("MediaWiki:Modifiedarticleprotection", 1, ref modifyprotectRegex, true);
-            generateRegex("MediaWiki:Uploadedimage", 0, ref uploadRegex, false);
-            generateRegex("MediaWiki:1movedto2", 2, ref moveRegex, false);
-            generateRegex("MediaWiki:1movedto2_redir", 2, ref moveredirRegex, false);
+            GenerateRegex("MediaWiki:Undeletedarticle", 1, ref restoreRegex, false);
+            GenerateRegex("MediaWiki:Deletedarticle", 1, ref deleteRegex, false);
+            GenerateRegex("MediaWiki:Protectedarticle", 1, ref protectRegex, false);
+            GenerateRegex("MediaWiki:Unprotectedarticle", 1, ref unprotectRegex, false);
+            GenerateRegex("MediaWiki:Modifiedarticleprotection", 1, ref modifyprotectRegex, true);
+            GenerateRegex("MediaWiki:Uploadedimage", 0, ref uploadRegex, false);
+            GenerateRegex("MediaWiki:1movedto2", 2, ref moveRegex, false);
+            GenerateRegex("MediaWiki:1movedto2_redir", 2, ref moveredirRegex, false);
             // blockRegex is nonStrict because some wikis override the message without including $2 (block length).
             // RCReader will fall back to "24 hours" if this is the case.
             // Some newer messages (e.g. https://lmo.wikipedia.org/wiki/MediaWiki:Blocklogentry) have a third item,
             // $3 ("anononly,nocreate,autoblock"). This may conflict with $2 detection.
             // Trying (changed 2 -> 3) to see if length of time will be correctly detected using just this method:
-            generateRegex("MediaWiki:Blocklogentry", 3, ref blockRegex, true);
-            generateRegex("MediaWiki:Unblocklogentry", 0, ref unblockRegex, false);
-            generateRegex("MediaWiki:Reblock-logentry", 3, ref reblockRegex, false);
-            generateRegex("MediaWiki:Autosumm-blank", 0, ref autosummBlank, false);
+            GenerateRegex("MediaWiki:Blocklogentry", 3, ref blockRegex, true);
+            GenerateRegex("MediaWiki:Unblocklogentry", 0, ref unblockRegex, false);
+            GenerateRegex("MediaWiki:Reblock-logentry", 3, ref reblockRegex, false);
+            GenerateRegex("MediaWiki:Autosumm-blank", 0, ref autosummBlank, false);
             // autosummReplace is nonStrict because some large wikis don't include the "profanity" in their
             // messages (privacy measure?)
-            generateRegex("MediaWiki:Autosumm-replace", 1, ref autosummReplace, true);
+            GenerateRegex("MediaWiki:Autosumm-replace", 1, ref autosummReplace, true);
 
-            generateRegexen();
+            GenerateRegexen();
         }
 
-        /*
-         * Equivalent to function getre in RCParser.py
-         */
-        void generateRegex(string mwMessageTitle, int reqCount, ref string destRegex, bool nonStrict)
+        void GenerateRegex(string mwMessageTitle, int reqCount, ref string destRegex, bool nonStrict)
         {
             //Get raw wikitext
-            string mwMessage = CVNBotUtils.getRawDocument(rooturl + "w/index.php?title=" + mwMessageTitle + "&action=raw&usemsgcache=yes");
+            string mwMessage = CVNBotUtils.GetRawDocument(rooturl + "w/index.php?title=" + mwMessageTitle + "&action=raw&usemsgcache=yes");
 
             //Now gently coax that into a regex
             foreach (char c in rechars)
@@ -248,7 +242,7 @@ namespace CVNBot
 
             try
             {
-                new Regex(mwMessage);
+                Regex.Match("", mwMessage);
             }
             catch (Exception e)
             {
@@ -274,24 +268,21 @@ namespace CVNBot
         /// </summary>
         /// <param name="pageTitle">A page title, such as "Special:Helloworld" and "Helloworld"</param>
         /// <returns></returns>
-        public int detectNamespace(string pageTitle)
+        public int DetectNamespace(string pageTitle)
         {
             if (pageTitle.Contains(":"))
             {
                 string nsLocal = pageTitle.Substring(0, pageTitle.IndexOf(':'));
-                //Try to locate value (As fast as ContainsValue())
+                // Try to locate value (As fast as ContainsValue())
                 foreach (DictionaryEntry de in this.namespaces)
                 {
                     if ((string)de.Value == nsLocal)
                         return Convert.ToInt32(de.Key);
                 }
-                //If we're here (couldn't find, then probably not a namespace)
-                return 0;
             }
-            else
-            {
-                return 0; //Main namespace
-            }
+            // If no match for the prefix found, or if no colon,
+            // assume main namespace
+            return 0;
         }
 
         /// <summary>
@@ -299,7 +290,7 @@ namespace CVNBot
         /// </summary>
         /// <param name="originalTitle">Title in original (localized) language</param>
         /// <returns></returns>
-        public static string translateNamespace(string project, string originalTitle)
+        public static string TranslateNamespace(string project, string originalTitle)
         {
             if (originalTitle.Contains(":"))
             {
@@ -309,7 +300,7 @@ namespace CVNBot
 		        // in the watchlist and items database. (ie. don't change Image to File unless Image is broken)
 		        // When they do need to be changed, make sure to make note in the RELEASE-NOTES that databases
 		        // should be updated manually to keep all regexes and watchlists functional!
-                switch (((Project)Program.prjlist[project]).detectNamespace(originalTitle))
+                switch (((Project)Program.prjlist[project]).DetectNamespace(originalTitle))
                 {
                     case -2:
                         nsEnglish = "Media";
@@ -366,11 +357,12 @@ namespace CVNBot
                         return originalTitle;
                 }
 
-                //If we're still here, then nsEnglish has been set
+                // If we're still here, then nsEnglish has been set
                 return nsEnglish + originalTitle.Substring(originalTitle.IndexOf(':'));
             }
-            else
-                return originalTitle; //Mainspace articles do not need translation
+
+			// Mainspace articles do not need translation
+            return originalTitle;
         }
     }
 }

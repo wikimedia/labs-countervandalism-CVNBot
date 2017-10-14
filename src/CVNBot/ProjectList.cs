@@ -1,16 +1,15 @@
 using System;
 using System.Collections;
-using System.Text;
-using System.Xml;
 using System.IO;
 using System.Threading;
+using System.Xml;
 using log4net;
 
 namespace CVNBot
 {
     class ProjectList : SortedList
     {
-        private ILog logger = LogManager.GetLogger("CVNBot.ProjectList");
+        ILog logger = LogManager.GetLogger("CVNBot.ProjectList");
 
         public string fnProjectsXML;
         public string currentBatchReloadChannel = "";
@@ -18,7 +17,7 @@ namespace CVNBot
         /// <summary>
         /// Dumps all Projects to an XML file (Projects.xml)
         /// </summary>
-        void dumpToFile()
+        void DumpToFile()
         {
             logger.Info("Saving configuration to " + fnProjectsXML);
             StreamWriter sw = new StreamWriter(fnProjectsXML);
@@ -26,8 +25,8 @@ namespace CVNBot
             foreach (DictionaryEntry dicent in this)
             {
                 Project prj = (Project)dicent.Value;
-                //Get each Project's details and append it to the XML file
-                sw.WriteLine(prj.dumpProjectDetails());
+                // Get each Project's details and append it to the XML file
+                sw.WriteLine(prj.DumpProjectDetails());
             }
             sw.WriteLine("</projects>");
             sw.Flush();
@@ -37,7 +36,7 @@ namespace CVNBot
         /// <summary>
         /// Loads and initializes Projects from an XML file (Projects.xml)
         /// </summary>
-        public void loadFromFile()
+        public void LoadFromFile()
         {
             logger.Info("Reading projects from " + fnProjectsXML);
             XmlDocument doc = new XmlDocument();
@@ -47,8 +46,7 @@ namespace CVNBot
             {
                 string prjDefinition = "<project>" + parentnode.ChildNodes[i].InnerXml + "</project>";
                 Project prj = new Project();
-                prj.readProjectDetails(prjDefinition);
-                //logger.Info("Registering " + prj.projectName);
+                prj.ReadProjectDetails(prjDefinition);
                 this.Add(prj.projectName, prj);
             }
         }
@@ -58,20 +56,20 @@ namespace CVNBot
         /// </summary>
         /// <param name="projectName">Name of the project (e.g., en.wikipedia) to add</param>
         /// <param name="interwiki">Interwiki link (e.g., it:s: -- can be empty string)</param>
-        public void addNewProject(string projectName, string interwiki)
+        public void AddNewProject(string projectName, string interwiki)
         {
             if (interwiki == "")
             {
-                //Try to guess interwiki
+                // Try to guess interwiki
 
                 if (!projectName.Contains("."))
                 {
-                    //Cannot guess; probably something like "mediawiki"
+                    // Cannot guess; probably something like "mediawiki"
                     throw new Exception((String)Program.msgs["20004"]);
                 }
 
-                string langPortion = projectName.Split(new char[1] { '.' }, 2)[0];
-                string projPortion = projectName.Split(new char[1] { '.' }, 2)[1];
+                string langPortion = projectName.Split(new char[] { '.' }, 2)[0];
+                string projPortion = projectName.Split(new char[] { '.' }, 2)[1];
                 switch (projPortion)
                 {
                     case "wikipedia":
@@ -101,51 +99,51 @@ namespace CVNBot
             }
 
             if (this.ContainsKey(projectName))
-                throw new Exception(Program.getFormatMessage(16400, projectName));
+                throw new Exception(Program.GetFormatMessage(16400, projectName));
 
             logger.Info("Registering new project " + projectName + " with interwiki " + interwiki);
             Project prj = new Project();
             prj.projectName = projectName;
             prj.interwikiLink = interwiki;
             prj.rooturl = "https://" + projectName + ".org/";
-            prj.retrieveWikiDetails();
+            prj.RetrieveWikiDetails();
             this.Add(projectName, prj);
-            //Join the new channel:
+            // Join the new channel:
             logger.Info("Joining #" + projectName);
             Program.rcirc.rcirc.RfcJoin("#" + projectName);
 
-            //Dump new settings:
-            dumpToFile();
+            // Dump new settings:
+            DumpToFile();
         }
 
         /// <summary>
         /// Removes a project from the ProjectList
         /// </summary>
         /// <param name="projectName">Name of the project to remove</param>
-        public void deleteProject(string projectName)
+        public void DeleteProject(string projectName)
         {
             if (!this.ContainsKey(projectName))
             {
-                throw new Exception(Program.getFormatMessage(16401, projectName));
+                throw new Exception(Program.GetFormatMessage(16401, projectName));
             }
 
             logger.Info("Deleting existing project " + projectName);
 
-            //Leave monitoring channel:
+            // Leave monitoring channel:
             logger.Info("Leaving #" + projectName);
             Program.rcirc.rcirc.RfcPart("#" + projectName, "No longer monitored");
 
-            //Wait for existing RCEvents in separate thread to go through:
+            // Wait for existing RCEvents in separate thread to go through:
             Thread.Sleep(4000);
 
-            //Finally, remove from list:
+            // Finally, remove from list:
             this.Remove(projectName);
 
-            //Dump new settings:
-            dumpToFile();
+            // Dump new settings:
+            DumpToFile();
         }
 
-        public void reloadAllWikis()
+        public void ReloadAllWikis()
         {
             Thread.CurrentThread.Name = "ReloadAll";
 
@@ -155,12 +153,12 @@ namespace CVNBot
             foreach (DictionaryEntry dicent in this)
             {
                 Project prj = (Project)dicent.Value;
-                prj.retrieveWikiDetails();
+                prj.RetrieveWikiDetails();
                 Thread.Sleep(600);
             }
 
-            //Dump new settings:
-            dumpToFile();
+            // Dump new settings:
+            DumpToFile();
 
             Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel
                         , "Reloaded all wikis. Phew, give the Wikimedia servers a break :(", false, false);

@@ -13,7 +13,7 @@ namespace CVNBot
         static Regex rStripper = new Regex(@"(,|and)");
         static Regex rSpaces = new Regex(@"\s{2,}");
         static Regex rfindValues = new Regex(@"(\d+) (year|month|fortnight|week|day|hour|minute|min|second|sec)s?");
-        //TODO: Something is still wrong here, some exprs show up as 3 instead of 3 day(s)
+        // TODO: Something is still wrong here, some exprs show up as 3 instead of 3 day(s)
 
         /// <summary>
         /// Like PHP's str_split() function, splits a string into an array of chunks
@@ -21,7 +21,7 @@ namespace CVNBot
         /// <param name="input">String to split</param>
         /// <param name="chunkLen">Maximum length of each chunk</param>
         /// <returns></returns>
-        public static ArrayList stringSplit(string input, int chunkLen)
+        public static ArrayList StringSplit(string input, int chunkLen)
         {
             ArrayList output = new ArrayList();
 
@@ -57,7 +57,7 @@ namespace CVNBot
             parseStr = rStripper.Replace(parseStr, "");
             parseStr = rSpaces.Replace(parseStr, " ");
 
-            //Handle specials here
+            // Handle specials here
             switch (parseStr)
             {
                 case "indefinite":
@@ -67,7 +67,7 @@ namespace CVNBot
                     return 24 * 3600;
             }
 
-            //Now for some real parsing
+            // Now for some real parsing
             Double sumSeconds = 0;
             MatchCollection mc = rfindValues.Matches(parseStr);
 
@@ -76,38 +76,41 @@ namespace CVNBot
                 switch (m.Groups[2].Captures[0].Value)
                 {
                     case "year":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 8760 * 3600; //365 days
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 8760 * 3600; // 365 days
                         break;
                     case "month":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 732 * 3600; //30.5 days
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 732 * 3600; // 30.5 days
                         break;
                     case "fortnight":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 336 * 3600; //14 days
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 336 * 3600; // 14 days
                         break;
                     case "week":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 168 * 3600; //7 days
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 168 * 3600; // 7 days
                         break;
                     case "day":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 24 * 3600; //24 hours
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 24 * 3600; // 24 hours
                         break;
                     case "hour":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 3600; //1 hour
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 3600; // 1 hour
                         break;
                     case "minute":
                     case "min":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 60; //60 seconds
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 60; // 60 seconds
                         break;
                     case "second":
                     case "sec":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value); //One second
+                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value); // One second
                         break;
                 }
             }
 
-            if (sumSeconds == 0)
+            // Round the double
+            Int32 seconds = Convert.ToInt32(sumSeconds);
+
+            if (seconds == 0)
                 return defaultLen;
 
-            return Convert.ToInt32(sumSeconds);
+            return seconds;
         }
 
         /// <summary>
@@ -115,7 +118,7 @@ namespace CVNBot
         /// </summary>
         /// <param name="url">Location of the resource</param>
         /// <returns></returns>
-        public static string getRawDocument(string url)
+        public static string GetRawDocument(string url)
         {
             try
             {
@@ -145,7 +148,7 @@ namespace CVNBot
         /// <param name="newChar">The character to insert</param>
         /// <param name="maxChars">The maximum number of instances to replace</param>
         /// <returns></returns>
-        public static string replaceStrMax(string input, char oldChar, char newChar, int maxChars)
+        public static string ReplaceStrMax(string input, char oldChar, char newChar, int maxChars)
         {
             for (int i = 1; i <= maxChars; i++)
             {
@@ -162,7 +165,7 @@ namespace CVNBot
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        public static string wikiEncode(string input)
+        public static string WikiEncode(string input)
         {
             return HttpUtility.UrlEncode(input.Replace(' ', '_')).Replace("(","%28").Replace(")","%29").Replace("!","%21");
         }
@@ -172,12 +175,12 @@ namespace CVNBot
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        public static string rootUrl(string input)
+        public static string RootUrl(string input)
         {
             if (Program.forceHttps)
                 return Regex.Replace(input, "^http:", "https:");
-            else
-                return input;
+
+            return input;
         }
     }
 }

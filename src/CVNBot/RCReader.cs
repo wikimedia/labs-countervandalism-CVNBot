@@ -1,10 +1,8 @@
 using System;
-using System.Collections;
-using System.Collections.Specialized;
-using Meebey.SmartIrc4net;
-using System.Threading;
 using System.Text.RegularExpressions;
+using System.Threading;
 using log4net;
+using Meebey.SmartIrc4net;
 
 namespace CVNBot
 {
@@ -42,14 +40,14 @@ namespace CVNBot
         public DateTime lastMessage = DateTime.Now;
 
         // RC parsing regexen
-        static Regex stripColours = new Regex(@"\x04\d{0,2}\*?");
-        static Regex stripColours2 = new Regex(@"\x03\d{0,2}");
-        static Regex stripBold = new Regex(@"\x02");
-        static Regex rszDiff = new Regex(@"\(([\+\-])([0-9]+)\)");
+        static readonly Regex stripColours = new Regex(@"\x04\d{0,2}\*?");
+        static readonly Regex stripColours2 = new Regex(@"\x03\d{0,2}");
+        static readonly Regex stripBold = new Regex(@"\x02");
+        static readonly Regex rszDiff = new Regex(@"\(([\+\-])([0-9]+)\)");
 
-        private static ILog logger = LogManager.GetLogger("CVNBot.RCReader");
+        static readonly ILog logger = LogManager.GetLogger("CVNBot.RCReader");
 
-        public void initiateConnection()
+        public void InitiateConnection()
         {
             Thread.CurrentThread.Name = "RCReader";
 
@@ -60,8 +58,8 @@ namespace CVNBot
             rcirc.AutoReconnect = true;
             rcirc.AutoRejoin = true;
 
-            rcirc.OnChannelMessage += new IrcEventHandler(rcirc_OnChannelMessage);
-            rcirc.OnConnected += new EventHandler(rcirc_OnConnected);
+            rcirc.OnChannelMessage += new IrcEventHandler(Rcirc_OnChannelMessage);
+            rcirc.OnConnected += new EventHandler(Rcirc_OnConnected);
 
             try
             {
@@ -95,12 +93,12 @@ namespace CVNBot
             }
         }
 
-        void rcirc_OnConnected(object sender, EventArgs e)
+        void Rcirc_OnConnected(object sender, EventArgs e)
         {
             logger.Info("Connected to RC feed");
         }
 
-        void rcirc_OnChannelMessage(object sender, IrcEventArgs e)
+        void Rcirc_OnChannelMessage(object sender, IrcEventArgs e)
         {
             lastMessage = DateTime.Now;
 
@@ -121,8 +119,8 @@ namespace CVNBot
             // 13> #003
             // 14> #00310 created new account User:Upendhare
             // 15> #003
-            string strippedmsg = stripBold.Replace(stripColours.Replace(CVNBotUtils.replaceStrMax(e.Data.Message, '\x03', '\x04', 14), "\x03"), "");
-            string[] fields = strippedmsg.Split(new char[1] { '\x03' }, 15);
+            string strippedmsg = stripBold.Replace(stripColours.Replace(CVNBotUtils.ReplaceStrMax(e.Data.Message, '\x03', '\x04', 14), "\x03"), "");
+            string[] fields = strippedmsg.Split(new char[] { '\x03' }, 15);
             if (fields.Length == 15)
             {
                 if (fields[14].EndsWith("\x03"))
@@ -141,26 +139,25 @@ namespace CVNBot
                 rce.blockLength = "";
                 rce.movedTo = "";
                 rce.project = e.Data.Channel.Substring(1);
-                rce.title = Project.translateNamespace(rce.project, fields[2]);
-                rce.url = CVNBotUtils.rootUrl(fields[6]);
+                rce.title = Project.TranslateNamespace(rce.project, fields[2]);
+                rce.url = CVNBotUtils.RootUrl(fields[6]);
                 rce.user = fields[10];
-                //At the moment, fields[14] contains IRC colour codes. For plain edits, remove just the \x03's. For logs, remove using the regex.
+                // At the moment, fields[14] contains IRC colour codes. For plain edits, remove just the \x03's. For logs, remove using the regex.
                 Match titlemo = ((Project)Program.prjlist[rce.project]).rSpecialLogRegex.Match(fields[2]);
                 if (!titlemo.Success)
                 {
-                    //This is a regular edit
+                    // This is a regular edit
                     rce.minor = fields[4].Contains("M");
                     rce.newpage = fields[4].Contains("N");
                     rce.botflag = fields[4].Contains("B");
-                    //logger.Info("DEBUG: fields[4]:" + fields[4]);
                     rce.eventtype = RCEvent.EventType.edit;
                     rce.comment = fields[14].Replace("\x03", "");
                 }
                 else
                 {
-                    //This is a log edit; check for type
+                    // This is a log edit; check for type
                     string logType = titlemo.Groups[1].Captures[0].Value;
-                    //Fix comments
+                    // Fix comments
                     rce.comment = stripColours2.Replace(fields[14], "");
                     switch (logType)
                     {
@@ -272,7 +269,7 @@ namespace CVNBot
                             if (pm.Success)
                             {
                                 rce.eventtype = RCEvent.EventType.protect;
-                                rce.title = Project.translateNamespace(rce.project, pm.Groups["item1"].Captures[0].Value);
+                                rce.title = Project.TranslateNamespace(rce.project, pm.Groups["item1"].Captures[0].Value);
                                 try
                                 {
                                     rce.comment = pm.Groups["comment"].Captures[0].Value;
@@ -282,7 +279,7 @@ namespace CVNBot
                             else if (modpm.Success)
                             {
                                 rce.eventtype = RCEvent.EventType.modifyprotect;
-                                rce.title = Project.translateNamespace(rce.project, modpm.Groups["item1"].Captures[0].Value);
+                                rce.title = Project.TranslateNamespace(rce.project, modpm.Groups["item1"].Captures[0].Value);
                                 try
                                 {
                                     rce.comment = modpm.Groups["comment"].Captures[0].Value;
@@ -294,7 +291,7 @@ namespace CVNBot
                                 if (upm.Success)
                                 {
                                     rce.eventtype = RCEvent.EventType.unprotect;
-                                    rce.title = Project.translateNamespace(rce.project, upm.Groups["item1"].Captures[0].Value);
+                                    rce.title = Project.TranslateNamespace(rce.project, upm.Groups["item1"].Captures[0].Value);
                                     try
                                     {
                                         rce.comment = upm.Groups["comment"].Captures[0].Value;
@@ -318,7 +315,7 @@ namespace CVNBot
                             if (dm.Success)
                             {
                                 rce.eventtype = RCEvent.EventType.delete;
-                                rce.title = Project.translateNamespace(rce.project, dm.Groups["item1"].Captures[0].Value);
+                                rce.title = Project.TranslateNamespace(rce.project, dm.Groups["item1"].Captures[0].Value);
                                 try
                                 {
                                     rce.comment = dm.Groups["comment"].Captures[0].Value;
@@ -331,7 +328,7 @@ namespace CVNBot
                                 if (udm.Success)
                                 {
                                     rce.eventtype = RCEvent.EventType.restore;
-                                    rce.title = Project.translateNamespace(rce.project, udm.Groups["item1"].Captures[0].Value);
+                                    rce.title = Project.TranslateNamespace(rce.project, udm.Groups["item1"].Captures[0].Value);
                                     try
                                     {
                                         rce.comment = udm.Groups["comment"].Captures[0].Value;
@@ -351,7 +348,7 @@ namespace CVNBot
                             if (um.Success)
                             {
                                 rce.eventtype = RCEvent.EventType.upload;
-                                rce.title = Project.translateNamespace(rce.project, um.Groups["item1"].Captures[0].Value);
+                                rce.title = Project.TranslateNamespace(rce.project, um.Groups["item1"].Captures[0].Value);
                                 try
                                 {
                                     rce.comment = um.Groups["comment"].Captures[0].Value;
@@ -372,10 +369,10 @@ namespace CVNBot
                             Match mrm = ((Project)Program.prjlist[rce.project]).rmoveredirRegex.Match(rce.comment);
                             if (mrm.Success)
                             {
-                                rce.title = Project.translateNamespace(rce.project, mrm.Groups["item1"].Captures[0].Value);
-                                rce.movedTo = Project.translateNamespace(rce.project, mrm.Groups["item2"].Captures[0].Value);
+                                rce.title = Project.TranslateNamespace(rce.project, mrm.Groups["item1"].Captures[0].Value);
+                                rce.movedTo = Project.TranslateNamespace(rce.project, mrm.Groups["item2"].Captures[0].Value);
                                 //We use the unused blockLength field to store our "moved from" URL
-                                rce.blockLength = CVNBotUtils.rootUrl(((Project)Program.prjlist[rce.project]).rooturl) + "wiki/" + CVNBotUtils.wikiEncode(mrm.Groups["item1"].Captures[0].Value);
+                                rce.blockLength = CVNBotUtils.RootUrl(((Project)Program.prjlist[rce.project]).rooturl) + "wiki/" + CVNBotUtils.WikiEncode(mrm.Groups["item1"].Captures[0].Value);
                                 try
                                 {
                                     rce.comment = mrm.Groups["comment"].Captures[0].Value;
@@ -387,10 +384,10 @@ namespace CVNBot
                                 Match mm = ((Project)Program.prjlist[rce.project]).rmoveRegex.Match(rce.comment);
                                 if (mm.Success)
                                 {
-                                    rce.title = Project.translateNamespace(rce.project, mm.Groups["item1"].Captures[0].Value);
-                                    rce.movedTo = Project.translateNamespace(rce.project, mm.Groups["item2"].Captures[0].Value);
+                                    rce.title = Project.TranslateNamespace(rce.project, mm.Groups["item1"].Captures[0].Value);
+                                    rce.movedTo = Project.TranslateNamespace(rce.project, mm.Groups["item2"].Captures[0].Value);
                                     //We use the unused blockLength field to store our "moved from" URL
-                                    rce.blockLength = CVNBotUtils.rootUrl(((Project)Program.prjlist[rce.project]).rooturl) + "wiki/" + CVNBotUtils.wikiEncode(mm.Groups["item1"].Captures[0].Value);
+                                    rce.blockLength = CVNBotUtils.RootUrl(((Project)Program.prjlist[rce.project]).rooturl) + "wiki/" + CVNBotUtils.WikiEncode(mm.Groups["item1"].Captures[0].Value);
                                     try
                                     {
                                         rce.comment = mm.Groups["comment"].Captures[0].Value;
@@ -446,7 +443,7 @@ namespace CVNBot
                 // Broadcast this for Distributed Debugging
                 logger.Error("Failed to process incoming message", eor);
                 Program.BroadcastDD("ERROR", "RCR_AOORE", eor.Message, e.Data.Channel + "/" + e.Data.Message
-                    + "Fields: " + fields.ToString());
+                    + "Fields: " + fields);
             }
         }
 
