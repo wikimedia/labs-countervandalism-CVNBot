@@ -1,3 +1,40 @@
+1.22.0 / Unreleased
+==================
+
+CVNBot 1.22 now requires Mono 4 or Mono 5 to run.
+
+### Added
+* RCReader: Add support for block/reblock log events.
+  Previously, only "Block" and "Unblock" were reported.
+  Now, "Block modification" events are reported as well.
+
+### Changed
+* build: CVNBot now requires Mono 4 or Mono 5. Mono 3 is no longer supported.
+* build: Enable continuous integration via Travis CI.
+* build: Automatically copy CVNBot.exe.config to simplify installation.
+* build: Automatically copy CVNBot-sample.ini to simplify installation.
+* build: Upgrade log4net from 1.2.10 to 2.0.8.
+* build: Upgrade Meebey.SmartIrc4net from 0.4 to 1.1.
+* build: Upgrade .NET Framework from 3.5 to 4.5.
+  The Sqlite library in .NET 4.5 no longer supports reading integer fields
+  with GetString. This was common in CVNBot code and has now been mitigated.
+* Logger: Change default log destination to Syslog, not text files.
+* Logger: Add Nickname in log messages.
+* ListManager: Re-use the same Sqlite connection between threads.
+* RCReader: Remove "emergency restarter" feature for irc.wikimedia.org ops.
+* RCReader: Remove log warnings about unknown log events.
+
+### Fixed
+* Project: Remove unused regexes for "Undo" detection that could
+  cause the "reload" command to crash on certain wikis.
+* ListManager: Catch invalid BES regex patterns and log them.
+* Program: Fix "Key duplication when adding: watchword" problem in ReactToRCEvent.
+  Previously, if an edit or new page event triggered both BES and BNA, this
+  bug caused the change to be ignored by the bot.
+* RCReader: Fix parsing of newusers/create2 log events.
+  Previously, events for users creating another account were ignored due to
+  the log format being out of sync with the wiki software.
+
 1.21.0 / 2015-09-07
 ==================
 * RCReader: Don't strip "/w/index.php" from urls.
