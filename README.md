@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/countervandalism/CVNBot.svg?branch=master)](https://travis-ci.org/countervandalism/CVNBot)
+
 CVNBot
 ==================================================
 
