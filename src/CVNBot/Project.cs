@@ -128,27 +128,28 @@ namespace CVNBot
             XmlNode parentnode = doc.FirstChild;
             for (int i = 0; i < parentnode.ChildNodes.Count; i++)
             {
-                switch (parentnode.ChildNodes[i].Name)
+                string key = parentnode.ChildNodes[i].Name;
+                string value = parentnode.ChildNodes[i].InnerText;
+                switch (key)
                 {
-                    case "projectName": projectName = parentnode.ChildNodes[i].InnerText; break;
-                    case "interwikiLink": interwikiLink = parentnode.ChildNodes[i].InnerText; break;
-                    case "rooturl": rooturl = parentnode.ChildNodes[i].InnerText; break;
-                    case "speciallog": specialLogRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "namespaces": snamespaces = parentnode.ChildNodes[i].InnerText; break;
-
-                    case "restoreRegex": restoreRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "deleteRegex": deleteRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "protectRegex": protectRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "unprotectRegex": unprotectRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "modifyprotectRegex": modifyprotectRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "uploadRegex": uploadRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "moveRegex": moveRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "moveredirRegex": moveredirRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "blockRegex": blockRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "unblockRegex": unblockRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "reblockRegex": reblockRegex = parentnode.ChildNodes[i].InnerText; break;
-                    case "autosummBlank": autosummBlank = parentnode.ChildNodes[i].InnerText; break;
-                    case "autosummReplace": autosummReplace = parentnode.ChildNodes[i].InnerText; break;
+                    case "projectName": projectName = value; break;
+                    case "interwikiLink": interwikiLink = value; break;
+                    case "rooturl": rooturl = value; break;
+                    case "speciallog": specialLogRegex = value; break;
+                    case "namespaces": snamespaces = value; break;
+                    case "restoreRegex": restoreRegex = value; break;
+                    case "deleteRegex": deleteRegex = value; break;
+                    case "protectRegex": protectRegex = value; break;
+                    case "unprotectRegex": unprotectRegex = value; break;
+                    case "modifyprotectRegex": modifyprotectRegex = value; break;
+                    case "uploadRegex": uploadRegex = value; break;
+                    case "moveRegex": moveRegex = value; break;
+                    case "moveredirRegex": moveredirRegex = value; break;
+                    case "blockRegex": blockRegex = value; break;
+                    case "unblockRegex": unblockRegex = value; break;
+                    case "reblockRegex": reblockRegex = value; break;
+                    case "autosummBlank": autosummBlank = value; break;
+                    case "autosummReplace": autosummReplace = value; break;
                 }
             }
             // Overwrite in case non-HTTPS url is stored
@@ -218,12 +219,12 @@ namespace CVNBot
 
         void GenerateRegex(string mwMessageTitle, int reqCount, ref string destRegex, bool nonStrict)
         {
-            //Get raw wikitext
+            // Get raw wikitext
             string mwMessage = CVNBotUtils.GetRawDocument(rooturl + "w/index.php?title=" + mwMessageTitle + "&action=raw&usemsgcache=yes");
 
-            //Now gently coax that into a regex
+            // Now gently coax that into a regex
             foreach (char c in rechars)
-                mwMessage = mwMessage.Replace(c.ToString(), @"\" + c);
+                mwMessage = mwMessage.Replace(c.ToString(), @"\" + c.ToString());
             mwMessage = mwMessage.Replace("$1", "(?<item1>.+?)");
             mwMessage = mwMessage.Replace("$2", "(?<item2>.+?)");
             mwMessage = mwMessage.Replace("$3", "(?<item3>.+?)");
@@ -233,7 +234,7 @@ namespace CVNBot
             mwMessage = mwMessage.Replace("$", @"\$");
             mwMessage = "^" + mwMessage + @"(?:: (?<comment>.*?))?$"; // Special:Log comments are preceded by a colon
 
-            //Dirty code: Block log exceptions!
+            // Dirty code: Block log exceptions!
             if (mwMessageTitle == "MediaWiki:Blocklogentry")
             {
                 mwMessage = mwMessage.Replace("(?<item3>.+?)", "\\((?<item3>.+?)\\)");

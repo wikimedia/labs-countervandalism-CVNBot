@@ -16,8 +16,8 @@ namespace CVNBot
         public SendType type;
         public String destination;
         public String message;
-        public long SentTime;
-        public bool IsDroppable;
+        public long sentTime;
+        public bool isDroppable;
     }
 
     class Program
@@ -36,7 +36,7 @@ namespace CVNBot
         // Flood protection objects
         static Queue fcQueue = new Queue();
         static Queue priQueue = new Queue();
-        static Boolean dontSendNow;
+        static Boolean DoNotSendNow;
         static int sentLength;
         static ManualResetEvent sendlock = new ManualResetEvent(true);
 
@@ -105,7 +105,7 @@ namespace CVNBot
         static void Main()
         {
             Thread.CurrentThread.Name = "Main";
-            Thread.GetDomain().UnhandledException += new UnhandledExceptionEventHandler(Application_UnhandledException);
+            Thread.GetDomain().UnhandledException += Application_UnhandledException;
 
             string mainConfigFN = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
                 + Path.DirectorySeparatorChar + "CVNBot.ini";
@@ -153,7 +153,7 @@ namespace CVNBot
             // Include bot nick in all logs from any thread.
             // Especially useful when running mulitple CVNBot instances that
             // log to the same syslog.
-            log4net.GlobalContext.Properties["Nick"] = botNick;
+            GlobalContext.Properties["Nick"] = botNick;
             logger.Info("Loaded main configuration from " + mainConfigFN);
 
             botCmd = new Regex("^" + botNick + @" (\s*(?<command>\S*))(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
@@ -166,7 +166,7 @@ namespace CVNBot
                 Exit();
             }
 
-            //Read projects (prjlist displays logger message)
+            // Read projects (prjlist displays logger message)
             prjlist.LoadFromFile();
 
             logger.Info("Loading lists");
@@ -179,13 +179,12 @@ namespace CVNBot
             irc.AutoReconnect = true;
             irc.AutoRejoin = true;
             irc.ActiveChannelSyncing = true;
-            irc.OnChannelMessage += new IrcEventHandler(Irc_OnChannelMessage);
-            irc.OnChannelNotice += new IrcEventHandler(Irc_OnChannelNotice);
-            irc.OnConnected += new EventHandler(Irc_OnConnected);
-            irc.OnError += new Meebey.SmartIrc4net.ErrorEventHandler(Irc_OnError);
-            irc.OnConnectionError += new EventHandler(Irc_OnConnectionError);
-            irc.OnPong += new PongEventHandler(Irc_OnPong);
-            //irc.PingTimeout = 10;
+            irc.OnChannelMessage += Irc_OnChannelMessage;
+            irc.OnChannelNotice += Irc_OnChannelNotice;
+            irc.OnConnected += Irc_OnConnected;
+            irc.OnError += Irc_OnError;
+            irc.OnConnectionError += Irc_OnConnectionError;
+            irc.OnPong += Irc_OnPong;
 
             try
             {
@@ -238,13 +237,12 @@ namespace CVNBot
 
         static void Irc_OnConnectionError(object sender, EventArgs e)
         {
-            //Let's try to catch those strange disposal errors
-            //But only if it ain't a legitimate disconnection
+            // Let's try to catch those strange disposal errors
+            // But only if it ain't a legitimate disconnection
             if (rcirc.rcirc.AutoReconnect)
             {
                 logger.Error("OnConnectionError in Program, restarting...");
                 Restart();
-                //Exit(); /* DEBUG */
             }
         }
 
@@ -303,12 +301,13 @@ namespace CVNBot
             {
                 try
                 {
-                    string action = bm.Groups["action"].Captures[0].Value;
-                    string list = bm.Groups["list"].Captures[0].Value;
-                    string item = bm.Groups["item"].Captures[0].Value;
-                    int len = Convert.ToInt32(bm.Groups["len"].Captures[0].Value);
-                    string reason = bm.Groups["reason"].Captures[0].Value;
-                    string adder = bm.Groups["adder"].Captures[0].Value;
+                    GroupCollection groups = bm.Groups;
+                    string action = groups["action"].Captures[0].Value;
+                    string list = groups["list"].Captures[0].Value;
+                    string item = groups["item"].Captures[0].Value;
+                    int len = Convert.ToInt32(groups["len"].Captures[0].Value);
+                    string reason = groups["reason"].Captures[0].Value;
+                    string adder = groups["adder"].Captures[0].Value;
 
                     // Similar to ListManager.HandleListCommand
                     switch (action)
@@ -410,8 +409,8 @@ namespace CVNBot
             qm.type = type;
             qm.message = message;
             qm.destination = destination;
-            qm.SentTime = DateTime.Now.Ticks;
-            qm.IsDroppable = IsDroppable;
+            qm.sentTime = DateTime.Now.Ticks;
+            qm.isDroppable = IsDroppable;
 
             if (IsPriority)
                 lock (priQueue)
@@ -451,7 +450,7 @@ namespace CVNBot
         static void Irc_OnPong(object sender, PongEventArgs e)
         {
             sentLength = 0;
-            dontSendNow = false;
+            DoNotSendNow = false;
             sendlock.Set();
         }
 
@@ -478,15 +477,13 @@ namespace CVNBot
         static void MsgThread()
         {
             Thread.CurrentThread.Name = "Messaging";
-            Thread.CurrentThread.IsBackground = true; //Allow runtime to close this thread at shutdown
-            //Thread.CurrentThread.Priority = ThreadPriority.BelowNormal;
+            // Allow runtime to close this thread at shutdown
+            Thread.CurrentThread.IsBackground = true;
             logger.Info("Started messaging");
 
             while (irc.IsConnected)
             {
                 QueuedMessage qm;
-
-                //Console.WriteLine("Lag is " + irc.Lag.ToString());
 
                 // First check for any priority messages to send
                 if (priQueue.Count > 0)
@@ -502,48 +499,48 @@ namespace CVNBot
                     if (fcQueue.Count == 0)
                     {
                         // No messages at all to handle
-                        Thread.Sleep(50); // Sleep for 50 miliseconds
-                        continue; // Start the loop over
+                        // Sleep for 50 miliseconds
+                        Thread.Sleep(50);
+                        // Start the loop over
+                        continue;
                     }
 
                     // We do have a message to dequeue, so dequeue it
                     lock (fcQueue)
                         qm = (QueuedMessage)fcQueue.Dequeue();
-
-                    //logger.Info(fcQueue.Count.ToString() + " in normal. sentLength: " + sentLength.ToString());
                 }
 
 
                 // Okay, we now have a message to handle in qm
 
                 // Is our message too old?
-                if (qm.IsDroppable && (DateTime.Now.Ticks - qm.SentTime > maxlag))
+                if (qm.isDroppable && (DateTime.Now.Ticks - qm.sentTime > maxlag))
                 {
-                    //logger.Info("Lost packet");
-                    continue; // Start the loop over
+                    // Lost packet
+                    // Start the loop over
+                    continue;
                 }
 
                 // If it's okay to send now, but we would exceed the bufflen if we were to send it
-                if (!dontSendNow && (sentLength + CalculateByteLength(qm) + 2 > bufflen))
+                if (!DoNotSendNow && (sentLength + CalculateByteLength(qm) + 2 > bufflen))
                 {
                     // Ping the server and wait for a reply
                     irc.RfcPing(ircServerName); //Removed Priority.Critical
                     sendlock.Reset();
-                    dontSendNow = true;
-                    //logger.Info("Waiting for artificial PONG");
+                    DoNotSendNow = true;
                 }
 
                 // Sleep while it's not okay to send
-                while (dontSendNow)
+                while (DoNotSendNow)
                     Thread.Sleep(1000);
-                //sendlock.WaitOne();
 
                 // Okay, we can carry on now. Is our message still fresh?
-                if (qm.IsDroppable && (DateTime.Now.Ticks - qm.SentTime > maxlag))
+                if (qm.isDroppable && (DateTime.Now.Ticks - qm.sentTime > maxlag))
                 // Oops, sowwy. Our message has rotten.
                 {
-                    //logger.Info("Lost packet");
-                    continue; // Start the loop over
+                    // Lost packet
+                    // Start the loop over
+                    continue;
                 }
 
                 // At last! Send the damn thing!
@@ -590,8 +587,9 @@ namespace CVNBot
 
         static void Irc_OnChannelMessage(object sender, IrcEventArgs e)
         {
+            // Prevent empty messages from crashing the bot
             if (string.IsNullOrEmpty(e.Data.Message))
-                return; //Prevent empty messages from crashing the bot
+                return;
 
             Match cmdMatch = botCmd.Match(e.Data.Message);
 
@@ -634,7 +632,7 @@ namespace CVNBot
                     case "status":
                         TimeSpan ago = DateTime.Now.Subtract(rcirc.lastMessage);
                         SendMessageF(SendType.Message, e.Data.Channel, "Last message was received on RCReader "
-                            + ago.TotalSeconds + " seconds ago", false, false);
+                            + ago.TotalSeconds.ToString() + " seconds ago", false, false);
                         break;
                     case "help":
                         SendMessageF(SendType.Message, e.Data.Channel, (String)msgs["20005"], false, true);

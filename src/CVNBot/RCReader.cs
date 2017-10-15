@@ -58,8 +58,8 @@ namespace CVNBot
             rcirc.AutoReconnect = true;
             rcirc.AutoRejoin = true;
 
-            rcirc.OnChannelMessage += new IrcEventHandler(Rcirc_OnChannelMessage);
-            rcirc.OnConnected += new EventHandler(Rcirc_OnConnected);
+            rcirc.OnChannelMessage += Rcirc_OnChannelMessage;
+            rcirc.OnConnected += Rcirc_OnConnected;
 
             try
             {
@@ -67,7 +67,7 @@ namespace CVNBot
             }
             catch (ConnectionException e)
             {
-                logger.Warn( "Connection error: " + e.Message );
+                logger.Warn("Connection error: " + e.Message);
                 return;
             }
 
@@ -77,7 +77,6 @@ namespace CVNBot
 
                 foreach (string prj in Program.prjlist.Keys)
                 {
-                    //logger.Info("Joining #" + prj);
                     rcirc.RfcJoin("#" + prj);
                 }
 
@@ -186,7 +185,7 @@ namespace CVNBot
                             }
                             else
                             {
-                                if(fields[4].Contains("autocreate"))
+                                if (fields[4].Contains("autocreate"))
                                 {
                                     rce.eventtype = RCEvent.EventType.autocreate;
                                 }
@@ -221,7 +220,8 @@ namespace CVNBot
                                     return;
                                 }
                             }
-                            else if (fields[4].Contains("reblock")) {
+                            else if (fields[4].Contains("reblock"))
+                            {
                                 Match rbm = ((Project)Program.prjlist[rce.project]).rreblockRegex.Match(rce.comment);
                                 if (rbm.Success)
                                 {
@@ -234,7 +234,9 @@ namespace CVNBot
                                     logger.Warn("Unmatched block/reblock type in " + rce.project + ": " + e.Data.Message);
                                     return;
                                 }
-                            } else {
+                            }
+                            else
+                            {
                                 Match bm = ((Project)Program.prjlist[rce.project]).rblockRegex.Match(rce.comment);
                                 if (bm.Success)
                                 {
@@ -308,7 +310,7 @@ namespace CVNBot
                         case "rights":
                             // Ignore event
                             return;
-                            //break;
+                        //break;
                         case "delete":
                             // Could be a delete or restore; need to parse regex
                             Match dm = ((Project)Program.prjlist[rce.project]).rdeleteRegex.Match(rce.comment);
@@ -405,7 +407,7 @@ namespace CVNBot
                             //rce.eventtype = RCEvent.EventType.import;
                             // Ignore event
                             return;
-                            //break;
+                        //break;
                         default:
                             // Ignore event
                             return;
@@ -416,7 +418,7 @@ namespace CVNBot
                     rce.botflag = false;
                 }
 
-                //Deal with the diff size
+                // Deal with the diff size
                 Match n = rszDiff.Match(fields[13]);
                 if (n.Success)
                 {

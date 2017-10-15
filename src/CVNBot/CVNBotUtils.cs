@@ -73,33 +73,35 @@ namespace CVNBot
 
             foreach (Match m in mc)
             {
-                switch (m.Groups[2].Captures[0].Value)
+                string unit = m.Groups[2].Captures[0].Value;
+                string value = m.Groups[1].Captures[0].Value;
+                switch (unit)
                 {
                     case "year":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 8760 * 3600; // 365 days
+                        sumSeconds += Convert.ToInt32(value) * 8760 * 3600; // 365 days
                         break;
                     case "month":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 732 * 3600; // 30.5 days
+                        sumSeconds += Convert.ToInt32(value) * 732 * 3600; // 30.5 days
                         break;
                     case "fortnight":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 336 * 3600; // 14 days
+                        sumSeconds += Convert.ToInt32(value) * 336 * 3600; // 14 days
                         break;
                     case "week":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 168 * 3600; // 7 days
+                        sumSeconds += Convert.ToInt32(value) * 168 * 3600; // 7 days
                         break;
                     case "day":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 24 * 3600; // 24 hours
+                        sumSeconds += Convert.ToInt32(value) * 24 * 3600; // 24 hours
                         break;
                     case "hour":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 3600; // 1 hour
+                        sumSeconds += Convert.ToInt32(value) * 3600; // 1 hour
                         break;
                     case "minute":
                     case "min":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value) * 60; // 60 seconds
+                        sumSeconds += Convert.ToInt32(value) * 60; // 60 seconds
                         break;
                     case "second":
                     case "sec":
-                        sumSeconds += Convert.ToInt32(m.Groups[1].Captures[0].Value); // One second
+                        sumSeconds += Convert.ToInt32(value); // One second
                         break;
                 }
             }
@@ -152,10 +154,13 @@ namespace CVNBot
         {
             for (int i = 1; i <= maxChars; i++)
             {
-                int place = input.IndexOf(oldChar); //Find first oldChar
-                if (place == -1) //If not found then finish
+				// Find first oldChar
+                int place = input.IndexOf(oldChar);
+                if (place == -1)
+                    // If not found then finish
                     break;
-                input = input.Substring(0, place) + newChar + input.Substring(place + 1); //Replace first oldChar with newChar
+				// Replace first oldChar with newChar
+                input = input.Substring(0, place) + newChar.ToString() + input.Substring(place + 1);
             }
             return input;
         }
