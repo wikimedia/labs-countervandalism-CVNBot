@@ -153,7 +153,7 @@ namespace CVNBot
                 }
             }
             // Overwrite in case non-HTTPS url is stored
-            rooturl = Regex.Replace(rooturl, "^http:", "https:");
+            rooturl = CVNBotUtils.RootUrl(rooturl);
             // Always get namespaces before generating regexen
             GetNamespaces(true);
             // Regenerate regexen
@@ -164,7 +164,7 @@ namespace CVNBot
         {
             if (!snamespacesAlreadySet)
             {
-                snamespaces = CVNBotUtils.GetRawDocument(rooturl + "w/api.php?action=query&meta=siteinfo&siprop=namespaces&format=xml");
+                snamespaces = CVNBotUtils.GetRawDocument(rooturl + "w/api.php?format=xml&action=query&meta=siteinfo&siprop=namespaces");
                 if (snamespaces == "")
                     throw new Exception("Can't load list of namespaces from " + rooturl);
             }

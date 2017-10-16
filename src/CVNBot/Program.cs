@@ -755,8 +755,7 @@ namespace CVNBot
                     case "batchgetusers":
                         if (!HasPrivileges('@', ref e))
                             return;
-                        listman.currentGetBatchChannel = e.Data.Channel;
-                        new Thread(new ThreadStart(listman.BatchGetAllAdminsAndBots)).Start();
+                        new Thread(listman.BatchGetAllAdminsAndBots).Start(e.Data.Channel);
                         break;
                     case "bl":
                         SendMessageF(SendType.Message, e.Data.Channel,

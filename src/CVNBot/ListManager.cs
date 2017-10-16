@@ -1,9 +1,11 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Xml;
 using log4net;
 using Mono.Data.Sqlite;
 
@@ -23,17 +25,12 @@ namespace CVNBot
         public IDbConnection dbcon;
         public string connectionString = "";
 
-        public string currentGetBatchChannel = ""; // Used for the batch function
-
         static Regex ipv4 = new Regex(@"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b");
         static Regex ipv6 = new Regex(@"\b(?:[0-9A-F]{1,4}:){7}[0-9A-F]{1,4}\b");
-        static Regex adminLine = new Regex("<li><a href=\"/wiki/.*?\" title=\".*?\">(.*?)</a>");
         static Regex rlistCmd = new Regex(@"^(?<cmd>add|del|show|test) (?<item>.+?)(?: p=(?<project>\S+?))?(?: x=(?<len>\d{1,4}))?(?: r=(?<reason>.+?))?$"
             , RegexOptions.IgnoreCase);
 
         readonly Object dbtoken = new Object();
-        static string currentGetThreadWiki = ""; // Used to pass data to the configGetAdmins/configGetBots threads
-        static string currentGetThreadMode = ""; // Same as above
 
         Timer garbageCollector;
 
@@ -821,12 +818,11 @@ namespace CVNBot
         /// <summary>
         /// Downloads a list of admins/bots from wiki and adds them to the database (Run this in a separate thread)
         /// </summary>
-        void AddGroupToList()
+        void AddGroupToList(object data)
         {
-            string projectName = currentGetThreadWiki;
-            currentGetThreadWiki = "";
-            string getGroup = currentGetThreadMode;
-            currentGetThreadMode = "";
+            Dictionary<string, string> args = (Dictionary<string, string>)data;
+            string projectName = args["project"];
+            string getGroup = args["group"];
 
             Thread.CurrentThread.Name = "Get" + getGroup + "@" + projectName;
 
@@ -838,46 +834,49 @@ namespace CVNBot
             else
                 throw new Exception("Undefined group: " + getGroup);
 
-            logger.Info("Downloading list of " + getGroup + "s from " + projectName);
+            logger.Info("Fetching list of " + getGroup + " users from " + projectName);
 
+            string resp = null;
             try
             {
-                lock (dbtoken)
+
+                resp = CVNBotUtils.GetRawDocument("https://" + projectName
+                                                         + ".org/w/api.php?format=xml&action=query&list=allusers&augroup="
+                                                         + getGroup + "&aulimit=max");
+                XmlDocument doc = new XmlDocument();
+                doc.LoadXml(resp);
+                XmlNode list = doc.GetElementsByTagName("allusers")[0];
+                XmlNodeList nodes = list.ChildNodes;
+                int total = nodes.Count;
+                for (int i = 0; i < total; i++)
                 {
-
-                    string list = CVNBotUtils.GetRawDocument("http://" + projectName
-                        + ".org/w/index.php?title=Special:Listusers&group=" + getGroup + "&limit=5000&offset=0");
-
-                    //Now parse the list:
-                    /* _1568: FIX: MW error */
-                    string sr = list.Substring(list.IndexOf("<ul>") + 4);
-                    Match lusers = adminLine.Match(sr.Substring(0, sr.IndexOf("</ul>")));
-                    while (lusers.Success)
-                    {
-                        AddUserToList(lusers.Groups[1].Captures[0].Value, projectName, getGroupUT, "CVNBot"
-                            , "Auto-download from wiki", 0);
-                        lusers = lusers.NextMatch();
-                    }
-                    logger.Info("Added all " + getGroup + "s from " + projectName);
+                    string name = nodes[i].Attributes["name"].Value;
+                    AddUserToList(name, projectName, getGroupUT, "CVNBot", "Auto-download from wiki", 0);
                 }
+
+                logger.Info("Added " + total.ToString() + " " + getGroup + " users from " + projectName);
             }
             catch (Exception e)
             {
-                logger.Error("Unable to get list of " + getGroup + "s from " + projectName + ": " + e.Message);
+                if (resp != null)
+                {
+                    logger.Info("Preview of failed user list fetch: " + resp.Substring(0, 100));
+                }
+                logger.Error("Unable to get list of " + getGroup + " users from " + projectName, e);
             }
         }
 
         public string ConfigGetAdmins(string cmdParams)
         {
-            if (currentGetThreadWiki != "")
-                return "The userlist fetcher is currently off on another errand.";
-
             if (Program.prjlist.ContainsKey(cmdParams))
             {
-                currentGetThreadWiki = cmdParams;
-                currentGetThreadMode = "sysop";
-                new Thread(new ThreadStart(AddGroupToList)).Start();
-                return "Started admin userlist fetcher in separate thread";
+                Dictionary<string, string> args = new Dictionary<string, string>
+                {
+                    { "project", cmdParams },
+                    { "group", "sysop" }
+                };
+                new Thread(AddGroupToList).Start(args);
+                return "Started admin userlist fetcher in the background";
             }
 
             return "Project is unknown: " + cmdParams;
@@ -885,70 +884,58 @@ namespace CVNBot
 
         public string ConfigGetBots(string cmdParams)
         {
-            if (currentGetThreadWiki != "")
-                return "The userlist fetcher is currently off on another errand";
-
             if (Program.prjlist.ContainsKey(cmdParams))
             {
-                currentGetThreadWiki = cmdParams;
-                currentGetThreadMode = "bot";
-                new Thread(new ThreadStart(AddGroupToList)).Start();
-                return "Started bot userlist fetcher in separate thread";
+                Dictionary<string, string> args = new Dictionary<string, string>
+                {
+                    { "project", cmdParams },
+                    { "group", "bot" }
+                };
+                new Thread(AddGroupToList).Start(args);
+                return "Started bot userlist fetcher in the background";
             }
 
             return "Project is unknown: " + cmdParams;
         }
 
-        public void BatchGetAllAdminsAndBots()
+        public void BatchGetAllAdminsAndBots(object data)
         {
             Thread.CurrentThread.Name = "GetAllUsers";
 
-            try
+            string originChannel = (string)data;
+
+            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, originChannel
+                 , "Request to get admins and bots for all " + Program.prjlist.Count.ToString() + " wikis accepted.",
+                false, true);
+
+            foreach (DictionaryEntry de in Program.prjlist)
             {
-                if (currentGetBatchChannel == "")
-                    return; //Shouldn't happen, but here anyway
+                Thread myThread;
 
-                if (currentGetThreadMode != "")
-                    Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentGetBatchChannel
-                        , "The userlist fetcher is currently off on another errand", false, true);
+                // Get admins
+                Dictionary<string, string> args = new Dictionary<string, string>();
+                args.Add("project", (string)de.Key);
+                args.Add("group", "sysop");
+                myThread = new Thread(AddGroupToList);
+                myThread.Start(args);
+                while (myThread.IsAlive)
+                    Thread.Sleep(1);
 
-                Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentGetBatchChannel
-                        , "Request to get admins and bots for all " + Program.prjlist.Count.ToString() + " wikis accepted.",
-                        false, true);
+                Thread.Sleep(500);
 
-                foreach (DictionaryEntry de in Program.prjlist)
-                {
-                    // Get admins
-                    currentGetThreadWiki = (string)de.Key;
-                    currentGetThreadMode = "sysop";
-                    Thread myThread = new Thread(new ThreadStart(AddGroupToList));
-                    myThread.Start();
-                    while (myThread.IsAlive)
-                        Thread.Sleep(0);
+                // Get bots
+                args.Remove("group");
+                args.Add("group", "bot");
+                myThread = new Thread(AddGroupToList);
+                myThread.Start(args);
+                while (myThread.IsAlive)
+                    Thread.Sleep(1);
 
-                    Thread.Sleep(500);
-
-                    //Get bots
-                    currentGetThreadWiki = (string)de.Key;
-                    currentGetThreadMode = "bot";
-                    Thread myThread2 = new Thread(new ThreadStart(AddGroupToList));
-                    myThread2.Start();
-                    while (myThread2.IsAlive)
-                        Thread.Sleep(0);
-
-                    Thread.Sleep(800);
-                }
-
-                Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentGetBatchChannel
-                        , "Done fetching all admins and bots. Phew, I'm tired :P", false, false);
+                Thread.Sleep(500);
             }
-            finally
-            {
-                //Now reset all persistent variables
-                currentGetThreadWiki = "";
-                currentGetThreadMode = "";
-                currentGetBatchChannel = "";
-            }
+
+            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, originChannel
+                    , "Done fetching all admins and bots. Phew, I'm tired :P", false, false);
         }
 
         /// <summary>
