@@ -705,10 +705,8 @@ namespace CVNBot
                                 prjlist.AddNewProject(cmdParams[0], "");
 
                             SendMessageF(SendType.Message, e.Data.Channel, "Loaded new project " + cmdParams[0], false, true);
-                            //Automatically get admins and bots:
-                            Thread.Sleep(200);
+                            // Automatically get admins and bots
                             SendMessageF(SendType.Message, e.Data.Channel, listman.ConfigGetAdmins(cmdParams[0]), false, false);
-                            Thread.Sleep(500);
                             SendMessageF(SendType.Message, e.Data.Channel, listman.ConfigGetBots(cmdParams[0]), false, false);
                         }
                         catch (Exception ex)
