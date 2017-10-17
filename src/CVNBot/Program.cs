@@ -46,17 +46,46 @@ namespace CVNBot
             + @"09\x02(?<reason>.*?)\x02\x03\*\x03"
             + @"11\x02(?<adder>.*?)\x03\x02\*");
         static Regex botCmd;
-        /* _1568: Added rcitems to .ini */
+
+        static int bufflen = 1400;
+        static long maxlag = 600000000; // 60 seconds in 100-nanoseconds
+
+        /* INI settings */
+        public static string botNick;
         static int editblank;
         static int editbig;
         static int newbig;
         static int newsmall;
+        // Channel name
         static string ControlChannel;
+        // Channel name
         static string FeedChannel;
+        // Channel name or "None"
         static string BroadcastChannel;
+        // Host name
         static string ircServerName;
-        static int bufflen = 1400;
-        static long maxlag = 600000000; // 60 seconds in 100-nanoseconds
+        // Restart command (e.g. "mono" or "nice")
+        static string cfgRestartCmd;
+        // Restart command arguments (e.g. "mono $1" if restartCmd is "nice")
+        static string cfgRestartArgs;
+
+        // Whether to entirely disable the database. This means requesting a usertype
+        // will always return 3 (anon) or 4 (user) based on a static regex.
+        // This speeds up the the flow incredibly (especially when using SQLite) and makes it possible
+        // to load a many (or even, all) of the Wikimedia wikis without producing an ever-growing backlog
+        // of change events faster than we can process them.
+        // Disabling the database means the actual output in the feedchannel will not be useful (all edits go through,
+        // no bot, user, or whitelist detection).
+        // Recommended to be used in combination with high(est) feedFilter settings for the purposes
+        // of detecting block events from all wikis to then automatically broadcast to other bots
+        // for cross-wiki vandalism detection. Originally written for the CVNBlackRock bot.
+        public static bool disableClassifyEditor;
+
+        // IsCubbie overrides feedfilters if true to only show uploads and ignore the rest
+        static bool IsCubbie;
+
+        // Use https as protocol in output feeds.
+        public static bool forceHttps;
 
         /**
          * Feed filters
@@ -87,21 +116,6 @@ namespace CVNBot
         static int feedFilterEventUpload = 1;
         static int feedFilterEventProtect = 1; // No 'softhide', 2 behaves like 1; includes unprotect and modifyprotect
 
-        // IsCubbie overrides feedfilters if true to only show uploads and ignore the rest
-        static bool IsCubbie;
-        // Use https as protocol in output feeds.
-        public static bool forceHttps;
-
-        // Set this to true to stops the bot from checking the database when requesting a usertype
-        //  and instead will only return 3 (anon) or 4 (user) based on a regex.
-        // This speeds up the the flow incredibly (especially when using SQLite) and makes it possible
-        // to load a lot of the biggest wikis without any delay
-        // This will mean that the actual output in the feedchannel is very unusable (all edits go through, no bot, user, whitelist detection)
-        // Recommended to use in combination with high(est) feedFilter settings (originally written for CVNBlackRock bot)
-        public static bool disableClassifyEditor;
-
-        public static string botNick;
-
         static void Main()
         {
             Thread.CurrentThread.Name = "Main";
@@ -128,12 +142,16 @@ namespace CVNBot
             FeedChannel = (string)mainConfig["feedchannel"];
             BroadcastChannel = (string)mainConfig["broadcastchannel"];
             ircServerName = (string)mainConfig["ircserver"];
-            /* _1568: Added for .ini */
+            cfgRestartCmd = mainConfig.ContainsKey("restartcmd") ? (string)mainConfig["restartcmd"] : "mono";
+            cfgRestartArgs = mainConfig.ContainsKey("restartarg") ? (string)mainConfig["restartarg"] : "$1";
+
             editblank = Int32.Parse((string)mainConfig["editblank"]);
             editbig = Int32.Parse((string)mainConfig["editbig"]);
             newbig = Int32.Parse((string)mainConfig["newbig"]);
             newsmall = Int32.Parse((string)mainConfig["newsmall"]);
             prjlist.fnProjectsXML = (string)mainConfig["projects"];
+
+            // Optional
             IsCubbie = mainConfig.ContainsKey("IsCubbie");
             forceHttps = mainConfig.ContainsKey("forceHttps");
             disableClassifyEditor = mainConfig.ContainsKey("disableClassifyEditor");
@@ -1457,7 +1475,7 @@ namespace CVNBot
             }
             finally
             {
-                System.Environment.Exit(0);
+                Environment.Exit(0);
 
             }
         }
@@ -1465,17 +1483,10 @@ namespace CVNBot
 
         public static void Restart()
         {
-            // If a custom restartcmd / restartarg has been set in the main config, use that
-            if (mainConfig.ContainsKey("restartcmd"))
-            {
-                // Execute the custom command
-                System.Diagnostics.Process.Start((string)mainConfig["restartcmd"], (string)mainConfig["restartarg"]);
-            }
-            else
-            {
-                // Note: argument is not actually used, but it's there to prevent a mono bug
-                System.Diagnostics.Process.Start(System.Reflection.Assembly.GetExecutingAssembly().Location, "--restart");
-            }
+            string cmd = cfgRestartCmd;
+            string args = cfgRestartArgs.Replace("$1", System.Reflection.Assembly.GetExecutingAssembly().Location);
+            logger.Info("Executing: " + cmd + " " + args);
+            System.Diagnostics.Process.Start(cmd, args);
             Exit();
         }
 
