@@ -67,7 +67,7 @@ namespace CVNBot
             }
             catch (ConnectionException e)
             {
-                logger.Warn("Connection error: " + e.Message);
+                logger.Warn("Connection error", e);
                 return;
             }
 
