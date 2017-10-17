@@ -147,8 +147,9 @@ namespace CVNBot
         {
             Thread.CurrentThread.Name = "ReloadAll";
 
-            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel
-                        , "Request to reload all " + this.Count.ToString() + " wikis accepted.", false, true);
+            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel,
+                                 "Request to reload all " + this.Count.ToString() + " wikis accepted.",
+                                 Meebey.SmartIrc4net.Priority.High);
 
             foreach (DictionaryEntry dicent in this)
             {
@@ -160,8 +161,9 @@ namespace CVNBot
             // Dump new settings:
             DumpToFile();
 
-            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel
-                        , "Reloaded all wikis. Phew, give the Wikimedia servers a break :(", false, false);
+            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, currentBatchReloadChannel,
+                                 "Reloaded all wikis. Phew, give the Wikimedia servers a break :(",
+                                 Meebey.SmartIrc4net.Priority.High);
         }
     }
 }

@@ -911,9 +911,9 @@ namespace CVNBot
 
             string originChannel = (string)data;
 
-            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, originChannel
-                 , "Request to get admins and bots for all " + Program.prjlist.Count.ToString() + " wikis accepted.",
-                false, true);
+            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, originChannel,
+                                 "Request to get admins and bots for all " + Program.prjlist.Count.ToString() + " wikis accepted.",
+                                 Meebey.SmartIrc4net.Priority.High);
 
             foreach (DictionaryEntry de in Program.prjlist)
             {
@@ -941,8 +941,9 @@ namespace CVNBot
                 Thread.Sleep(500);
             }
 
-            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, originChannel
-                    , "Done fetching all admins and bots. Phew, I'm tired :P", false, false);
+            Program.SendMessageF(Meebey.SmartIrc4net.SendType.Message, originChannel,
+                                 "Done fetching all admins and bots. Phew, I'm tired :P",
+                                 Meebey.SmartIrc4net.Priority.High);
         }
 
         /// <summary>

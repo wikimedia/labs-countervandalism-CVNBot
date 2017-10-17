@@ -13,11 +13,6 @@ namespace CVNBot
 {
     class QueuedMessage
     {
-        public SendType type;
-        public String destination;
-        public String message;
-        public long sentTime;
-        public bool isDroppable;
     }
 
     class Program
@@ -34,10 +29,6 @@ namespace CVNBot
         static ILog logger = LogManager.GetLogger("CVNBot.Program");
 
         // Flood protection objects
-        static Queue fcQueue = new Queue();
-        static Queue priQueue = new Queue();
-        static Boolean DoNotSendNow;
-        static int sentLength;
         static ManualResetEvent sendlock = new ManualResetEvent(true);
 
         static Regex broadcastMsg = new Regex(@"\*\x02B/1.1\x02\*(?<list>.+?)\*(?<action>.+?)\*\x03"
@@ -46,9 +37,6 @@ namespace CVNBot
             + @"09\x02(?<reason>.*?)\x02\x03\*\x03"
             + @"11\x02(?<adder>.*?)\x03\x02\*");
         static Regex botCmd;
-
-        static int bufflen = 1400;
-        static long maxlag = 600000000; // 60 seconds in 100-nanoseconds
 
         /* INI settings */
         public static string botNick;
@@ -202,7 +190,6 @@ namespace CVNBot
             irc.OnConnected += Irc_OnConnected;
             irc.OnError += Irc_OnError;
             irc.OnConnectionError += Irc_OnConnectionError;
-            irc.OnPong += Irc_OnPong;
 
             try
             {
@@ -213,9 +200,6 @@ namespace CVNBot
                 logger.Fatal("Could not connect", e);
                 Exit();
             }
-
-            // Now initialize flood protection code
-            new Thread(new ThreadStart(MsgThread)).Start();
 
             try
             {
@@ -387,12 +371,12 @@ namespace CVNBot
                         case "FIND":
                             if (list == "BLEEP")
                                 if (prjlist.ContainsKey(item))
-                                    SendMessageF(SendType.Action, reason, "has " + item + ", " + adder + " :D", false, true);
+                                SendMessageF(SendType.Action, reason, "has " + item + ", " + adder + " :D", Priority.High);
                             break;
                         case "COUNT":
                             if (list == "BLEEP")
                                 SendMessageF(SendType.Action, reason, "owns " + prjlist.Count.ToString() + " wikis; version is " + version,
-                                    false, true);
+                                             Priority.High);
                             break;
                         case "CONFIG":
                             if (list == "BLEEP")
@@ -421,29 +405,15 @@ namespace CVNBot
         /// <summary>
         /// Route all irc.SendMessage() calls through this to use the queue
         /// </summary>
-        public static void SendMessageF(SendType type, string destination, string message, bool IsDroppable, bool IsPriority)
+        public static void SendMessageF(SendType type, string destination, string message, Priority priority = Priority.Low)
         {
-            QueuedMessage qm = new QueuedMessage();
-            qm.type = type;
-            qm.message = message;
-            qm.destination = destination;
-            qm.sentTime = DateTime.Now.Ticks;
-            qm.isDroppable = IsDroppable;
-
-            if (IsPriority)
-                lock (priQueue)
-                    priQueue.Enqueue(qm);
-            else
-                lock (fcQueue)
-                    fcQueue.Enqueue(qm);
-
-            //logger.Info("Queued item");
+            irc.SendMessage(type, destination, message, priority);
         }
 
         /// <summary>
         /// Splitting messages by line breaks and in chucks if they're too long and forward to SendMessageF
         /// </summary>
-        public static void SendMessageFMulti(SendType type, string destination, string message, bool IsDroppable, bool IsPriority)
+        public static void SendMessageFMulti(SendType type, string destination, string message, Priority priority = Priority.Low)
         {
 
             if (message != "")
@@ -457,125 +427,11 @@ namespace CVNBot
                         // Ignore "" and "
                         if ((chunk.Trim() != "\"\"") && (chunk.Trim() != "\""))
                         {
-                            SendMessageF(type, destination, chunk, IsDroppable, IsPriority);
+                            SendMessageF(type, destination, chunk, priority);
                         }
                     }
                 }
             }
-        }
-
-
-        static void Irc_OnPong(object sender, PongEventArgs e)
-        {
-            sentLength = 0;
-            DoNotSendNow = false;
-            sendlock.Set();
-        }
-
-        /// <summary>
-        /// Calculates the rough length, in bytes, of a queued message
-        /// </summary>
-        /// <param name="qm"></param>
-        /// <returns></returns>
-        static int CalculateByteLength(QueuedMessage qm)
-        {
-            // PRIVMSG #channelname :My message here (10 + destination + message)
-            // NOTICE #channelname :My message here (9 + dest + msg)
-            if (qm.type == SendType.Notice)
-                return 11 + System.Text.Encoding.Unicode.GetByteCount(qm.message)
-                    + System.Text.Encoding.Unicode.GetByteCount(qm.destination);
-
-            return 12 + System.Text.Encoding.Unicode.GetByteCount(qm.message)
-                + System.Text.Encoding.Unicode.GetByteCount(qm.destination);
-        }
-
-        /// <summary>
-        /// Thread function that runs continuously in the background, sending messages
-        /// </summary>
-        static void MsgThread()
-        {
-            Thread.CurrentThread.Name = "Messaging";
-            // Allow runtime to close this thread at shutdown
-            Thread.CurrentThread.IsBackground = true;
-            logger.Info("Started messaging");
-
-            while (irc.IsConnected)
-            {
-                QueuedMessage qm;
-
-                // First check for any priority messages to send
-                if (priQueue.Count > 0)
-                {
-                    // We have priority messages to handle
-                    lock (priQueue)
-                        qm = (QueuedMessage)priQueue.Dequeue();
-                }
-                else
-                {
-                    // No priority messages; let's handle the regular-class messages
-                    // Do we have any messages to handle?
-                    if (fcQueue.Count == 0)
-                    {
-                        // No messages at all to handle
-                        // Sleep for 50 miliseconds
-                        Thread.Sleep(50);
-                        // Start the loop over
-                        continue;
-                    }
-
-                    // We do have a message to dequeue, so dequeue it
-                    lock (fcQueue)
-                        qm = (QueuedMessage)fcQueue.Dequeue();
-                }
-
-
-                // Okay, we now have a message to handle in qm
-
-                // Is our message too old?
-                if (qm.isDroppable && (DateTime.Now.Ticks - qm.sentTime > maxlag))
-                {
-                    // Lost packet
-                    // Start the loop over
-                    continue;
-                }
-
-                // If it's okay to send now, but we would exceed the bufflen if we were to send it
-                if (!DoNotSendNow && (sentLength + CalculateByteLength(qm) + 2 > bufflen))
-                {
-                    // Ping the server and wait for a reply
-                    irc.RfcPing(ircServerName); //Removed Priority.Critical
-                    sendlock.Reset();
-                    DoNotSendNow = true;
-                }
-
-                // Sleep while it's not okay to send
-                while (DoNotSendNow)
-                    Thread.Sleep(1000);
-
-                // Okay, we can carry on now. Is our message still fresh?
-                if (qm.isDroppable && (DateTime.Now.Ticks - qm.sentTime > maxlag))
-                // Oops, sowwy. Our message has rotten.
-                {
-                    // Lost packet
-                    // Start the loop over
-                    continue;
-                }
-
-                // At last! Send the damn thing!
-                // ...but only if we're still connected
-                if (irc.IsConnected)
-                {
-                    sentLength = sentLength + CalculateByteLength(qm) + 2;
-                    irc.SendMessage(qm.type, qm.destination, qm.message);
-                }
-
-                //logger.Info("Lag was " + (DateTime.Now.Ticks - qm.SentTime));
-
-                // Throttle on our part
-                Thread.Sleep(300);
-            }
-
-            logger.Info("Thread ended");
         }
 
         #endregion
@@ -587,14 +443,14 @@ namespace CVNBot
                 case '@':
                     if (!irc.GetChannelUser(e.Data.Channel, e.Data.Nick).IsOp)
                     {
-                        SendMessageF(SendType.Notice, e.Data.Nick, (String)msgs["00122"], false, true);
+                        SendMessageF(SendType.Notice, e.Data.Nick, (String)msgs["00122"]);
                         return false;
                     }
                     return true;
                 case '+':
                     if (!irc.GetChannelUser(e.Data.Channel, e.Data.Nick).IsOp && !irc.GetChannelUser(e.Data.Channel, e.Data.Nick).IsVoice)
                     {
-                        SendMessageF(SendType.Notice, e.Data.Nick, (String)msgs["00120"], false, true);
+                        SendMessageF(SendType.Notice, e.Data.Nick, (String)msgs["00120"]);
                         return false;
                     }
                     return true;
@@ -650,10 +506,10 @@ namespace CVNBot
                     case "status":
                         TimeSpan ago = DateTime.Now.Subtract(rcirc.lastMessage);
                         SendMessageF(SendType.Message, e.Data.Channel, "Last message was received on RCReader "
-                            + ago.TotalSeconds.ToString() + " seconds ago", false, false);
+                                     + ago.TotalSeconds.ToString() + " seconds ago", Priority.High);
                         break;
                     case "help":
-                        SendMessageF(SendType.Message, e.Data.Channel, (String)msgs["20005"], false, true);
+                        SendMessageF(SendType.Message, e.Data.Channel, (String)msgs["20005"], Priority.High);
                         break;
                     case "version":
                     case "settings":
@@ -665,20 +521,20 @@ namespace CVNBot
                         }
                         break;
                     case "msgs":
-                        //Reloads msgs
+                        // Reloads messages
                         if (!HasPrivileges('@', ref e))
                             return;
                         ReadMessages((string)mainConfig["messages"]);
-                        SendMessageF(SendType.Message, e.Data.Channel, "Re-read messages", false, false);
+                        SendMessageF(SendType.Message, e.Data.Channel, "Re-read messages", Priority.High);
                         break;
                     case "reload":
-                        //Reloads wiki data for a project
+                        // Reloads wiki data for a project
                         if (!HasPrivileges('@', ref e))
                             return;
 
                         if (!prjlist.ContainsKey(cmdParams[0]))
                         {
-                            SendMessageF(SendType.Message, e.Data.Channel, "Project " + cmdParams[0] + " is not loaded", false, true);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Project " + cmdParams[0] + " is not loaded", Priority.High);
                             return;
                         }
 
@@ -686,11 +542,11 @@ namespace CVNBot
                         {
 
                             ((Project)prjlist[cmdParams[0]]).RetrieveWikiDetails();
-                            SendMessageF(SendType.Message, e.Data.Channel, "Reloaded project " + cmdParams[0], false, false);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Reloaded project " + cmdParams[0], Priority.High);
                         }
                         catch (Exception ex)
                         {
-                            SendMessageF(SendType.Message, e.Data.Channel, "Unable to reload: " + ex.Message, false, true);
+							SendMessageF(SendType.Message, e.Data.Channel, "Unable to reload: " + ex.Message, Priority.High);
                             logger.Error("Reload project failed", ex);
                         }
                         break;
@@ -704,14 +560,14 @@ namespace CVNBot
                             else
                                 prjlist.AddNewProject(cmdParams[0], "");
 
-                            SendMessageF(SendType.Message, e.Data.Channel, "Loaded new project " + cmdParams[0], false, true);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Loaded new project " + cmdParams[0], Priority.High);
                             // Automatically get admins and bots
-                            SendMessageF(SendType.Message, e.Data.Channel, listman.ConfigGetAdmins(cmdParams[0]), false, false);
-                            SendMessageF(SendType.Message, e.Data.Channel, listman.ConfigGetBots(cmdParams[0]), false, false);
+                            SendMessageF(SendType.Message, e.Data.Channel, listman.ConfigGetAdmins(cmdParams[0]), Priority.High);
+                            SendMessageF(SendType.Message, e.Data.Channel, listman.ConfigGetBots(cmdParams[0]), Priority.High);
                         }
                         catch (Exception ex)
                         {
-                            SendMessageF(SendType.Message, e.Data.Channel, "Unable to add project: " + ex.Message, false, true);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Unable to add project: " + ex.Message, Priority.High);
                             logger.Error("Add project failed: " + ex.Message);
                         }
                         break;
@@ -724,18 +580,18 @@ namespace CVNBot
                             {
                                 if (prjlist.ContainsKey(cmdParams[0]))
                                 {
-                                    SendMessageF(SendType.Action, e.Data.Channel, "has " + cmdParams[0] + ", " + e.Data.Nick + " :D", false, true);
+                                    SendMessageF(SendType.Action, e.Data.Channel, "has " + cmdParams[0] + ", " + e.Data.Nick + " :D", Priority.High);
                                 }
                                 else
                                 {
                                     Broadcast("BLEEP", "FIND", cmdParams[0], 0, e.Data.Channel, e.Data.Nick);
-                                    SendMessageF(SendType.Message, e.Data.Channel, "Bleeped. Please wait for a reply.", false, true);
+                                    SendMessageF(SendType.Message, e.Data.Channel, "Bleeped. Please wait for a reply.", Priority.High);
                                 }
                             }
                         }
                         catch (Exception ex)
                         {
-                            SendMessageF(SendType.Message, e.Data.Channel, "Unable to bleep: " + ex.Message, false, true);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Unable to bleep: " + ex.Message, Priority.High);
                         }
                         break;
                     case "count":
@@ -743,7 +599,7 @@ namespace CVNBot
                             return;
                         Broadcast("BLEEP", "COUNT", "BLEEP", 0, e.Data.Channel, e.Data.Nick);
                         SendMessageF(SendType.Action, e.Data.Channel, "owns " + prjlist.Count.ToString() + " wikis; version is " + version,
-                            false, true);
+                                     Priority.High);
                         break;
                     case "drop":
                         if (!HasPrivileges('@', ref e))
@@ -751,11 +607,11 @@ namespace CVNBot
                         try
                         {
                             prjlist.DeleteProject(cmdParams[0]);
-                            SendMessageF(SendType.Message, e.Data.Channel, "Deleted project " + cmdParams[0], false, true);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Deleted project " + cmdParams[0], Priority.High);
                         }
                         catch (Exception ex)
                         {
-                            SendMessageF(SendType.Message, e.Data.Channel, "Unable to delete project: " + ex.Message, false, true);
+                            SendMessageF(SendType.Message, e.Data.Channel, "Unable to delete project: " + ex.Message, Priority.High);
                             logger.Error("Delete project failed: " + ex.Message);
                         }
                         break;
@@ -766,7 +622,7 @@ namespace CVNBot
                             result += p + " ";
                         }
                         result += "(Total: " + prjlist.Count.ToString() + " wikis)";
-                        SendMessageFMulti(SendType.Message, e.Data.Channel, result, false, true);
+                        SendMessageFMulti(SendType.Message, e.Data.Channel, result, Priority.High);
                         break;
                     case "batchgetusers":
                         if (!HasPrivileges('@', ref e))
@@ -775,62 +631,62 @@ namespace CVNBot
                         break;
                     case "bl":
                         SendMessageF(SendType.Message, e.Data.Channel,
-                            listman.HandleListCommand(1, e.Data.Nick, extraParams), false, true);
+                                     listman.HandleListCommand(1, e.Data.Nick, extraParams), Priority.High);
                         break;
                     case "wl":
                         SendMessageF(SendType.Message, e.Data.Channel,
-                            listman.HandleListCommand(0, e.Data.Nick, extraParams), false, true);
+                                     listman.HandleListCommand(0, e.Data.Nick, extraParams), Priority.High);
                         break;
                     case "gl":
                         SendMessageF(SendType.Message, e.Data.Channel,
-                            listman.HandleListCommand(6, e.Data.Nick, extraParams), false, true);
+                                     listman.HandleListCommand(6, e.Data.Nick, extraParams), Priority.High);
                         break;
                     case "al":
                         SendMessageF(SendType.Message, e.Data.Channel,
-                            listman.HandleListCommand(2, e.Data.Nick, extraParams), false, true);
+                                     listman.HandleListCommand(2, e.Data.Nick, extraParams), Priority.High);
                         break;
                     case "bots":
                     case "bot":
                         SendMessageF(SendType.Message, e.Data.Channel,
-                            listman.HandleListCommand(5, e.Data.Nick, extraParams), false, true);
+                                     listman.HandleListCommand(5, e.Data.Nick, extraParams), Priority.High);
                         break;
                     case "cvp":
                         SendMessageF(SendType.Message, e.Data.Channel,
-                            listman.HandleListCommand(10, e.Data.Nick, extraParams), false, true);
+                                     listman.HandleListCommand(10, e.Data.Nick, extraParams), Priority.High);
                         break;
                     case "bnu":
                         SendMessageF(SendType.Message, e.Data.Channel,
-                            listman.HandleListCommand(11, e.Data.Nick, extraParams), false, true);
+                                     listman.HandleListCommand(11, e.Data.Nick, extraParams), Priority.High);
                         break;
                     case "bna":
                         SendMessageF(SendType.Message, e.Data.Channel,
-                            listman.HandleListCommand(12, e.Data.Nick, extraParams), false, true);
+                                     listman.HandleListCommand(12, e.Data.Nick, extraParams), Priority.High);
                         break;
                     case "bes":
                         SendMessageF(SendType.Message, e.Data.Channel,
-                            listman.HandleListCommand(20, e.Data.Nick, extraParams), false, true);
+                                     listman.HandleListCommand(20, e.Data.Nick, extraParams), Priority.High);
                         break;
 
                     //_1568: Restrict the "get" command to ops
                     case "getadmins":
                         if (!HasPrivileges('@', ref e))
                             return;
-                        SendMessageF(SendType.Message, e.Data.Channel, listman.ConfigGetAdmins(extraParams), false, true);
+                        SendMessageF(SendType.Message, e.Data.Channel, listman.ConfigGetAdmins(extraParams), Priority.High);
                         break;
                     case "getbots":
                         if (!HasPrivileges('@', ref e))
                             return;
-                        SendMessageF(SendType.Message, e.Data.Channel, listman.ConfigGetBots(extraParams), false, true);
+                        SendMessageF(SendType.Message, e.Data.Channel, listman.ConfigGetBots(extraParams), Priority.High);
                         break;
 
                     case "intel":
                         string intelResult = listman.GlobalIntel(extraParams);
-                        SendMessageFMulti(SendType.Message, e.Data.Channel, intelResult, false, true);
+                        SendMessageFMulti(SendType.Message, e.Data.Channel, intelResult, Priority.High);
                         break;
                     case "purge":
                         if (!HasPrivileges('@', ref e))
                             return;
-                        SendMessageF(SendType.Message, e.Data.Channel, listman.PurgeWikiData(extraParams), false, true);
+                        SendMessageF(SendType.Message, e.Data.Channel, listman.PurgeWikiData(extraParams), Priority.High);
                         break;
                     case "batchreload":
                         if (!HasPrivileges('@', ref e))
@@ -925,7 +781,7 @@ namespace CVNBot
                 return;
             string bMsg = "*%BB/1.1%B*" + list + "*" + action + "*%C07%B" + item + "%B%C*%C13" + expiry.ToString()
                 + "%C*%C09%B" + reason + "%B%C*%C11%B" + adder + "%C%B*";
-            SendMessageF(SendType.Notice, BroadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"), false, true);
+            SendMessageF(SendType.Notice, BroadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"), Priority.High);
         }
 
         public static void BroadcastDD(string type, string codename, string message, string ingredients)
@@ -933,7 +789,7 @@ namespace CVNBot
             if (BroadcastChannel == "None")
                 return;
             string bMsg = "*%BDD/1.0%B*" + type + "*" + codename + "*%C07%B" + message + "%B%C*%C13" + ingredients + "%C*";
-            SendMessageF(SendType.Notice, BroadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"), false, true);
+            SendMessageF(SendType.Notice, BroadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"), Priority.High);
             logger.Info("Broadcasted DD: " + type + "," + codename + "," + message + "," + ingredients);
         }
 
@@ -1428,7 +1284,7 @@ namespace CVNBot
                 message = "";
             }
 
-            SendMessageFMulti(SendType.Message, FeedChannel, message, true, false);
+            SendMessageFMulti(SendType.Message, FeedChannel, message, Priority.Low);
 
         }
 
@@ -1453,7 +1309,7 @@ namespace CVNBot
             settingsmessage += IsCubbie ? ", IsCubbie:true" : ", IsCubbie:false";
             settingsmessage += disableClassifyEditor ? ", disableClassifyEditor:true" : ", disableClassifyEditor:false;";
 
-            SendMessageFMulti(SendType.Action, destChannel, settingsmessage, false, true);
+            SendMessageFMulti(SendType.Action, destChannel, settingsmessage, Priority.High);
 
         }
 
