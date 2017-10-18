@@ -1026,6 +1026,8 @@ namespace CVNBot
             if (feedFilterThisUser == 4)// 4 is "ignore"
                 return;
 
+            Project project = ((Project)prjlist[r.project]);
+
             switch (r.eventtype)
             {
                 // This case handles:
@@ -1038,9 +1040,9 @@ namespace CVNBot
                     else
                         diffsize = r.szdiff.ToString();
 
-                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("article", project.interwikiLink + r.title);
                     attribs.Add("carticle", r.title);
                     attribs.Add("size", diffsize);
                     attribs.Add("url", r.url);
@@ -1189,14 +1191,14 @@ namespace CVNBot
                         }
 
                         // Did the user user blank the page?
-                        if (((Project)prjlist[r.project]).rautosummBlank.IsMatch(r.comment))
+                        if (project.rautosummBlank.IsMatch(r.comment))
                         {
                             message = GetMessage(96010 + userOffset, ref attribs);
                             AddToGreylist(userOffset, r.user, Program.GetFormatMessage(16311, (String)attribs["article"]));
                             break;
                         }
 
-                        Match rplm = ((Project)prjlist[r.project]).rautosummReplace.Match(r.comment);
+                        Match rplm = project.rautosummReplace.Match(r.comment);
                         if (rplm.Success)
                         {
                             // The user replaced the page.
@@ -1245,22 +1247,22 @@ namespace CVNBot
                     {
                         return;
                     }
-                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("fromname", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("fromname", project.interwikiLink + r.title);
                     attribs.Add("cfromname", r.title);
-                    attribs.Add("toname", ((Project)prjlist[r.project]).interwikiLink + r.movedTo);
+                    attribs.Add("toname", project.interwikiLink + r.movedTo);
                     attribs.Add("ctoname", r.movedTo);
                     attribs.Add("url", r.blockLength); //The blockLength field stores the moveFrom URL
                     attribs.Add("reason", r.comment);
                     message = GetMessage(5500 + userOffset, ref attribs);
                     break;
                 case RCEvent.EventType.block:
-                    attribs.Add("blockname", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("blockname", project.interwikiLink + r.title);
                     attribs.Add("cblockname", r.title.Split(new char[] { ':' }, 2)[1]);
-                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("talkurl", CVNBotUtils.RootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.title.Split(new char[] { ':' }, 2)[1]));
+                    attribs.Add("talkurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.title.Split(new char[] { ':' }, 2)[1]));
                     attribs.Add("length", r.blockLength);
                     attribs.Add("reason", r.comment);
                     message = GetMessage(5400, ref attribs);
@@ -1279,29 +1281,29 @@ namespace CVNBot
                     }
                     break;
                 case RCEvent.EventType.unblock:
-                    attribs.Add("blockname", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("blockname", project.interwikiLink + r.title);
                     attribs.Add("cblockname", r.title.Split(new char[] { ':' }, 2)[1]);
-                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("talkurl", CVNBotUtils.RootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("talkurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
                     attribs.Add("reason", r.comment);
                     message = GetMessage(5700, ref attribs);
                     break;
                 case RCEvent.EventType.delete:
-                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("article", project.interwikiLink + r.title);
                     attribs.Add("carticle", r.title);
-                    attribs.Add("url", CVNBotUtils.RootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/" + CVNBotUtils.WikiEncode(r.title));
+                    attribs.Add("url", CVNBotUtils.RootUrl(project.rooturl) + "wiki/" + CVNBotUtils.WikiEncode(r.title));
                     attribs.Add("reason", r.comment);
                     message = GetMessage(05300, ref attribs);
                     break;
                 case RCEvent.EventType.newuser:
-                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("blockurl", CVNBotUtils.RootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/Special:Blockip/" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("blockurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/Special:Blockip/" + CVNBotUtils.WikiEncode(r.user));
                     attribs.Add("caurl", "https://meta.wikimedia.org/wiki/Special:CentralAuth/" + CVNBotUtils.WikiEncode(r.user));
-                    attribs.Add("talkurl", CVNBotUtils.RootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("talkurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
                     ListMatch bnuMatch = listman.MatchesList(r.user, 11);
                     if (bnuMatch.Success && feedFilterThisEvent == 1)
                     {
@@ -1318,12 +1320,12 @@ namespace CVNBot
                     }
                     break;
                 case RCEvent.EventType.newuser2:
-                    attribs.Add("creator", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("creator", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ccreator", r.user);
-                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.title);
+                    attribs.Add("editor", project.interwikiLink + "User:" + r.title);
                     attribs.Add("ceditor", r.title);
-                    attribs.Add("blockurl", CVNBotUtils.RootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/Special:Blockip/" + CVNBotUtils.WikiEncode(r.user));
-                    attribs.Add("talkurl", CVNBotUtils.RootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("blockurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/Special:Blockip/" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("talkurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
                     ListMatch bnuMatch2 = listman.MatchesList(r.user, 11);
                     if (bnuMatch2.Success)
                     {
@@ -1380,42 +1382,42 @@ namespace CVNBot
                             r.comment = r.comment.Substring(0, 23) + "...";
                     }
 
-                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("uploaditem", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("uploaditem", project.interwikiLink + r.title);
                     attribs.Add("cuploaditem", r.title);
                     attribs.Add("reason", r.comment);
-                    attribs.Add("url", CVNBotUtils.RootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/" + CVNBotUtils.WikiEncode(r.title));
+                    attribs.Add("url", CVNBotUtils.RootUrl(project.rooturl) + "wiki/" + CVNBotUtils.WikiEncode(r.title));
                     message = GetMessage(userOffset + uMsg, ref attribs);
                     break;
                 case RCEvent.EventType.protect:
-                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("article", project.interwikiLink + r.title);
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
                     //'url' in protect is broken, it also contains " [move=sysop] (indefinite)" etc.
-                    //attribs.Add("url", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/" + CVNBotUtils.wikiEncode(r.title));
+                    //attribs.Add("url", CVNBotUtils.rootUrl(project.rooturl) + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = GetMessage(5900, ref attribs);
                     break;
                 case RCEvent.EventType.unprotect:
-                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("article", project.interwikiLink + r.title);
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
                     //'url' in unprotect is fine, it's just the pagetitle
-                    attribs.Add("url", CVNBotUtils.RootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/" + CVNBotUtils.WikiEncode(r.title));
+                    attribs.Add("url", CVNBotUtils.RootUrl(project.rooturl) + "wiki/" + CVNBotUtils.WikiEncode(r.title));
                     message = GetMessage(5901, ref attribs);
                     break;
                 case RCEvent.EventType.modifyprotect:
-                    attribs.Add("editor", ((Project)prjlist[r.project]).interwikiLink + "User:" + r.user);
+                    attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("article", ((Project)prjlist[r.project]).interwikiLink + r.title);
+                    attribs.Add("article", project.interwikiLink + r.title);
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
                     //'url' in modifyprotect is broken, it also contains " [move=sysop] (indefinite)" etc.
-                    //attribs.Add("url", CVNBotUtils.rootUrl(((Project)prjlist[r.project]).rooturl) + "wiki/" + CVNBotUtils.wikiEncode(r.title));
+                    //attribs.Add("url", CVNBotUtils.rootUrl(project.rooturl) + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = GetMessage(5902, ref attribs);
                     break;
             }

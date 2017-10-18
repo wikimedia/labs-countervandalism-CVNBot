@@ -141,8 +141,9 @@ namespace CVNBot
                 rce.title = Project.TranslateNamespace(rce.project, fields[2]);
                 rce.url = CVNBotUtils.RootUrl(fields[6]);
                 rce.user = fields[10];
+                Project project = ((Project)Program.prjlist[rce.project]);
                 // At the moment, fields[14] contains IRC colour codes. For plain edits, remove just the \x03's. For logs, remove using the regex.
-                Match titlemo = ((Project)Program.prjlist[rce.project]).rSpecialLogRegex.Match(fields[2]);
+                Match titlemo = project.rSpecialLogRegex.Match(fields[2]);
                 if (!titlemo.Success)
                 {
                     // This is a regular edit
@@ -172,7 +173,7 @@ namespace CVNBot
                             // > [[Special:Log/newusers]] create2  * Ujju.19788 *  created new account User:Upendhare
                             if (fields[4].Contains("create2"))
                             {
-                                Match mc2 = ((Project)Program.prjlist[rce.project]).rCreate2Regex.Match(rce.comment);
+                                Match mc2 = project.rCreate2Regex.Match(rce.comment);
                                 if (mc2.Success)
                                 {
                                     rce.title = mc2.Groups[1].Captures[0].Value;
@@ -203,7 +204,7 @@ namespace CVNBot
                             // > [[Special:Log/block]] reblock  * DeltaQuad *  changed block settings for [[User:208.111.64.0/19]] (anon. only, account creation blocked) with an expiry time of 06:21, February 2, 2019: {{colocationwebhost}}
                             if (fields[4].Contains("unblock"))
                             {
-                                Match ubm = ((Project)Program.prjlist[rce.project]).runblockRegex.Match(rce.comment);
+                                Match ubm = project.runblockRegex.Match(rce.comment);
                                 if (ubm.Success)
                                 {
                                     rce.eventtype = RCEvent.EventType.unblock;
@@ -222,7 +223,7 @@ namespace CVNBot
                             }
                             else if (fields[4].Contains("reblock"))
                             {
-                                Match rbm = ((Project)Program.prjlist[rce.project]).rreblockRegex.Match(rce.comment);
+                                Match rbm = project.rreblockRegex.Match(rce.comment);
                                 if (rbm.Success)
                                 {
                                     // Treat reblock the same as a new block for simplicity
@@ -237,7 +238,7 @@ namespace CVNBot
                             }
                             else
                             {
-                                Match bm = ((Project)Program.prjlist[rce.project]).rblockRegex.Match(rce.comment);
+                                Match bm = project.rblockRegex.Match(rce.comment);
                                 if (bm.Success)
                                 {
                                     rce.eventtype = RCEvent.EventType.block;
@@ -265,9 +266,9 @@ namespace CVNBot
                             break;
                         case "protect":
                             // Could be a protect, modifyprotect or unprotect; need to parse regex
-                            Match pm = ((Project)Program.prjlist[rce.project]).rprotectRegex.Match(rce.comment);
-                            Match modpm = ((Project)Program.prjlist[rce.project]).rmodifyprotectRegex.Match(rce.comment);
-                            Match upm = ((Project)Program.prjlist[rce.project]).runprotectRegex.Match(rce.comment);
+                            Match pm = project.rprotectRegex.Match(rce.comment);
+                            Match modpm = project.rmodifyprotectRegex.Match(rce.comment);
+                            Match upm = project.runprotectRegex.Match(rce.comment);
                             if (pm.Success)
                             {
                                 rce.eventtype = RCEvent.EventType.protect;
@@ -313,7 +314,7 @@ namespace CVNBot
                         //break;
                         case "delete":
                             // Could be a delete or restore; need to parse regex
-                            Match dm = ((Project)Program.prjlist[rce.project]).rdeleteRegex.Match(rce.comment);
+                            Match dm = project.rdeleteRegex.Match(rce.comment);
                             if (dm.Success)
                             {
                                 rce.eventtype = RCEvent.EventType.delete;
@@ -326,7 +327,7 @@ namespace CVNBot
                             }
                             else
                             {
-                                Match udm = ((Project)Program.prjlist[rce.project]).rrestoreRegex.Match(rce.comment);
+                                Match udm = project.rrestoreRegex.Match(rce.comment);
                                 if (udm.Success)
                                 {
                                     rce.eventtype = RCEvent.EventType.restore;
@@ -346,7 +347,7 @@ namespace CVNBot
                             }
                             break;
                         case "upload":
-                            Match um = ((Project)Program.prjlist[rce.project]).ruploadRegex.Match(rce.comment);
+                            Match um = project.ruploadRegex.Match(rce.comment);
                             if (um.Success)
                             {
                                 rce.eventtype = RCEvent.EventType.upload;
@@ -368,13 +369,13 @@ namespace CVNBot
                             //Is a move
                             rce.eventtype = RCEvent.EventType.move;
                             //Check "move over redirect" first: it's longer, and plain "move" may match both (e.g., en-default)
-                            Match mrm = ((Project)Program.prjlist[rce.project]).rmoveredirRegex.Match(rce.comment);
+                            Match mrm = project.rmoveredirRegex.Match(rce.comment);
                             if (mrm.Success)
                             {
                                 rce.title = Project.TranslateNamespace(rce.project, mrm.Groups["item1"].Captures[0].Value);
                                 rce.movedTo = Project.TranslateNamespace(rce.project, mrm.Groups["item2"].Captures[0].Value);
                                 //We use the unused blockLength field to store our "moved from" URL
-                                rce.blockLength = CVNBotUtils.RootUrl(((Project)Program.prjlist[rce.project]).rooturl) + "wiki/" + CVNBotUtils.WikiEncode(mrm.Groups["item1"].Captures[0].Value);
+                                rce.blockLength = CVNBotUtils.RootUrl(project.rooturl) + "wiki/" + CVNBotUtils.WikiEncode(mrm.Groups["item1"].Captures[0].Value);
                                 try
                                 {
                                     rce.comment = mrm.Groups["comment"].Captures[0].Value;
@@ -383,13 +384,13 @@ namespace CVNBot
                             }
                             else
                             {
-                                Match mm = ((Project)Program.prjlist[rce.project]).rmoveRegex.Match(rce.comment);
+                                Match mm = project.rmoveRegex.Match(rce.comment);
                                 if (mm.Success)
                                 {
                                     rce.title = Project.TranslateNamespace(rce.project, mm.Groups["item1"].Captures[0].Value);
                                     rce.movedTo = Project.TranslateNamespace(rce.project, mm.Groups["item2"].Captures[0].Value);
                                     //We use the unused blockLength field to store our "moved from" URL
-                                    rce.blockLength = CVNBotUtils.RootUrl(((Project)Program.prjlist[rce.project]).rooturl) + "wiki/" + CVNBotUtils.WikiEncode(mm.Groups["item1"].Captures[0].Value);
+                                    rce.blockLength = CVNBotUtils.RootUrl(project.rooturl) + "wiki/" + CVNBotUtils.WikiEncode(mm.Groups["item1"].Captures[0].Value);
                                     try
                                     {
                                         rce.comment = mm.Groups["comment"].Captures[0].Value;
