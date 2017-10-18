@@ -210,7 +210,7 @@ namespace CVNBot
             }
             catch (ConnectionException e)
             {
-                logger.Fatal("Could not connect: " + e.Message);
+                logger.Fatal("Could not connect", e);
                 Exit();
             }
 
@@ -691,7 +691,7 @@ namespace CVNBot
                         catch (Exception ex)
                         {
                             SendMessageF(SendType.Message, e.Data.Channel, "Unable to reload: " + ex.Message, false, true);
-                            logger.Error("Reload project failed: " + ex.Message);
+                            logger.Error("Reload project failed", ex);
                         }
                         break;
                     case "load":
