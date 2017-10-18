@@ -836,12 +836,19 @@ namespace CVNBot
 
             logger.Info("Fetching list of " + getGroup + " users from " + projectName);
 
+
+            if (!Program.prjlist.ContainsKey(projectName))
+            {
+                throw new Exception("Undefined project: " + projectName);
+            }
+            Project project = ((Project)Program.prjlist[projectName]);
+
             string resp = null;
             try
             {
 
-                resp = CVNBotUtils.GetRawDocument("https://" + projectName
-                                                         + ".org/w/api.php?format=xml&action=query&list=allusers&augroup="
+                resp = CVNBotUtils.GetRawDocument(project.rooturl
+                                                         + "w/api.php?format=xml&action=query&list=allusers&augroup="
                                                          + getGroup + "&aulimit=max");
                 XmlDocument doc = new XmlDocument();
                 doc.LoadXml(resp);
