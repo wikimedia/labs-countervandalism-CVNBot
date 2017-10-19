@@ -91,18 +91,26 @@ namespace CVNBot
          * hardhide is dealt with at end of ReactToRCEvent() (after autolistings are done)
          * softhide is done inline
          */
+        // any event by anon: show-all
         static int feedFilterUsersAnon = 1;
+        // any event by reg: special-only
         static int feedFilterUsersReg = 2;
+        // any event by bot: ignore
         static int feedFilterUsersBot = 4;
-        static int feedFilterEventMinorEdit = 4; // No 'softhide', 2 behaves like 1
-        static int feedFilterEventEdit = 1; // No 'softhide', 2 behaves like 1
-        static int feedFilterEventNewpage = 1; // No 'softhide', 2 behaves like 1
+        // any minor edit: ignore
+        static int feedFilterEventMinorEdit = 4;
+        // any page edit: show-all (other filter may override)
+        static int feedFilterEventEdit = 1;
+        // any page create: show-all (other filter may override)
+        static int feedFilterEventNewpage = 1;
+        // any move event: show-all
         static int feedFilterEventMove = 1;
-        static int feedFilterEventBlock = 1; // No 'softhide', 2 behaves like 1; includes unblock
+        // any move event: show-all (bots hidden?)
+        static int feedFilterEventBlock = 1;
         static int feedFilterEventDelete = 1;
         static int feedFilterEventNewuser = 1;
         static int feedFilterEventUpload = 1;
-        static int feedFilterEventProtect = 1; // No 'softhide', 2 behaves like 1; includes unprotect and modifyprotect
+        static int feedFilterEventProtect = 1;
 
         static void Main()
         {
@@ -143,18 +151,42 @@ namespace CVNBot
             IsCubbie = mainConfig.ContainsKey("IsCubbie");
             forceHttps = mainConfig.ContainsKey("forceHttps");
             disableClassifyEditor = mainConfig.ContainsKey("disableClassifyEditor");
-            feedFilterUsersAnon = mainConfig.ContainsKey("feedFilterUsersAnon") ? Int32.Parse((string)mainConfig["feedFilterUsersAnon"]) : 1;
-            feedFilterUsersReg = mainConfig.ContainsKey("feedFilterUsersReg") ? Int32.Parse((string)mainConfig["feedFilterUsersReg"]) : 2;
-            feedFilterUsersBot = mainConfig.ContainsKey("feedFilterUsersBot") ? Int32.Parse((string)mainConfig["feedFilterUsersBot"]) : 4;
-            feedFilterEventMinorEdit = mainConfig.ContainsKey("feedFilterEventMinorEdit") ? Int32.Parse((string)mainConfig["feedFilterEventMinorEdit"]) : 4;
-            feedFilterEventEdit = mainConfig.ContainsKey("feedFilterEventEdit") ? Int32.Parse((string)mainConfig["feedFilterEventEdit"]) : 1;
-            feedFilterEventNewpage = mainConfig.ContainsKey("feedFilterEventNewpage") ? Int32.Parse((string)mainConfig["feedFilterEventNewpage"]) : 1;
-            feedFilterEventMove = mainConfig.ContainsKey("feedFilterEventMove") ? Int32.Parse((string)mainConfig["feedFilterEventMove"]) : 1;
-            feedFilterEventBlock = mainConfig.ContainsKey("feedFilterEventBlock") ? Int32.Parse((string)mainConfig["feedFilterEventBlock"]) : 1;
-            feedFilterEventDelete = mainConfig.ContainsKey("feedFilterEventDelete") ? Int32.Parse((string)mainConfig["feedFilterEventDelete"]) : 1;
-            feedFilterEventNewuser = mainConfig.ContainsKey("feedFilterEventNewuser") ? Int32.Parse((string)mainConfig["feedFilterEventNewuser"]) : 1;
-            feedFilterEventUpload = mainConfig.ContainsKey("feedFilterEventUpload") ? Int32.Parse((string)mainConfig["feedFilterEventUpload"]) : 1;
-            feedFilterEventProtect = mainConfig.ContainsKey("feedFilterEventProtect") ? Int32.Parse((string)mainConfig["feedFilterEventProtect"]) : 1;
+
+            if (mainConfig.ContainsKey("feedFilterUsersAnon"))
+                feedFilterUsersAnon = Int32.Parse((string)mainConfig["feedFilterUsersAnon"]);
+
+            if (mainConfig.ContainsKey("feedFilterUsersReg"))
+                feedFilterUsersReg = Int32.Parse((string)mainConfig["feedFilterUsersReg"]);
+
+            if (mainConfig.ContainsKey("feedFilterUsersBot"))
+                feedFilterUsersBot = Int32.Parse((string)mainConfig["feedFilterUsersBot"]);
+
+            if (mainConfig.ContainsKey("feedFilterEventMinorEdit"))
+                feedFilterEventMinorEdit = Int32.Parse((string)mainConfig["feedFilterEventMinorEdit"]);
+
+            if (mainConfig.ContainsKey("feedFilterEventEdit"))
+                feedFilterEventEdit = Int32.Parse((string)mainConfig["feedFilterEventEdit"]);
+
+            if (mainConfig.ContainsKey("feedFilterEventNewpage"))
+                feedFilterEventNewpage = Int32.Parse((string)mainConfig["feedFilterEventNewpage"]);
+
+            if (mainConfig.ContainsKey("feedFilterEventMove"))
+                feedFilterEventMove = Int32.Parse((string)mainConfig["feedFilterEventMove"]);
+
+            if (mainConfig.ContainsKey("feedFilterEventBlock"))
+                feedFilterEventBlock = Int32.Parse((string)mainConfig["feedFilterEventBlock"]);
+
+            if (mainConfig.ContainsKey("feedFilterEventDelete"))
+                feedFilterEventDelete = Int32.Parse((string)mainConfig["feedFilterEventDelete"]);
+
+            if (mainConfig.ContainsKey("feedFilterEventNewuser"))
+                feedFilterEventNewuser = Int32.Parse((string)mainConfig["feedFilterEventNewuser"]);
+
+            if (mainConfig.ContainsKey("feedFilterEventUpload"))
+                feedFilterEventUpload = Int32.Parse((string)mainConfig["feedFilterEventUpload"]);
+
+            if (mainConfig.ContainsKey("feedFilterEventProtect"))
+                feedFilterEventProtect = Int32.Parse((string)mainConfig["feedFilterEventProtect"]);
 
             // Include bot nick in all logs from any thread.
             // Especially useful when running mulitple CVNBot instances that
