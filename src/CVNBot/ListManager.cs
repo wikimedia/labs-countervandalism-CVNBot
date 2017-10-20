@@ -79,7 +79,7 @@ namespace CVNBot
                     }
                 }
             }
-			logger.Info("Tim threw away " + total.ToString() + " items");
+            logger.InfoFormat("Tim threw away {0} items", total);
         }
 
         public void CloseDBConnection()
@@ -834,7 +834,7 @@ namespace CVNBot
             else
                 throw new Exception("Undefined group: " + getGroup);
 
-            logger.Info("Fetching list of " + getGroup + " users from " + projectName);
+            logger.InfoFormat("Fetching list of {0} users from {1}", getGroup, projectName);
 
 
             if (!Program.prjlist.ContainsKey(projectName))
@@ -861,15 +861,15 @@ namespace CVNBot
                     AddUserToList(name, projectName, getGroupUT, "CVNBot", "Auto-download from wiki", 0);
                 }
 
-                logger.Info("Added " + total.ToString() + " " + getGroup + " users from " + projectName);
+                logger.InfoFormat("Added {0} {1} users from {2}", total, getGroup, projectName);
             }
             catch (Exception e)
             {
                 if (resp != null)
                 {
-                    logger.Info("Preview of failed user list fetch: " + resp.Substring(0, 100));
+                    logger.InfoFormat("Preview of failed user list fetch: {0}", resp.Substring(0, 100));
                 }
-                logger.Error("Unable to get list of " + getGroup + " users from " + projectName, e);
+                logger.Error("Unable to get list", e);
             }
         }
 

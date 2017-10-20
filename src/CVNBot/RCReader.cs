@@ -47,11 +47,13 @@ namespace CVNBot
 
         static readonly ILog logger = LogManager.GetLogger("CVNBot.RCReader");
 
+        static readonly string serverName = "irc.wikimedia.org";
+
         public void InitiateConnection()
         {
             Thread.CurrentThread.Name = "RCReader";
 
-            logger.Info("RCReader thread started");
+            logger.Info("Thread started");
 
             // Set up RCReader
             rcirc.Encoding = System.Text.Encoding.UTF8;
@@ -63,11 +65,11 @@ namespace CVNBot
 
             try
             {
-                rcirc.Connect("irc.wikimedia.org", 6667);
+                rcirc.Connect(serverName, 6667);
             }
             catch (ConnectionException e)
             {
-                logger.Warn("Connection error", e);
+                logger.Warn("Could not connect", e);
                 return;
             }
 
@@ -75,6 +77,7 @@ namespace CVNBot
             {
                 rcirc.Login(Program.botNick, "CVNBot", 4, "CVNBot");
 
+                logger.InfoFormat("Joining {0} channels", Program.prjlist.Count);
                 foreach (string prj in Program.prjlist.Keys)
                 {
                     rcirc.RfcJoin("#" + prj);
@@ -82,7 +85,7 @@ namespace CVNBot
 
                 // Enter loop
                 rcirc.Listen();
-                // when Listen() returns the IRC session is over
+                // When Listen() returns the IRC session is over
                 rcirc.Disconnect();
             }
             catch (ConnectionException)
@@ -94,7 +97,7 @@ namespace CVNBot
 
         void Rcirc_OnConnected(object sender, EventArgs e)
         {
-            logger.Info("Connected to RC feed");
+            logger.InfoFormat("Connected to {0}", serverName);
         }
 
         void Rcirc_OnChannelMessage(object sender, IrcEventArgs e)

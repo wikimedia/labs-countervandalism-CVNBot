@@ -101,18 +101,18 @@ namespace CVNBot
             if (this.ContainsKey(projectName))
                 throw new Exception(Program.GetFormatMessage(16400, projectName));
 
-            logger.Info("Registering new project " + projectName + " with interwiki " + interwiki);
+            logger.InfoFormat("Registering new project {0} with interwiki {1}", projectName, interwiki);
             Project prj = new Project();
             prj.projectName = projectName;
             prj.interwikiLink = interwiki;
             prj.rooturl = "https://" + projectName + ".org/";
             prj.RetrieveWikiDetails();
             this.Add(projectName, prj);
-            // Join the new channel:
-            logger.Info("Joining #" + projectName);
+            // Join the new channel
+            logger.InfoFormat("Joining RCReader channel: #{0}", projectName);
             Program.rcirc.rcirc.RfcJoin("#" + projectName);
 
-            // Dump new settings:
+            // Dump new settings
             DumpToFile();
         }
 

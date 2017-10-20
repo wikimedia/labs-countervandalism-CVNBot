@@ -207,10 +207,8 @@ namespace CVNBot
             // Read projects (prjlist displays logger message)
             prjlist.LoadFromFile();
 
-            logger.Info("Loading lists");
             listman.InitDBConnection((string)mainConfig["lists"]);
 
-            logger.Info("Setting up main IRC client");
             // Set up freenode IRC client
             irc.Encoding = System.Text.Encoding.UTF8;
             irc.SendDelay = 300;
@@ -236,34 +234,36 @@ namespace CVNBot
             try
             {
                 irc.Login(botNick, (string)mainConfig["description"] + " " + version, 4, botNick, (string)mainConfig["botpass"]);
+                logger.InfoFormat("Joining channels: {0}, {1}", ControlChannel, FeedChannel);
                 irc.RfcJoin(ControlChannel);
                 irc.RfcJoin(FeedChannel);
                 if (BroadcastChannel != "None")
+                {
+                    logger.InfoFormat("Joining broadcast channel: {0}", BroadcastChannel);
                     irc.RfcJoin(BroadcastChannel);
+                }
 
-                //Now connect the RCReader to channels
+                // Now connect the RCReader to channels
                 new Thread(new ThreadStart(rcirc.InitiateConnection)).Start();
 
-                // here we tell the IRC API to go into a receive mode, all events
+                // Here we tell the IRC API to go into a receive mode, all events
                 // will be triggered by _this_ thread (main thread in this case)
                 // Listen() blocks by default, you can also use ListenOnce() if you
                 // need that does one IRC operation and then returns, so you need then
                 // an own loop
                 irc.Listen();
 
-                // when Listen() returns our IRC session is over, to be sure we call
-                // disconnect manually
+                // When Listen() returns, our IRC session is over, let's disconnect
                 irc.Disconnect();
             }
             catch (ConnectionException)
             {
-                // this exception is handled because Disconnect() can throw a not
-                // connected exception
+                // This exception is handled because Disconnect() can throw
                 Exit();
             }
             catch (Exception e)
             {
-                // this should not happen by just in case we handle it nicely
+                // This should not happen, but just in case, we handle it nicely
                 logger.Fatal("Error occurred in Main IRC try clause!", e);
                 Exit();
             }
@@ -311,9 +311,9 @@ namespace CVNBot
         static void Irc_OnError(object sender, Meebey.SmartIrc4net.ErrorEventArgs e)
         {
             logger.Error("IRC: " + e.ErrorMessage);
-            if (e.ErrorMessage.Contains("Excess Flood")) //Do not localize
+            if (e.ErrorMessage.Contains("Excess Flood")) // Do not localize
             {
-                //Oops, we were flooded off
+                // Oops, we were flooded off
                 logger.Warn("Initiating restart sequence after Excess Flood");
                 Restart();
             }
@@ -428,7 +428,7 @@ namespace CVNBot
 
         static void Irc_OnConnected(object sender, EventArgs e)
         {
-            logger.Info("Connected to " + ircServerName);
+            logger.InfoFormat("Connected to {0}", ircServerName);
         }
 
 
@@ -600,7 +600,7 @@ namespace CVNBot
                         catch (Exception ex)
                         {
                             SendMessageF(SendType.Message, e.Data.Channel, "Unable to add project: " + ex.Message, Priority.High);
-                            logger.Error("Add project failed: " + ex.Message);
+                            logger.Error("Add project failed", ex);
                         }
                         break;
                     case "bleep":
@@ -644,7 +644,7 @@ namespace CVNBot
                         catch (Exception ex)
                         {
                             SendMessageF(SendType.Message, e.Data.Channel, "Unable to delete project: " + ex.Message, Priority.High);
-                            logger.Error("Delete project failed: " + ex.Message);
+                            logger.Error("Delete project failed", ex);
                         }
                         break;
                     case "list":
@@ -1373,7 +1373,7 @@ namespace CVNBot
         {
             string cmd = cfgRestartCmd;
             string args = cfgRestartArgs.Replace("$1", System.Reflection.Assembly.GetExecutingAssembly().Location);
-            logger.Info("Executing: " + cmd + " " + args);
+            logger.InfoFormat("Executing: {0} {1}", cmd, args);
             System.Diagnostics.Process.Start(cmd, args);
             Exit();
         }
