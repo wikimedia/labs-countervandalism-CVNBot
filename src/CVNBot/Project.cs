@@ -164,6 +164,7 @@ namespace CVNBot
         {
             if (!snamespacesAlreadySet)
             {
+                logger.InfoFormat("Fetching namespaces from {0}", rooturl);
                 snamespaces = CVNBotUtils.GetRawDocument(rooturl + "w/api.php?format=xml&action=query&meta=siteinfo&siprop=namespaces");
                 if (snamespaces == "")
                     throw new Exception("Can't load list of namespaces from " + rooturl);
@@ -180,7 +181,6 @@ namespace CVNBot
                 namespaces.Add(namespacesNode.ChildNodes[i].Attributes["id"].Value, namespacesNode.ChildNodes[i].InnerText);
                 namespacesLogline += "id["+namespacesNode.ChildNodes[i].Attributes["id"].Value + "]="+namespacesNode.ChildNodes[i].InnerText + "; ";
             }
-            logger.Info("getNamespaces: "+namespacesLogline);
         }
 
         public void RetrieveWikiDetails()
@@ -189,6 +189,8 @@ namespace CVNBot
             GetNamespaces(false);
 
             specialLogRegex = namespaces["-1"] + @":.+?/(.+)";
+
+            logger.InfoFormat("Fetching interface messages from {0}", rooturl);
 
             // Location of message, number of required parameters, reference to regex, allow lazy
             // Retrieve messages for all the required events and generate regexen for them
