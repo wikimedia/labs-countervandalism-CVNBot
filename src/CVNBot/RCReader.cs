@@ -75,7 +75,7 @@ namespace CVNBot
 
             try
             {
-                rcirc.Login(Program.botNick, "CVNBot", 4, "CVNBot");
+                rcirc.Login(Program.config.botNick, "CVNBot", 4, "CVNBot");
 
                 logger.InfoFormat("Joining {0} channels", Program.prjlist.Count);
                 foreach (string prj in Program.prjlist.Keys)

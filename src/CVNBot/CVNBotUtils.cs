@@ -182,7 +182,7 @@ namespace CVNBot
         /// <returns></returns>
         public static string RootUrl(string input)
         {
-            if (Program.forceHttps)
+            if (Program.config.forceHttps)
                 return Regex.Replace(input, "^http:", "https:");
 
             return input;

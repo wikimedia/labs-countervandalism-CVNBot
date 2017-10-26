@@ -665,7 +665,7 @@ namespace CVNBot
         /// <returns></returns>
         public UserType ClassifyEditor(string username, string project)
         {
-            if (!Program.disableClassifyEditor)
+            if (!Program.config.disableClassifyEditor)
             {
 
                 IDbCommand cmd = dbcon.CreateCommand();

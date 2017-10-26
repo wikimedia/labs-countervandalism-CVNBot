@@ -1,10 +1,13 @@
 using System;
 using System.Collections;
+using System.Collections.Specialized;
 using Meebey.SmartIrc4net;
 using System.Threading;
 using System.Text.RegularExpressions;
 using System.IO;
 using log4net;
+using System.Collections.Generic;
+using System.Reflection;
 
 // Logging:
 [assembly: log4net.Config.XmlConfigurator(Watch = true)]
@@ -20,7 +23,8 @@ namespace CVNBot
         public static ProjectList prjlist = new ProjectList();
         public static ListManager listman = new ListManager();
         public static SortedList msgs = new SortedList();
-        public static SortedList mainConfig = new SortedList();
+        public static StringDictionary rawConfig = new StringDictionary();
+        public static Config config = new Config();
 
         static ILog logger = LogManager.GetLogger("CVNBot.Program");
 
@@ -34,166 +38,107 @@ namespace CVNBot
             + @"11\x02(?<adder>.*?)\x03\x02\*");
         static Regex botCmd;
 
-        /* INI settings */
-        public static string botNick;
-        static int editblank;
-        static int editbig;
-        static int newbig;
-        static int newsmall;
-        // Channel name
-        static string ControlChannel;
-        // Channel name
-        static string FeedChannel;
-        // Channel name or "None"
-        static string BroadcastChannel;
-        // Host name
-        static string ircServerName;
-        // Restart command (e.g. "mono" or "nice")
-        static string cfgRestartCmd;
-        // Restart command arguments (e.g. "mono $1" if restartCmd is "nice")
-        static string cfgRestartArgs;
-
-        // Whether to entirely disable the database. This means requesting a usertype
-        // will always return 3 (anon) or 4 (user) based on a static regex.
-        // This speeds up the the flow incredibly (especially when using SQLite) and makes it possible
-        // to load a many (or even, all) of the Wikimedia wikis without producing an ever-growing backlog
-        // of change events faster than we can process them.
-        // Disabling the database means the actual output in the feedchannel will not be useful (all edits go through,
-        // no bot, user, or whitelist detection).
-        // Recommended to be used in combination with high(est) feedFilter settings for the purposes
-        // of detecting block events from all wikis to then automatically broadcast to other bots
-        // for cross-wiki vandalism detection. Originally written for the CVNBlackRock bot.
-        public static bool disableClassifyEditor;
-
-        // IsCubbie overrides feedfilters if true to only show uploads and ignore the rest
-        static bool IsCubbie;
-
-        // Use https as protocol in output feeds.
-        public static bool forceHttps;
-
-        /**
-         * Feed filters
-         *
-         * These settings allow filtering of user types and event types
-         * They are defined via the .ini file and loaded on top of the Main thread
-         * Possible values:
-         *  1 "show"     (show and allow autolist) - default
-         *  2 "softhide" (hide non-specials, show exceptions and allow autolist)
-         *     softhide users: only large actions or matching watchlist/BES/BNU etc.
-         *     softhide events: hide bots, admins, whitelist performing the event
-         *  3 "hardhide" (hide all but do autolist)
-         *  4 "ignore"   (hide and ignore totally)
-         * show/ignore is dealt with at beginning of ReactToRCEvent()
-         * hardhide is dealt with at end of ReactToRCEvent() (after autolistings are done)
-         * softhide is done inline
-         */
-        // any event by anon: show-all
-        static int feedFilterUsersAnon = 1;
-        // any event by reg: special-only
-        static int feedFilterUsersReg = 2;
-        // any event by bot: ignore
-        static int feedFilterUsersBot = 4;
-        // any minor edit: ignore
-        static int feedFilterEventMinorEdit = 4;
-        // any page edit: show-all (other filter may override)
-        static int feedFilterEventEdit = 1;
-        // any page create: show-all (other filter may override)
-        static int feedFilterEventNewpage = 1;
-        // any move event: show-all
-        static int feedFilterEventMove = 1;
-        // any move event: show-all (bots hidden?)
-        static int feedFilterEventBlock = 1;
-        static int feedFilterEventDelete = 1;
-        static int feedFilterEventNewuser = 1;
-        static int feedFilterEventUpload = 1;
-        static int feedFilterEventProtect = 1;
-
         static void Main()
         {
             Thread.CurrentThread.Name = "Main";
             Thread.GetDomain().UnhandledException += Application_UnhandledException;
 
-            string mainConfigFN = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
-                + Path.DirectorySeparatorChar + "CVNBot.ini";
+            string rawConfigFN = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)
+                                     + Path.DirectorySeparatorChar.ToString() + "CVNBot.ini";
 
-            using (StreamReader sr = new StreamReader(mainConfigFN))
+            // Read config file
+            using (StreamReader sr = new StreamReader(rawConfigFN))
             {
                 String line;
                 while ((line = sr.ReadLine()) != null)
                 {
-                    if (!line.StartsWith("#") && (line != "")) //ignore comments
+					// Ignore comments
+                    if (!line.StartsWith("#") && (line != ""))
                     {
                         string[] parts = line.Split(new char[] { '=' }, 2);
-                        mainConfig.Add(parts[0], parts[1]);
+                        rawConfig[parts[0]] = parts[1];
                     }
                 }
             }
 
-            botNick = (string)mainConfig["botnick"];
-            ControlChannel = (string)mainConfig["controlchannel"];
-            FeedChannel = (string)mainConfig["feedchannel"];
-            BroadcastChannel = (string)mainConfig["broadcastchannel"];
-            ircServerName = (string)mainConfig["ircserver"];
-            cfgRestartCmd = mainConfig.ContainsKey("restartcmd") ? (string)mainConfig["restartcmd"] : "mono";
-            cfgRestartArgs = mainConfig.ContainsKey("restartarg") ? (string)mainConfig["restartarg"] : "$1";
-
-            editblank = Int32.Parse((string)mainConfig["editblank"]);
-            editbig = Int32.Parse((string)mainConfig["editbig"]);
-            newbig = Int32.Parse((string)mainConfig["newbig"]);
-            newsmall = Int32.Parse((string)mainConfig["newsmall"]);
-            prjlist.fnProjectsXML = (string)mainConfig["projects"];
-
-            // Optional
-            IsCubbie = mainConfig.ContainsKey("IsCubbie");
-            forceHttps = mainConfig.ContainsKey("forceHttps");
-            disableClassifyEditor = mainConfig.ContainsKey("disableClassifyEditor");
-
-            if (mainConfig.ContainsKey("feedFilterUsersAnon"))
-                feedFilterUsersAnon = Int32.Parse((string)mainConfig["feedFilterUsersAnon"]);
-
-            if (mainConfig.ContainsKey("feedFilterUsersReg"))
-                feedFilterUsersReg = Int32.Parse((string)mainConfig["feedFilterUsersReg"]);
-
-            if (mainConfig.ContainsKey("feedFilterUsersBot"))
-                feedFilterUsersBot = Int32.Parse((string)mainConfig["feedFilterUsersBot"]);
-
-            if (mainConfig.ContainsKey("feedFilterEventMinorEdit"))
-                feedFilterEventMinorEdit = Int32.Parse((string)mainConfig["feedFilterEventMinorEdit"]);
-
-            if (mainConfig.ContainsKey("feedFilterEventEdit"))
-                feedFilterEventEdit = Int32.Parse((string)mainConfig["feedFilterEventEdit"]);
-
-            if (mainConfig.ContainsKey("feedFilterEventNewpage"))
-                feedFilterEventNewpage = Int32.Parse((string)mainConfig["feedFilterEventNewpage"]);
-
-            if (mainConfig.ContainsKey("feedFilterEventMove"))
-                feedFilterEventMove = Int32.Parse((string)mainConfig["feedFilterEventMove"]);
-
-            if (mainConfig.ContainsKey("feedFilterEventBlock"))
-                feedFilterEventBlock = Int32.Parse((string)mainConfig["feedFilterEventBlock"]);
-
-            if (mainConfig.ContainsKey("feedFilterEventDelete"))
-                feedFilterEventDelete = Int32.Parse((string)mainConfig["feedFilterEventDelete"]);
-
-            if (mainConfig.ContainsKey("feedFilterEventNewuser"))
-                feedFilterEventNewuser = Int32.Parse((string)mainConfig["feedFilterEventNewuser"]);
-
-            if (mainConfig.ContainsKey("feedFilterEventUpload"))
-                feedFilterEventUpload = Int32.Parse((string)mainConfig["feedFilterEventUpload"]);
-
-            if (mainConfig.ContainsKey("feedFilterEventProtect"))
-                feedFilterEventProtect = Int32.Parse((string)mainConfig["feedFilterEventProtect"]);
+            // Apply config
+            // User
+            if (rawConfig.ContainsKey("botnick"))
+                config.botNick = rawConfig["botnick"];
+            if (rawConfig.ContainsKey("botpass"))
+                config.botPass = rawConfig["botpass"];
+            if (rawConfig.ContainsKey("description"))
+                config.description = rawConfig["description"];
+            if (rawConfig.ContainsKey("partmsg"))
+                config.description = rawConfig["partmsg"];
+            // Server
+            if (rawConfig.ContainsKey("ircserver"))
+                config.ircServerName = rawConfig["ircserver"];
+            if (rawConfig.ContainsKey("feedchannel"))
+                config.feedChannel = rawConfig["feedchannel"];
+            if (rawConfig.ContainsKey("controlchannel"))
+                config.controlChannel = rawConfig["controlchannel"];
+            if (rawConfig.ContainsKey("broadcastchannel"))
+                config.broadcastChannel = rawConfig["broadcastchannel"];
+            // Files
+            if (rawConfig.ContainsKey("messages"))
+                config.messagesFile = rawConfig["messages"];
+            if (rawConfig.ContainsKey("lists"))
+                config.listsFile = rawConfig["lists"];
+            if (rawConfig.ContainsKey("projects"))
+                config.projectsFile = rawConfig["projects"];
+            // Process
+            if (rawConfig.ContainsKey("restartcmd"))
+                config.restartCmd = rawConfig["restartcmd"];
+            if (rawConfig.ContainsKey("restartarg"))
+                config.restartArgs = rawConfig["restartarg"];
+            // Feed
+            if (rawConfig.ContainsKey("editblank"))
+                config.editBlank = Int32.Parse(rawConfig["editblank"]);
+            if (rawConfig.ContainsKey("editbig"))
+                config.editBig = Int32.Parse(rawConfig["editbig"]);
+            if (rawConfig.ContainsKey("newbig"))
+                config.newBig = Int32.Parse(rawConfig["newbig"]);
+            if (rawConfig.ContainsKey("newsmall"))
+                config.newSmall = Int32.Parse(rawConfig["newsmall"]);
+            config.isCubbie = rawConfig.ContainsKey("IsCubbie");
+            config.disableClassifyEditor = rawConfig.ContainsKey("disableClassifyEditor");
+            config.forceHttps = rawConfig.ContainsKey("forceHttps");
+            if (rawConfig.ContainsKey("feedFilterUsersAnon"))
+                config.feedFilterUsersAnon = Int32.Parse(rawConfig["feedFilterUsersAnon"]);
+            if (rawConfig.ContainsKey("feedFilterUsersReg"))
+                config.feedFilterUsersReg = Int32.Parse(rawConfig["feedFilterUsersReg"]);
+            if (rawConfig.ContainsKey("feedFilterUsersBot"))
+                config.feedFilterUsersBot = Int32.Parse(rawConfig["feedFilterUsersBot"]);
+            if (rawConfig.ContainsKey("feedFilterEventMinorEdit"))
+                config.feedFilterEventMinorEdit = Int32.Parse(rawConfig["feedFilterEventMinorEdit"]);
+            if (rawConfig.ContainsKey("feedFilterEventEdit"))
+                config.feedFilterEventEdit = Int32.Parse(rawConfig["feedFilterEventEdit"]);
+            if (rawConfig.ContainsKey("feedFilterEventNewpage"))
+                config.feedFilterEventNewpage = Int32.Parse(rawConfig["feedFilterEventNewpage"]);
+            if (rawConfig.ContainsKey("feedFilterEventMove"))
+                config.feedFilterEventMove = Int32.Parse(rawConfig["feedFilterEventMove"]);
+            if (rawConfig.ContainsKey("feedFilterEventBlock"))
+                config.feedFilterEventBlock = Int32.Parse(rawConfig["feedFilterEventBlock"]);
+            if (rawConfig.ContainsKey("feedFilterEventDelete"))
+                config.feedFilterEventDelete = Int32.Parse(rawConfig["feedFilterEventDelete"]);
+            if (rawConfig.ContainsKey("feedFilterEventNewuser"))
+                config.feedFilterEventNewuser = Int32.Parse(rawConfig["feedFilterEventNewuser"]);
+            if (rawConfig.ContainsKey("feedFilterEventUpload"))
+                config.feedFilterEventUpload = Int32.Parse(rawConfig["feedFilterEventUpload"]);
+            if (rawConfig.ContainsKey("feedFilterEventProtect"))
+                config.feedFilterEventProtect = Int32.Parse(rawConfig["feedFilterEventProtect"]);
 
             // Include bot nick in all logs from any thread.
             // Especially useful when running mulitple CVNBot instances that
             // log to the same syslog.
-            GlobalContext.Properties["Nick"] = botNick;
-            logger.Info("Loaded main configuration from " + mainConfigFN);
+            GlobalContext.Properties["Nick"] = config.botNick;
+            logger.InfoFormat("Loaded main configuration from {0}", rawConfigFN);
 
-            botCmd = new Regex("^" + botNick + @" (\s*(?<command>\S*))(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
+            botCmd = new Regex("^" + config.botNick + @" (\s*(?<command>\S*))(\s(?<params>.*))?$", RegexOptions.IgnoreCase);
 
-            logger.Info("Loading messages");
-            ReadMessages((string)mainConfig["messages"]);
+            logger.InfoFormat("Loading messages from {0}", config.messagesFile);
+            ReadMessages(config.messagesFile);
             if ((!msgs.ContainsKey("00000")) || ((String)msgs["00000"] != "2.03"))
             {
                 logger.Fatal("Message file version mismatch or read messages failed");
@@ -201,9 +146,10 @@ namespace CVNBot
             }
 
             // Read projects (prjlist displays logger message)
+            prjlist.fnProjectsXML = config.projectsFile;
             prjlist.LoadFromFile();
 
-            listman.InitDBConnection((string)mainConfig["lists"]);
+            listman.InitDBConnection(config.listsFile);
 
             // Set up freenode IRC client
             irc.Encoding = System.Text.Encoding.UTF8;
@@ -219,7 +165,7 @@ namespace CVNBot
 
             try
             {
-                irc.Connect(ircServerName, 6667);
+                irc.Connect(config.ircServerName, 6667);
             }
             catch (ConnectionException e)
             {
@@ -229,14 +175,25 @@ namespace CVNBot
 
             try
             {
-                irc.Login(botNick, (string)mainConfig["description"] + " " + version, 4, botNick, (string)mainConfig["botpass"]);
-                logger.InfoFormat("Joining channels: {0}, {1}", ControlChannel, FeedChannel);
-                irc.RfcJoin(ControlChannel);
-                irc.RfcJoin(FeedChannel);
-                if (BroadcastChannel != "None")
+                irc.Login(config.botNick, config.description + " " + version, 4, config.botNick, config.botPass);
+
+                string feedChannel = config.feedChannel;
+                string controlChannel = config.controlChannel;
+                string broadcastChannel = config.broadcastChannel;
+                if (feedChannel != "None")
                 {
-                    logger.InfoFormat("Joining broadcast channel: {0}", BroadcastChannel);
-                    irc.RfcJoin(BroadcastChannel);
+                    logger.InfoFormat("Joining feed channel: {0}", feedChannel);
+                    irc.RfcJoin(feedChannel);
+                }
+                if (controlChannel != "None")
+                {
+                    logger.InfoFormat("Joining control channel: {0}", controlChannel);
+                    irc.RfcJoin(controlChannel);
+                }
+                if (broadcastChannel != "None")
+                {
+                    logger.InfoFormat("Joining broadcast channel: {0}", broadcastChannel);
+                    irc.RfcJoin(broadcastChannel);
                 }
 
                 // Now connect the RCReader to channels
@@ -322,7 +279,7 @@ namespace CVNBot
         /// <param name="e"></param>
         static void Irc_OnChannelNotice(object sender, IrcEventArgs e)
         {
-            if (e.Data.Channel != BroadcastChannel)
+            if (e.Data.Channel != config.broadcastChannel)
                 return; // Just in case
             if (string.IsNullOrEmpty(e.Data.Message))
                 return; // Prevent empty messages from crashing the bot
@@ -424,7 +381,7 @@ namespace CVNBot
 
         static void Irc_OnConnected(object sender, EventArgs e)
         {
-            logger.InfoFormat("Connected to {0}", ircServerName);
+            logger.InfoFormat("Connected to {0}", config.ircServerName);
         }
 
 
@@ -521,7 +478,7 @@ namespace CVNBot
                         if (!HasPrivileges('@', ref e))
                             return;
                         logger.Info(e.Data.Nick + " ordered a quit");
-                        PartIRC((string)mainConfig["partmsg"]);
+                        PartIRC(rawConfig["partmsg"]);
                         Exit();
                         break;
                     case "restart":
@@ -552,7 +509,7 @@ namespace CVNBot
                         // Reloads messages
                         if (!HasPrivileges('@', ref e))
                             return;
-                        ReadMessages((string)mainConfig["messages"]);
+                        ReadMessages(rawConfig["messages"]);
                         SendMessageF(SendType.Message, e.Data.Channel, "Re-read messages", Priority.High);
                         break;
                     case "reload":
@@ -805,19 +762,19 @@ namespace CVNBot
 
         public static void Broadcast(string list, string action, string item, int expiry, string reason, string adder)
         {
-            if (BroadcastChannel == "None")
+            if (config.broadcastChannel == "None")
                 return;
             string bMsg = "*%BB/1.1%B*" + list + "*" + action + "*%C07%B" + item + "%B%C*%C13" + expiry.ToString()
                 + "%C*%C09%B" + reason + "%B%C*%C11%B" + adder + "%C%B*";
-            SendMessageF(SendType.Notice, BroadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"), Priority.High);
+            SendMessageF(SendType.Notice, config.broadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"), Priority.High);
         }
 
         public static void BroadcastDD(string type, string codename, string message, string ingredients)
         {
-            if (BroadcastChannel == "None")
+            if (config.broadcastChannel == "None")
                 return;
             string bMsg = "*%BDD/1.0%B*" + type + "*" + codename + "*%C07%B" + message + "%B%C*%C13" + ingredients + "%C*";
-            SendMessageF(SendType.Notice, BroadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"), Priority.High);
+            SendMessageF(SendType.Notice, config.broadcastChannel, bMsg.Replace(@"%C", "\x03").Replace(@"%B", "\x02"), Priority.High);
             logger.Info("Broadcasted DD: " + type + "," + codename + "," + message + "," + ingredients);
         }
 
@@ -850,41 +807,41 @@ namespace CVNBot
             // Perform these checks before even classifying the user
             // EventType is available right away, thus saving a db connection when setting is on 4 ('ignore')
             if (r.minor)
-                feedFilterThisEvent = feedFilterEventMinorEdit;
+                feedFilterThisEvent = config.feedFilterEventMinorEdit;
 
             if (r.eventtype == RCEvent.EventType.edit && !r.newpage)
-                feedFilterThisEvent = feedFilterEventEdit;
+                feedFilterThisEvent = config.feedFilterEventEdit;
 
             if (r.eventtype == RCEvent.EventType.edit && r.newpage)
-                feedFilterThisEvent = feedFilterEventNewpage;
+                feedFilterThisEvent = config.feedFilterEventNewpage;
 
             if (r.eventtype == RCEvent.EventType.move)
-                feedFilterThisEvent = feedFilterEventMove;
+                feedFilterThisEvent = config.feedFilterEventMove;
 
             if (r.eventtype == RCEvent.EventType.delete)
-                feedFilterThisEvent = feedFilterEventDelete;
+                feedFilterThisEvent = config.feedFilterEventDelete;
 
             if (r.eventtype == RCEvent.EventType.block || r.eventtype == RCEvent.EventType.unblock)
-                feedFilterThisEvent = feedFilterEventBlock;
+                feedFilterThisEvent = config.feedFilterEventBlock;
 
             if (r.eventtype == RCEvent.EventType.newuser || r.eventtype == RCEvent.EventType.newuser2 || r.eventtype == RCEvent.EventType.autocreate)
-                feedFilterThisEvent = feedFilterEventNewuser;
+                feedFilterThisEvent = config.feedFilterEventNewuser;
 
             if (r.eventtype == RCEvent.EventType.upload)
-                feedFilterThisEvent = feedFilterEventUpload;
+                feedFilterThisEvent = config.feedFilterEventUpload;
 
             if (r.eventtype == RCEvent.EventType.protect || r.eventtype == RCEvent.EventType.unprotect || r.eventtype == RCEvent.EventType.modifyprotect)
-                feedFilterThisEvent = feedFilterEventProtect;
+                feedFilterThisEvent = config.feedFilterEventProtect;
 
             if (feedFilterThisEvent == 4)
                 // 4 means "ignore"
                 return;
 
-            if (IsCubbie && (r.eventtype != RCEvent.EventType.upload))
+            if (config.isCubbie && (r.eventtype != RCEvent.EventType.upload))
                 //If this IsCubbie, then ignore all non-uploads
                 return;
 
-            if (r.botflag && (feedFilterUsersBot == 4))
+            if (r.botflag && (config.feedFilterUsersBot == 4))
                 return;
 
             Hashtable attribs = new Hashtable();
@@ -897,13 +854,13 @@ namespace CVNBot
 
             // Feed filters -> Users
             if (userOffset == 3)
-                feedFilterThisUser = feedFilterUsersAnon;
+                feedFilterThisUser = config.feedFilterUsersAnon;
 
             if (userOffset == 4)
-                feedFilterThisUser = feedFilterUsersReg;
+                feedFilterThisUser = config.feedFilterUsersReg;
 
             if (userOffset == 5)
-                feedFilterThisUser = feedFilterUsersBot;
+                feedFilterThisUser = config.feedFilterUsersBot;
 
             if (feedFilterThisUser == 4)// 4 is "ignore"
                 return;
@@ -943,14 +900,14 @@ namespace CVNBot
                         // Initialise the "sizeattrib" and "sizereset" attributes, which are used
                         // by all messages, including the later messages for listman-matches.
                         // The message keys assigned here may be used as a fallback.
-                        if (r.szdiff >= newbig)
+                        if (r.szdiff >= config.newBig)
                         {
                             createSpecial = true;
                             attribs.Add("sizeattrib", GetMessage(100, ref attribs));
                             attribs.Add("sizereset", GetMessage(102, ref attribs));
                             message = GetMessage(5010 + userOffset, ref attribs);
                         }
-                        else if (r.szdiff <= newsmall)
+                        else if (r.szdiff <= config.newSmall)
                         {
                             createSpecial = true;
                             attribs.Add("sizeattrib", GetMessage(101, ref attribs));
@@ -1033,14 +990,14 @@ namespace CVNBot
                         // Initialise the "sizeattrib" and "sizereset" attributes, which are used
                         // by all messages, including the later messages for listman-matches.
                         // The message keys assigned here may be used as a fallback.
-                        if (r.szdiff >= editbig)
+                        if (r.szdiff >= config.editBig)
                         {
                             attribs.Add("sizeattrib", GetMessage(100, ref attribs));
                             attribs.Add("sizereset", GetMessage(102, ref attribs));
                             message = GetMessage(5110 + userOffset, ref attribs);
                             editSpecial = true;
                         }
-                        else if (r.szdiff <= editblank)
+                        else if (r.szdiff <= config.editBlank)
                         {
                             attribs.Add("sizeattrib", GetMessage(101, ref attribs));
                             attribs.Add("sizereset", GetMessage(103, ref attribs));
@@ -1125,7 +1082,7 @@ namespace CVNBot
                     break;
                 case RCEvent.EventType.move:
                     // if moves are softhidden hide moves by admin, bot or whitelist
-                    if ((feedFilterEventMove == 2) && ((userOffset == 2) || (userOffset == 5) || (userOffset == 0)))
+                    if ((config.feedFilterEventMove == 2) && ((userOffset == 2) || (userOffset == 5) || (userOffset == 0)))
                     {
                         return;
                     }
@@ -1254,7 +1211,7 @@ namespace CVNBot
                         return;
 
                     // if normal and uploads are softhidden hide normal user and anon aswell
-                    if ((uMsg == 5600) && (feedFilterEventUpload == 2) && ((userOffset == 3) || (userOffset == 4)))
+                    if ((uMsg == 5600) && (config.feedFilterEventUpload == 2) && ((userOffset == 3) || (userOffset == 4)))
                         return;
 
                     // If our message is 95620, we might need to truncate r.comment
@@ -1312,32 +1269,34 @@ namespace CVNBot
                 message = "";
             }
 
-            SendMessageFMulti(SendType.Message, FeedChannel, message, Priority.Low);
+            SendMessageFMulti(SendType.Message, config.feedChannel, message, Priority.Low);
 
         }
 
         public static void BotConfigMsg(string destChannel)
         {
+            string message = "runs CVNBot " + version + " in " + config.feedChannel + "; settings: ";
 
-            string settingsmessage = "runs version: " + version + " in " + FeedChannel + "; settings"
-                + ": editblank:" + editblank
-                + ", editbig:" + editbig
-                + ", newbig:" + newbig
-                + ", newsmall:" + newsmall
-                + "\nfeedFilterUsersAnon:" + feedFilterUsersAnon
-                + ", feedFilterUsersReg:" + feedFilterUsersReg
-                + ", feedFilterUsersBot:" + feedFilterUsersBot
-                + ", feedFilterEventMinorEdit:" + feedFilterEventMinorEdit
-                + ", feedFilterEventEdit:" + feedFilterEventEdit
-                + ", feedFilterEventNewpage:" + feedFilterEventNewpage
-                + ", feedFilterEventMove:" + feedFilterEventMove
-                + ", feedFilterEventDelete:" + feedFilterEventDelete
-                + ", feedFilterEventUpload:" + feedFilterEventUpload
-                + ", feedFilterEventProtect:" + feedFilterEventProtect;
-            settingsmessage += IsCubbie ? ", IsCubbie:true" : ", IsCubbie:false";
-            settingsmessage += disableClassifyEditor ? ", disableClassifyEditor:true" : ", disableClassifyEditor:false;";
+            FieldInfo[] fields = config.GetType().GetFields();
+            logger.Info("Bot config fields: " + fields.Length.ToString());
+            foreach (FieldInfo field in fields)
+            {
+                string name = field.Name;
+                if (name.StartsWith("bot") ||
+                    name == "description" ||
+                    name == "ircServerName" ||
+                    name.EndsWith("Channel") ||
+                    name.EndsWith("File") ||
+                    name.StartsWith("restart")
+                   ) {
+                    continue;
+                }
+                string val = Convert.ToString(field.GetValue(config));
+                message += name + ": " + val + ", ";
+            }
+            message = message.TrimEnd(new char[] { ',', ' ' });
 
-            SendMessageFMulti(SendType.Action, destChannel, settingsmessage, Priority.High);
+            SendMessageFMulti(SendType.Action, destChannel, message, Priority.High);
 
         }
 
@@ -1367,8 +1326,8 @@ namespace CVNBot
 
         public static void Restart()
         {
-            string cmd = cfgRestartCmd;
-            string args = cfgRestartArgs.Replace("$1", System.Reflection.Assembly.GetExecutingAssembly().Location);
+            string cmd = config.restartCmd;
+            string args = config.restartArgs.Replace("$1", Assembly.GetExecutingAssembly().Location);
             logger.InfoFormat("Executing: {0} {1}", cmd, args);
             System.Diagnostics.Process.Start(cmd, args);
             Exit();
@@ -1378,9 +1337,9 @@ namespace CVNBot
         {
             rcirc.rcirc.AutoReconnect = false;
             rcirc.rcirc.RfcQuit(quitMessage);
-            irc.RfcPart(ControlChannel, quitMessage);
-            irc.RfcPart(FeedChannel, quitMessage);
-            irc.RfcPart(BroadcastChannel, quitMessage);
+            irc.RfcPart(config.controlChannel, quitMessage);
+            irc.RfcPart(config.feedChannel, quitMessage);
+            irc.RfcPart(config.broadcastChannel, quitMessage);
             Thread.Sleep(1000);
         }
     }
