@@ -11,10 +11,6 @@ using log4net;
 
 namespace CVNBot
 {
-    class QueuedMessage
-    {
-    }
-
     class Program
     {
         const string version = "1.22.0-alpha";
