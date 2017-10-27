@@ -28,9 +28,6 @@ namespace CVNBot
 
         static ILog logger = LogManager.GetLogger("CVNBot.Program");
 
-        // Flood protection objects
-        static ManualResetEvent sendlock = new ManualResetEvent(true);
-
         static Regex broadcastMsg = new Regex(@"\*\x02B/1.1\x02\*(?<list>.+?)\*(?<action>.+?)\*\x03"
             + @"07\x02(?<item>.+?)\x02\x03\*\x03"
             + @"13(?<len>\d+?)\x03\*\x03"
