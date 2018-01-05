@@ -1137,7 +1137,7 @@ namespace CVNBot
                 case RCEvent.EventType.newuser:
                     attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("blockurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/Special:Blockip/" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("blockurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/Special:Block/" + CVNBotUtils.WikiEncode(r.user));
                     attribs.Add("caurl", "https://meta.wikimedia.org/wiki/Special:CentralAuth/" + CVNBotUtils.WikiEncode(r.user));
                     attribs.Add("talkurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
                     ListMatch bnuMatch = listman.MatchesList(r.user, 11);
@@ -1160,7 +1160,7 @@ namespace CVNBot
                     attribs.Add("ccreator", r.user);
                     attribs.Add("editor", project.interwikiLink + "User:" + r.title);
                     attribs.Add("ceditor", r.title);
-                    attribs.Add("blockurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/Special:Blockip/" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("blockurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/Special:Block/" + CVNBotUtils.WikiEncode(r.user));
                     attribs.Add("talkurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
                     ListMatch bnuMatch2 = listman.MatchesList(r.user, 11);
                     if (bnuMatch2.Success)
