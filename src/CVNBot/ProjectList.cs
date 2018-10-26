@@ -56,7 +56,8 @@ namespace CVNBot
         /// </summary>
         /// <param name="projectName">Name of the project (e.g., en.wikipedia) to add</param>
         /// <param name="interwiki">Interwiki link (e.g., it:s: -- can be empty string)</param>
-        public void AddNewProject(string projectName, string interwiki)
+        /// <param name="lang">ISO 639 lang code (e.g. "it", "es" Optional) </param>
+        public void AddNewProject(string projectName, string interwiki, string lang = "")
         {
             if (interwiki == "")
             {
@@ -93,6 +94,9 @@ namespace CVNBot
                     case "wikiversity":
                         interwiki = "v:" + langPortion + ":";
                         break;
+                    case "wikivoyage":
+                        interwiki = "voy:" + langPortion + ":";
+                        break;
                     default:
                         throw new Exception((String)Program.msgs["20004"]);
                 }
@@ -105,7 +109,28 @@ namespace CVNBot
             Project prj = new Project();
             prj.projectName = projectName;
             prj.interwikiLink = interwiki;
-            prj.rooturl = "https://" + projectName + ".org/";
+            switch(projectName){
+                case "mediawiki.wikipedia":
+                    prj.langCode = "en";
+                    prj.rooturl = "https://www.mediawiki.org/";
+                    break;
+                case "outreach.wikipedia":
+                    prj.langCode = "en";
+                    prj.rooturl = "https://outreach.wikimedia.org/";
+                    break;
+                case "testwikidata.wikipedia":
+                    prj.langCode = "en";
+                    prj.rooturl = "https://test.wikidata.org/";
+                    break;
+                case "wikidata.wikipedia":
+                    prj.langCode = "en";
+                    prj.rooturl = "https://www.wikidata.org/";
+                    break;
+                default:
+                    prj.langCode = lang;
+                    prj.rooturl = "https://" + projectName + ".org/";
+                    break;
+            }
             prj.RetrieveWikiDetails();
             this.Add(projectName, prj);
             // Join the new channel

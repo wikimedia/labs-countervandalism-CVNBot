@@ -39,12 +39,12 @@ Or, if using `apt-get`, use one of these:
 * [`mono-develop`](https://packages.debian.org/search?keywords=mono-devel) (`mono`)
 * [`mono-complete`](https://packages.debian.org/search?keywords=mono-complete) (`mono`+`xbuild`)
 
-Currently supported versions of Mono: **4.6**, **5.4**
+Currently supported versions of Mono: **4.8**, **5.16**
 
 Once mono is installed, build the project:
 
 ```bash
-countervandalism/CVNBot/src/CVNBot:$ xbuild CVNBot.csproj
+countervandalism/CVNBot/src/CVNBot:$ xbuild src/CVNBot.sln /p:Configuration=Release
 ```
 
 Once built, you can run it (see [Installation](https://github.com/countervandalism/CVNBot/wiki/Documentation#installation) for more info on how to properly install it for actual usage, don't run it from the Debug directory in production):

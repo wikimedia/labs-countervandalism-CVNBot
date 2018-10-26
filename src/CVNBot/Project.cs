@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -13,6 +14,7 @@ namespace CVNBot
 
         public string projectName;
         public string interwikiLink;
+        public string langCode;
         public string rooturl; // Format: http://en.wikipedia.org/
 
         public Regex rrestoreRegex;
@@ -33,20 +35,7 @@ namespace CVNBot
 
         public Hashtable namespaces;
 
-        string restoreRegex;
-        string deleteRegex;
-        string protectRegex;
-        string unprotectRegex;
-        string modifyprotectRegex;
-        string uploadRegex;
-        string moveRegex;
-        string moveredirRegex;
-        string blockRegex;
-        string unblockRegex;
-        string reblockRegex;
-        string autosummBlank;
-        string autosummReplace;
-        string specialLogRegex;
+        Dictionary<string, string> regexDict = new Dictionary<string, string>();
 
         static char[] rechars = {'\\', '.' ,'(', ')', '[' , ']' ,'^' ,'*' ,'+' ,'?' ,'{' ,'}' ,'|' };
         string snamespaces;
@@ -56,34 +45,34 @@ namespace CVNBot
         /// </summary>
         void GenerateRegexen()
         {
-            rrestoreRegex = new Regex(restoreRegex);
-            rdeleteRegex = new Regex(deleteRegex);
-            rprotectRegex = new Regex(protectRegex);
-            runprotectRegex = new Regex(unprotectRegex);
+            rrestoreRegex = new Regex(regexDict["restoreRegex"]);
+            rdeleteRegex = new Regex(regexDict["deleteRegex"]);
+            rprotectRegex = new Regex(regexDict["protectRegex"]);
+            runprotectRegex = new Regex(regexDict["unprotectRegex"]);
 
             // modifyprotectRegex: Added in v1.20
             // Fallback if missing from older project.
-            if (modifyprotectRegex == null)
+            if (regexDict["modifyprotectRegex"] == null)
             {
-                modifyprotectRegex = protectRegex;
+                regexDict["modifyprotectRegex"] = regexDict["protectRegex"];
                 logger.Warn("generateRegexen: modifyprotectRegex is missing. Please reload this wiki.");
             }
-            rmodifyprotectRegex = new Regex(modifyprotectRegex);
-            ruploadRegex = new Regex(uploadRegex);
-            rmoveRegex = new Regex(moveRegex);
-            rmoveredirRegex = new Regex(moveredirRegex);
-            rblockRegex = new Regex(blockRegex);
-            runblockRegex = new Regex(unblockRegex);
+            rmodifyprotectRegex = new Regex(regexDict["modifyprotectRegex"]);
+            ruploadRegex = new Regex(regexDict["uploadRegex"]);
+            rmoveRegex = new Regex(regexDict["moveRegex"]);
+            rmoveredirRegex = new Regex(regexDict["moveredirRegex"]);
+            rblockRegex = new Regex(regexDict["blockRegex"]);
+            runblockRegex = new Regex(regexDict["unblockRegex"]);
             // modifyprotectRegex: Added in v1.22
             // Fallback if missing from older project.
-            if (reblockRegex == null) {
-                reblockRegex = "^$";
+            if (regexDict["reblockRegex"] == null) {
+                regexDict["reblockRegex"] = "^$";
             }
-            rreblockRegex = new Regex(reblockRegex);
-            rautosummBlank = new Regex(autosummBlank);
-            rautosummReplace = new Regex(autosummReplace);
+            rreblockRegex = new Regex(regexDict["reblockRegex"]);
+            rautosummBlank = new Regex(regexDict["autosummBlank"]);
+            rautosummReplace = new Regex(regexDict["autosummReplace"]);
 
-            rSpecialLogRegex = new Regex(specialLogRegex);
+            rSpecialLogRegex = new Regex(regexDict["specialLogRegex"]);
 
             rCreate2Regex = new Regex( namespaces["2"]+@":([^:]+)" );
         }
@@ -97,23 +86,24 @@ namespace CVNBot
 
             dump.WriteElementString("projectName", projectName);
             dump.WriteElementString("interwikiLink", interwikiLink);
+            dump.WriteElementString("langCode", langCode);
             dump.WriteElementString("rooturl", rooturl);
-            dump.WriteElementString("speciallog", specialLogRegex);
+            dump.WriteElementString("speciallog", regexDict["specialLogRegex"]);
             dump.WriteElementString("namespaces", snamespaces.Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", ""));
 
-            dump.WriteElementString("restoreRegex", restoreRegex);
-            dump.WriteElementString("deleteRegex", deleteRegex);
-            dump.WriteElementString("protectRegex", protectRegex);
-            dump.WriteElementString("unprotectRegex", unprotectRegex);
-            dump.WriteElementString("modifyprotectRegex", modifyprotectRegex);
-            dump.WriteElementString("uploadRegex", uploadRegex);
-            dump.WriteElementString("moveRegex", moveRegex);
-            dump.WriteElementString("moveredirRegex", moveredirRegex);
-            dump.WriteElementString("blockRegex", blockRegex);
-            dump.WriteElementString("unblockRegex", unblockRegex);
-            dump.WriteElementString("reblockRegex", reblockRegex);
-            dump.WriteElementString("autosummBlank", autosummBlank);
-            dump.WriteElementString("autosummReplace", autosummReplace);
+            dump.WriteElementString("restoreRegex", regexDict["restoreRegex"]);
+            dump.WriteElementString("deleteRegex", regexDict["deleteRegex"]);
+            dump.WriteElementString("protectRegex", regexDict["protectRegex"]);
+            dump.WriteElementString("unprotectRegex", regexDict["unprotectRegex"]);
+            dump.WriteElementString("modifyprotectRegex", regexDict["modifyprotectRegex"]);
+            dump.WriteElementString("uploadRegex", regexDict["uploadRegex"]);
+            dump.WriteElementString("moveRegex", regexDict["moveRegex"]);
+            dump.WriteElementString("moveredirRegex", regexDict["moveredirRegex"]);
+            dump.WriteElementString("blockRegex", regexDict["blockRegex"]);
+            dump.WriteElementString("unblockRegex", regexDict["unblockRegex"]);
+            dump.WriteElementString("reblockRegex", regexDict["reblockRegex"]);
+            dump.WriteElementString("autosummBlank", regexDict["autosummBlank"]);
+            dump.WriteElementString("autosummReplace", regexDict["autosummReplace"]);
 
             dump.WriteEndElement();
             dump.Flush();
@@ -134,22 +124,23 @@ namespace CVNBot
                 {
                     case "projectName": projectName = value; break;
                     case "interwikiLink": interwikiLink = value; break;
+                    case "langCode": langCode = value; break;
                     case "rooturl": rooturl = value; break;
-                    case "speciallog": specialLogRegex = value; break;
+                    case "speciallog": regexDict["specialLogRegex"] = value; break;
                     case "namespaces": snamespaces = value; break;
-                    case "restoreRegex": restoreRegex = value; break;
-                    case "deleteRegex": deleteRegex = value; break;
-                    case "protectRegex": protectRegex = value; break;
-                    case "unprotectRegex": unprotectRegex = value; break;
-                    case "modifyprotectRegex": modifyprotectRegex = value; break;
-                    case "uploadRegex": uploadRegex = value; break;
-                    case "moveRegex": moveRegex = value; break;
-                    case "moveredirRegex": moveredirRegex = value; break;
-                    case "blockRegex": blockRegex = value; break;
-                    case "unblockRegex": unblockRegex = value; break;
-                    case "reblockRegex": reblockRegex = value; break;
-                    case "autosummBlank": autosummBlank = value; break;
-                    case "autosummReplace": autosummReplace = value; break;
+                    case "restoreRegex": regexDict["restoreRegex"] = value; break;
+                    case "deleteRegex": regexDict["deleteRegex"] = value; break;
+                    case "protectRegex": regexDict["protectRegex"] = value; break;
+                    case "unprotectRegex": regexDict["unprotectRegex"] = value; break;
+                    case "modifyprotectRegex": regexDict["modifyprotectRegex"] = value; break;
+                    case "uploadRegex": regexDict["uploadRegex"] = value; break;
+                    case "moveRegex": regexDict["moveRegex"] = value; break;
+                    case "moveredirRegex": regexDict["moveredirRegex"] = value; break;
+                    case "blockRegex": regexDict["blockRegex"] = value; break;
+                    case "unblockRegex": regexDict["unblockRegex"] = value; break;
+                    case "reblockRegex": regexDict["reblockRegex"] = value; break;
+                    case "autosummBlank": regexDict["autosummBlank"] = value; break;
+                    case "autosummReplace": regexDict["autosummReplace"] = value; break;
                 }
             }
             // Overwrite in case non-HTTPS url is stored
@@ -183,50 +174,108 @@ namespace CVNBot
             }
         }
 
+        public struct MessagesOption
+        {
+            public int NumberOfArgs;
+            public string RegexName;
+            public bool NonStrictFlag;
+            public MessagesOption (int ArgNumberOfArgs, string ArgRegexName, bool ArgNonStrictFlag)
+            {
+                NumberOfArgs = ArgNumberOfArgs;
+                RegexName = ArgRegexName;
+                NonStrictFlag = ArgNonStrictFlag;
+            }
+        }
+
         public void RetrieveWikiDetails()
         {
             //Find out what the localized Special: (ID -1) namespace is, and create a regex
             GetNamespaces(false);
 
-            specialLogRegex = namespaces["-1"] + @":.+?/(.+)";
+            regexDict["specialLogRegex"] = namespaces["-1"] + @":.+?/(.+)";
 
             logger.InfoFormat("Fetching interface messages from {0}", rooturl);
+
+            Dictionary<string, MessagesOption> Messages = new Dictionary<string, MessagesOption>();
 
             // Location of message, number of required parameters, reference to regex, allow lazy
             // Retrieve messages for all the required events and generate regexen for them
 
-            GenerateRegex("MediaWiki:Undeletedarticle", 1, ref restoreRegex, false);
-            GenerateRegex("MediaWiki:Deletedarticle", 1, ref deleteRegex, false);
-            GenerateRegex("MediaWiki:Protectedarticle", 1, ref protectRegex, false);
-            GenerateRegex("MediaWiki:Unprotectedarticle", 1, ref unprotectRegex, false);
-            GenerateRegex("MediaWiki:Modifiedarticleprotection", 1, ref modifyprotectRegex, true);
-            GenerateRegex("MediaWiki:Uploadedimage", 0, ref uploadRegex, false);
-            GenerateRegex("MediaWiki:1movedto2", 2, ref moveRegex, false);
-            GenerateRegex("MediaWiki:1movedto2_redir", 2, ref moveredirRegex, false);
+            Messages.Add("Undeletedarticle", new MessagesOption(1, "restoreRegex", false));
+            Messages.Add("Deletedarticle", new MessagesOption(1, "deleteRegex", false));
+            Messages.Add("Protectedarticle", new MessagesOption(1, "protectRegex", false));
+            Messages.Add("Unprotectedarticle", new MessagesOption(1, "unprotectRegex", false));
+            Messages.Add("Modifiedarticleprotection", new MessagesOption(1, "modifyprotectRegex", true));
+            Messages.Add("Uploadedimage", new MessagesOption(0, "uploadRegex", false));
+            Messages.Add("1movedto2",new MessagesOption(2, "moveRegex", false));
+            Messages.Add("1movedto2_redir", new MessagesOption(2, "moveredirRegex", false));
             // blockRegex is nonStrict because some wikis override the message without including $2 (block length).
             // RCReader will fall back to "24 hours" if this is the case.
             // Some newer messages (e.g. https://lmo.wikipedia.org/wiki/MediaWiki:Blocklogentry) have a third item,
             // $3 ("anononly,nocreate,autoblock"). This may conflict with $2 detection.
             // Trying (changed 2 -> 3) to see if length of time will be correctly detected using just this method:
-            GenerateRegex("MediaWiki:Blocklogentry", 3, ref blockRegex, true);
-            GenerateRegex("MediaWiki:Unblocklogentry", 0, ref unblockRegex, false);
-            GenerateRegex("MediaWiki:Reblock-logentry", 3, ref reblockRegex, false);
-            GenerateRegex("MediaWiki:Autosumm-blank", 0, ref autosummBlank, false);
+            Messages.Add("Blocklogentry", new MessagesOption(3, "blockRegex", true));
+            Messages.Add("Unblocklogentry", new MessagesOption(0, "unblockRegex", false));
+            Messages.Add("Reblock-logentry", new MessagesOption(3, "reblockRegex", false));
+            Messages.Add("Autosumm-blank", new MessagesOption(0, "autosummBlank", false));
             // autosummReplace is nonStrict because some large wikis don't include the "profanity" in their
             // messages (privacy measure?)
-            GenerateRegex("MediaWiki:Autosumm-replace", 1, ref autosummReplace, true);
+            Messages.Add("Autosumm-replace", new MessagesOption(1, "autosummReplace", true));
+
+            GetInterfaceMessages(Messages);
 
             GenerateRegexen();
         }
 
-        void GenerateRegex(string mwMessageTitle, int reqCount, ref string destRegex, bool nonStrict)
+        void GetInterfaceMessages(Dictionary<string, MessagesOption> Messages)
         {
-            // Get raw wikitext
-            string mwMessage = CVNBotUtils.GetRawDocument(rooturl + "w/index.php?title=" + mwMessageTitle + "&action=raw&usemsgcache=yes");
+            logger.InfoFormat("Fetching InterfaceMessages from {0}", rooturl);
 
+            string CombinedMessages = string.Join("|", Messages.Keys);
+
+            if (langCode == null || langCode == "")
+            {
+                langCode = projectName.Split(new char[] { '.' }, 2)[0];
+            }
+
+            if (!Regex.IsMatch(langCode, "^[a-z]{2,3}(?:-[a-z]{1,9}(?:-[a-z]{2,3})?)?$"))
+            {
+                langCode = "en";
+            }
+
+            string sMwMessages = CVNBotUtils.GetRawDocument(
+                rooturl +
+                "w/api.php?action=query&meta=allmessages&format=xml" +
+                "&ammessages=" + CombinedMessages +
+                "&amlang=" + langCode
+            );
+            if (sMwMessages == "")
+                throw new Exception("Can't load list of InterfaceMessages from " + rooturl);
+
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(sMwMessages);
+            string mwMessagesLogline = "";
+            XmlNode allmessagesNode = doc.GetElementsByTagName("allmessages")[0];
+            for (int i = 0; i < allmessagesNode.ChildNodes.Count; i++)
+            {
+                string elmName = allmessagesNode.ChildNodes[i].Attributes["name"].Value;
+                GenerateRegex(
+                    elmName,
+                    allmessagesNode.ChildNodes[i].InnerText,
+                    Messages[elmName].NumberOfArgs,
+                    Messages[elmName].RegexName,
+                    Messages[elmName].NonStrictFlag
+                );
+                mwMessagesLogline += "name[" + elmName + "]="+allmessagesNode.ChildNodes[i].InnerText + "; ";
+            }
+        }
+
+        void GenerateRegex(string mwMessageTitle, string mwMessage, int reqCount, string destRegex, bool nonStrict)
+        {
             // Now gently coax that into a regex
             foreach (char c in rechars)
                 mwMessage = mwMessage.Replace(c.ToString(), @"\" + c.ToString());
+
             mwMessage = mwMessage.Replace("$1", "(?<item1>.+?)");
             mwMessage = mwMessage.Replace("$2", "(?<item2>.+?)");
             mwMessage = mwMessage.Replace("$3", "(?<item3>.+?)");
@@ -237,7 +286,7 @@ namespace CVNBot
             mwMessage = "^" + mwMessage + @"(?:: (?<comment>.*?))?$"; // Special:Log comments are preceded by a colon
 
             // Dirty code: Block log exceptions!
-            if (mwMessageTitle == "MediaWiki:Blocklogentry")
+            if (mwMessageTitle == "Blocklogentry")
             {
                 mwMessage = mwMessage.Replace("(?<item3>.+?)", "\\((?<item3>.+?)\\)");
                 mwMessage = mwMessage.Replace(@"(?<item2>.+?)(?:: (?<comment>.*?))?$", "(?<item2>.+?)$");
@@ -263,7 +312,7 @@ namespace CVNBot
                 }
             }
 
-            destRegex = mwMessage;
+            regexDict[destRegex] = mwMessage;
         }
 
         /// <summary>

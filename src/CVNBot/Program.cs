@@ -537,7 +537,9 @@ namespace CVNBot
                             return;
                         try
                         {
-                            if (cmdParams.Length == 2)
+                            if (cmdParams.Length == 3)
+                                prjlist.AddNewProject(cmdParams[0], cmdParams[1], cmdParams[2]);
+                            else if (cmdParams.Length == 2)
                                 prjlist.AddNewProject(cmdParams[0], cmdParams[1]);
                             else
                                 prjlist.AddNewProject(cmdParams[0], "");
