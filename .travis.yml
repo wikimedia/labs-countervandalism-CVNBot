@@ -9,9 +9,8 @@ mono:
   # http://download.mono-project.com/repo/debian/dists/wheezy/snapshots/
   - 5.2.0
 script:
-  - cd src/CVNBot
-  - xbuild CVNBot.csproj /p:Configuration=Release
-  - xbuild CVNBot.csproj /p:Configuration=Debug
+  - xbuild src/CVNBot.sln /p:Configuration=Release
+  - xbuild src/CVNBot.sln /p:Configuration=Debug
 notifications:
   irc:
     channels:
