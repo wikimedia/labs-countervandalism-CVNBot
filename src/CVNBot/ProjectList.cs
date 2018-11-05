@@ -94,9 +94,6 @@ namespace CVNBot
                     case "wikiversity":
                         interwiki = "v:" + langPortion + ":";
                         break;
-                    case "wikivoyage":
-                        interwiki = "voy:" + langPortion + ":";
-                        break;
                     default:
                         throw new Exception((String)Program.msgs["20004"]);
                 }
