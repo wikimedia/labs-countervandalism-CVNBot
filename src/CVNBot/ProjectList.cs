@@ -56,8 +56,7 @@ namespace CVNBot
         /// </summary>
         /// <param name="projectName">Name of the project (e.g., en.wikipedia) to add</param>
         /// <param name="interwiki">Interwiki link (e.g., it:s: -- can be empty string)</param>
-        /// <param name="lang">ISO 639 lang code (e.g. "it", "es" Optional) </param>
-        public void AddNewProject(string projectName, string interwiki, string lang = "")
+        public void AddNewProject(string projectName, string interwiki)
         {
             if (interwiki == "")
             {
@@ -108,23 +107,18 @@ namespace CVNBot
             prj.interwikiLink = interwiki;
             switch(projectName){
                 case "mediawiki.wikipedia":
-                    prj.langCode = "en";
                     prj.rooturl = "https://www.mediawiki.org/";
                     break;
                 case "outreach.wikipedia":
-                    prj.langCode = "en";
                     prj.rooturl = "https://outreach.wikimedia.org/";
                     break;
                 case "testwikidata.wikipedia":
-                    prj.langCode = "en";
                     prj.rooturl = "https://test.wikidata.org/";
                     break;
                 case "wikidata.wikipedia":
-                    prj.langCode = "en";
                     prj.rooturl = "https://www.wikidata.org/";
                     break;
                 default:
-                    prj.langCode = lang;
                     prj.rooturl = "https://" + projectName + ".org/";
                     break;
             }

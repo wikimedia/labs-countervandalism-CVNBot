@@ -14,7 +14,6 @@ namespace CVNBot
 
         public string projectName;
         public string interwikiLink;
-        public string langCode;
         public string rooturl; // Format: http://en.wikipedia.org/
 
         public Regex rrestoreRegex;
@@ -86,7 +85,6 @@ namespace CVNBot
 
             dump.WriteElementString("projectName", projectName);
             dump.WriteElementString("interwikiLink", interwikiLink);
-            dump.WriteElementString("langCode", langCode);
             dump.WriteElementString("rooturl", rooturl);
             dump.WriteElementString("speciallog", regexDict["specialLogRegex"]);
             dump.WriteElementString("namespaces", snamespaces.Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", ""));
@@ -124,7 +122,6 @@ namespace CVNBot
                 {
                     case "projectName": projectName = value; break;
                     case "interwikiLink": interwikiLink = value; break;
-                    case "langCode": langCode = value; break;
                     case "rooturl": rooturl = value; break;
                     case "speciallog": regexDict["specialLogRegex"] = value; break;
                     case "namespaces": snamespaces = value; break;
@@ -233,21 +230,10 @@ namespace CVNBot
 
             string CombinedMessages = string.Join("|", Messages.Keys);
 
-            if (langCode == null || langCode == "")
-            {
-                langCode = projectName.Split(new char[] { '.' }, 2)[0];
-            }
-
-            if (!Regex.IsMatch(langCode, "^[a-z]{2,3}(?:-[a-z]{1,9}(?:-[a-z]{2,3})?)?$"))
-            {
-                langCode = "en";
-            }
-
             string sMwMessages = CVNBotUtils.GetRawDocument(
                 rooturl +
                 "w/api.php?action=query&meta=allmessages&format=xml" +
-                "&ammessages=" + CombinedMessages +
-                "&amlang=" + langCode
+                "&ammessages=" + CombinedMessages
             );
             if (sMwMessages == "")
                 throw new Exception("Can't load list of InterfaceMessages from " + rooturl);
