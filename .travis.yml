@@ -1,13 +1,16 @@
 sudo: false
 dist: trusty
 language: csharp
+# Travis CI uses this repository:
+# http://download.mono-project.com/repo/ubuntu/dists/stable-trusty/snapshots/
 mono:
-  # Debian 9 Stretch provides v4.6.2.7
-  - 4.6.2
-  # Visual Studio for Mac 7.2 provides v5.4.0
-  # but latest provided currently is 5.2 per
-  # http://download.mono-project.com/repo/debian/dists/wheezy/snapshots/
-  - 5.2.0
+  - 4.8.0
+  # Visual Studio 7.2 for Mac provides Mono 5.4.0 (used by krinkle)
+  - 5.4.0
+  # In production at cvn.wmflabs.org, we run Debian 9 Stretch with 5.16 from
+  # https://download.mono-project.com/repo/debian/dists/stable-stretch/snapshots/
+  # See also https://github.com/countervandalism/infrastructure/blob/2906b10516/setup.yaml#L132
+  - 5.16.0
 script:
   - xbuild src/CVNBot.sln /p:Configuration=Release
   - xbuild src/CVNBot.sln /p:Configuration=Debug
