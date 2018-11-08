@@ -105,7 +105,23 @@ namespace CVNBot
             Project prj = new Project();
             prj.projectName = projectName;
             prj.interwikiLink = interwiki;
-            prj.rooturl = "https://" + projectName + ".org/";
+            switch(projectName){
+                case "mediawiki.wikipedia":
+                    prj.rooturl = "https://www.mediawiki.org/";
+                    break;
+                case "outreach.wikipedia":
+                    prj.rooturl = "https://outreach.wikimedia.org/";
+                    break;
+                case "testwikidata.wikipedia":
+                    prj.rooturl = "https://test.wikidata.org/";
+                    break;
+                case "wikidata.wikipedia":
+                    prj.rooturl = "https://www.wikidata.org/";
+                    break;
+                default:
+                    prj.rooturl = "https://" + projectName + ".org/";
+                    break;
+            }
             prj.RetrieveWikiDetails();
             this.Add(projectName, prj);
             // Join the new channel
