@@ -1,5 +1,8 @@
-Copyright (c) 2006-2017 Countervandalism Network and other contributors, 
-http://countervandalism.net/
+Copyright 2014-2018 rxy <github@rxy.jp>
+Copyright 2010-2018 Timo Tijhof <krinklemail@gmail.com>
+Copyright 2007-2018 Alex Zariv <alex@alexzariv.com>
+Copyright 2007-2010 Mike Lifeguard <lifeguard@toolserver.org>
+Copyright 2006-2009 Tangotango <tangotango.wp@gmail.com>
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
