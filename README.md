@@ -70,4 +70,4 @@ Documentation, support and contact
 Copyright and license
 ---------------------
 
-See [MIT-LICENSE](https://raw.github.com/countervandalism/CVNBot/master/MIT-LICENSE.txt) and [AUTHORS](https://github.com/countervandalism/CVNBot/blob/master/AUTHORS.txt).
+See [LICENSE](https://raw.github.com/countervandalism/CVNBot/master/LICENSE.txt).
