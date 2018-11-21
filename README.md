@@ -41,7 +41,7 @@ Or, if using `apt-get`, use one of these:
 
 Currently supported versions of Mono: **5.4**, **5.16**
 
-Once mono is installed, build the project. The below uses Debug for local development. (See [Installation](https://github.com/countervandalism/CVNBot/wiki#installation) for how to install it properly, don't run from Debug in production!):
+Once mono is installed, build the project. The below uses Debug, for local development. (See [Installation](./docs/install.md) for how to install it in production):
 
 ```bash
 countervandalism/CVNBot/src/CVNBot:$ msbuild src/CVNBot.sln /p:Configuration=Debug
