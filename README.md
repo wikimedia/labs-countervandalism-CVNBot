@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/countervandalism/CVNBot.svg?branch=master)](https://travis-ci.org/countervandalism/CVNBot)
+[![Build Status](https://travis-ci.com/countervandalism/CVNBot.svg?branch=master)](https://travis-ci.com/countervandalism/CVNBot)
 
 CVNBot
 ==================================================
@@ -23,7 +23,7 @@ Releases will be numbered in the following format:
 
 The `-alpha` suffix is used to indicate unreleased versions in development.
 
-For more information on SemVer, please visit http://semver.org/.
+For more information on SemVer, please visit https://semver.org/.
 
 
 Build

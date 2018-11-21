@@ -4,7 +4,7 @@
 
 1. Compile the code by running the following command:
 
-   `xbuild src/CVNBot.sln /p:Configuration=Release`
+   `msbuild src/CVNBot.sln /p:Configuration=Release`
 
    This command creates `CVNBot.exe` and other files in the output directory at `src/CVNBot/bin/Release`.
 1. Create a directory for your bot, and move the contents of `src/CVNBot/bin/Release` to it.
@@ -16,11 +16,11 @@
 
 1. Compile the code by running the following command:
 
-   `xbuild src/CVNBot.sln /p:Configuration=Release`
+   `msbuild src/CVNBot.sln /p:Configuration=Release`
 
    This command creates `CVNBot.exe` and other files in the output directory at `src/CVNBot/bin/Release`.
 1. Enter `src/CVNBot/bin/Release`.
-1. Remove `src/CVNBot/bin/Release/Projects.xml` and `src/CVNBot/bin/Release/CVNBot.ini` (to avoid accidentally overwriting your existing ones, later)
+1. Remove `Projects.xml` and `CVNBot.ini` (to avoid accidentally overwriting your existing ones, later)
 1. For personal use, chmod the remaining files 644 (except the .exe file, use 755).
    For organisational use (e.g. Countervandalism Network), chmod the remaining files 664 (except the .exe, use 775), and make sure all files are owned by the correct group (e.g. `chgrp cvn.cvnservice *`)
 1. Make sure the bot is not currently running (e.g. `Botname quit` on IRC, and check output of `ps aux`).
