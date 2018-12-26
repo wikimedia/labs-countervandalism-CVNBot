@@ -29,22 +29,22 @@ For more information on SemVer, please visit http://semver.org/.
 Build
 ----------
 The software is written in C# and originally created as a Visual Studio Project.
-We use `mono` to run the executable and `xbuild` to build the executable.
+We use `mono` to run the executable and `msbuild` to build the executable.
 
-Standalone installers (you'll need both Mono and MonoDevelop. The latter provides `xbuild`):
+Standalone installers (you'll need both Mono and MonoDevelop. The latter provides `msbuild`):
 * [mono-project.com](http://www.mono-project.com/download/)
 * [monodevelop.com/Download](http://monodevelop.com/Download)
 
 Or, if using `apt-get`, use one of these:
 * [`mono-develop`](https://packages.debian.org/search?keywords=mono-devel) (`mono`)
-* [`mono-complete`](https://packages.debian.org/search?keywords=mono-complete) (`mono`+`xbuild`)
+* [`mono-complete`](https://packages.debian.org/search?keywords=mono-complete) (`mono` + `msbuild`)
 
-Currently supported versions of Mono: **4.8**, **5.4**, **5.16**
+Currently supported versions of Mono: **5.4**, **5.16**
 
 Once mono is installed, build the project. The below uses Debug for local development. (See [Installation](https://github.com/countervandalism/CVNBot/wiki#installation) for how to install it properly, don't run from Debug in production!):
 
 ```bash
-countervandalism/CVNBot/src/CVNBot:$ xbuild src/CVNBot.sln /p:Configuration=Debug
+countervandalism/CVNBot/src/CVNBot:$ msbuild src/CVNBot.sln /p:Configuration=Debug
 ```
 
 Once built, you can run it:

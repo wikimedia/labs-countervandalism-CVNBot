@@ -4,7 +4,6 @@ language: csharp
 # Travis CI uses this repository:
 # http://download.mono-project.com/repo/ubuntu/dists/stable-trusty/snapshots/
 mono:
-  - 4.8.0
   # Visual Studio 7.2 for Mac provides Mono 5.4.0 (used by krinkle)
   - 5.4.0
   # In production at cvn.wmflabs.org, we run Debian 9 Stretch with 5.16 from
@@ -12,8 +11,8 @@ mono:
   # See also https://github.com/countervandalism/infrastructure/blob/2906b10516/setup.yaml#L132
   - 5.16.0
 script:
-  - xbuild src/CVNBot.sln /p:Configuration=Release
-  - xbuild src/CVNBot.sln /p:Configuration=Debug
+  - msbuild src/CVNBot.sln /p:Configuration=Release
+  - msbuild src/CVNBot.sln /p:Configuration=Debug
 notifications:
   irc:
     channels:
