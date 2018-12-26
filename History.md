@@ -1,7 +1,7 @@
 1.22.0 / Unreleased
 ==================
 
-CVNBot 1.22 now requires Mono 4 or Mono 5 to run.
+CVNBot 1.22 now requires Mono 5 to run.
 
 ### Added
 * RCReader: Add support for block/reblock log events.
@@ -9,7 +9,7 @@ CVNBot 1.22 now requires Mono 4 or Mono 5 to run.
   Now, "Block modification" events are reported as well.
 
 ### Changed
-* build: CVNBot now requires Mono 4 or Mono 5. Mono 3 is no longer supported.
+* build: CVNBot now requires Mono 5. Mono 3 and 4 are no longer supported.
 * build: Enable continuous integration via Travis CI.
 * build: Automatically copy CVNBot.exe.config to simplify installation.
 * build: Automatically copy CVNBot-sample.ini to simplify installation.
