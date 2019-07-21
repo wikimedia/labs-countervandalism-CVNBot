@@ -51,7 +51,7 @@ namespace CVNBot
 
             // modifyprotectRegex: Added in v1.20
             // Fallback if missing from older project.
-            if (regexDict["modifyprotectRegex"] == null)
+            if (regexDict.ContainsKey("modifyprotectRegex"))
             {
                 regexDict["modifyprotectRegex"] = regexDict["protectRegex"];
                 logger.Warn("generateRegexen: modifyprotectRegex is missing. Please reload this wiki.");
@@ -64,8 +64,9 @@ namespace CVNBot
             runblockRegex = new Regex(regexDict["unblockRegex"]);
             // modifyprotectRegex: Added in v1.22
             // Fallback if missing from older project.
-            if (regexDict["reblockRegex"] == null) {
+            if (!regexDict.ContainsKey("reblockRegex")) {
                 regexDict["reblockRegex"] = "^$";
+                logger.Warn("generateRegexen: reblockRegex is missing. Please reload this wiki.");
             }
             rreblockRegex = new Regex(regexDict["reblockRegex"]);
             rautosummBlank = new Regex(regexDict["autosummBlank"]);
