@@ -1,4 +1,4 @@
-1.22.0 / Unreleased
+1.22.0 / 2019-07-31
 ==================
 
 CVNBot 1.22 now requires Mono 5 to run.
@@ -9,6 +9,28 @@ CVNBot 1.22 now requires Mono 5 to run.
   Now, "Block modification" events are reported as well.
 
 ### Changed
+* Program: Remove the 200ms artificial delay from the "load" bot command,
+  which loads the list of admins and bots from the wiki.
+* Program: Remove our custom logic for message buffering. This existed
+  as flood protection in case the monitored wiki(s) had a higher rate of
+  events than the feed IRC channel allows. This custom logic is no longer
+  needed because the SmartIrc4net library already contains flood protection
+  and message buffering. ([issue #31](https://github.com/countervandalism/CVNBot/issues/31))
+* Program: Update urls from Special:Blockip to Special:Block. ([issue #36](https://github.com/countervandalism/CVNBot/issues/36))
+* RCReader: Remove "emergency restarter" feature for irc.wikimedia.org ops.
+
+### Fixed
+* Project: Remove unused regexes for "Undo" detection that could
+  cause the "reload" command to crash on certain wikis.
+* ListManager: Catch invalid BES regex patterns and log them. ([issue #28](https://github.com/countervandalism/CVNBot/issues/28))
+* Program: Fix "Key duplication when adding: watchword" problem in ReactToRCEvent.
+  Previously, if an edit or new page event triggered both BES and BNA, this
+  bug caused the change to be ignored by the bot. ([issue #9](https://github.com/countervandalism/CVNBot/issues/9))
+* RCReader: Fix parsing of newusers/create2 log events.
+  Previously, events for users creating another account were ignored due to
+  the log format being out of sync with the wiki software. ([issue #30](https://github.com/countervandalism/CVNBot/issues/30))
+
+### Maintenance
 * build: CVNBot now requires Mono 5. Mono 3 and 4 are no longer supported.
 * build: Enable continuous integration via Travis CI.
 * build: Automatically copy CVNBot.exe.config to simplify installation.
@@ -19,21 +41,9 @@ CVNBot 1.22 now requires Mono 5 to run.
   The Sqlite library in .NET 4.5 no longer supports reading integer fields
   with GetString. This was common in CVNBot code and has now been mitigated.
 * Logger: Change default log destination to Syslog, not text files.
-* Logger: Add Nickname in log messages.
+* Logger: Add Nickname to log messages.
 * ListManager: Re-use the same Sqlite connection between threads.
-* RCReader: Remove "emergency restarter" feature for irc.wikimedia.org ops.
 * RCReader: Remove log warnings about unknown log events.
-
-### Fixed
-* Project: Remove unused regexes for "Undo" detection that could
-  cause the "reload" command to crash on certain wikis.
-* ListManager: Catch invalid BES regex patterns and log them.
-* Program: Fix "Key duplication when adding: watchword" problem in ReactToRCEvent.
-  Previously, if an edit or new page event triggered both BES and BNA, this
-  bug caused the change to be ignored by the bot.
-* RCReader: Fix parsing of newusers/create2 log events.
-  Previously, events for users creating another account were ignored due to
-  the log format being out of sync with the wiki software.
 
 1.21.0 / 2015-09-07
 ==================

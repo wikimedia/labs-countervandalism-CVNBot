@@ -16,7 +16,7 @@ namespace CVNBot
 {
     class Program
     {
-        const string version = "1.22.0-beta.3";
+        const string version = "1.22.0";
 
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
