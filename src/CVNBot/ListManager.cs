@@ -478,8 +478,8 @@ namespace CVNBot
                     int len;
                     // Set length defaults: except for blacklist (listtype=1), the default is 0 (indefinite)
                     if (listtype == 1)
-						// 31 days, in seconds
-                        len = 2678400;
+                        // Default expiry for blacklist: 90 days (in seconds)
+                        len = 7776000;
                     else
                         len = 0;
                     if (groups["len"].Success)
