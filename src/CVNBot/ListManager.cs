@@ -36,7 +36,7 @@ namespace CVNBot
 
         static Regex ipv4 = new Regex(@"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b");
         static Regex ipv6 = new Regex(@"\b(?:[0-9A-F]{1,4}:){7}[0-9A-F]{1,4}\b");
-        static Regex rlistCmd = new Regex(@"^(?<cmd>add|del|show|test) (?<item>.+?)(?: p=(?<project>\S+?))?(?: x=(?<len>\d{1,4}))?(?: r=(?<reason>.+?))?$"
+        static Regex rlistCmd = new Regex(@"^(?<cmd>add|del|show|test) +(?<item>.+?)(?: +p=(?<project>\S+?))?(?: +x=(?<len>\d{1,4}))?(?: +r=(?<reason>.+?))?$"
             , RegexOptions.IgnoreCase);
 
         readonly Object dbtoken = new Object();
