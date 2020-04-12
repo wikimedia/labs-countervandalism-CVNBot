@@ -1188,14 +1188,16 @@ namespace CVNBot
                         attribs.Add("lmreason", ubes2.matchedReason);
                         uMsg = 95620;
                     }
-
-                    // Now check if the title matches BES
-                    ListMatch ubes1 = listman.MatchesList(r.title, 20);
-                    if (ubes1.Success)
+                    else
                     {
-                        attribs.Add("watchword", ubes1.matchedItem);
-                        attribs.Add("lmreason", ubes1.matchedReason);
-                        uMsg = 95620;
+                        // Now check if the title matches BES
+                        ListMatch ubes1 = listman.MatchesList(r.title, 20);
+                        if (ubes1.Success)
+                        {
+                            attribs.Add("watchword", ubes1.matchedItem);
+                            attribs.Add("lmreason", ubes1.matchedReason);
+                            uMsg = 95620;
+                        }
                     }
 
                     // Check if upload is watched
