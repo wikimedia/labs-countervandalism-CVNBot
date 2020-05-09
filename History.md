@@ -1,3 +1,14 @@
+3.1.0 / 2020-05-09
+==================
+
+### Changed
+* ListManager: Increase default blacklist expiry from 31 days to 90 days. ([pull #56](https://github.com/countervandalism/CVNBot/pull/56))
+
+
+### Fixed
+* Program: Fix `ReactorException: Duplicate 'watchword'` bug that could happen for
+  upload events due to BES matching both `r.title` and `r.comment`. ([issue #59](https://github.com/countervandalism/CVNBot/issues/59))
+
 1.22.0 / 2019-07-31
 ==================
 
