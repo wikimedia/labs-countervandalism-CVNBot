@@ -31,13 +31,13 @@ Build
 The software is written in C# and originally created as a Visual Studio Project.
 We use `mono` to run the executable and `msbuild` to build the executable.
 
-Standalone installers (you'll need both Mono and MonoDevelop. The latter provides `msbuild`):
-* [mono-project.com](http://www.mono-project.com/download/)
-* [monodevelop.com/Download](http://monodevelop.com/Download)
+Recommended installation methods:
 
-Or, if using `apt-get`, use one of these:
-* [`mono-develop`](https://packages.debian.org/search?keywords=mono-devel) (`mono`)
-* [`mono-complete`](https://packages.debian.org/search?keywords=mono-complete) (`mono` + `msbuild`)
+* For Linux, install [`mono-complete`](https://packages.debian.org/search?keywords=mono-complete) from Debian, or [latest from mono-project.com](https://www.mono-project.com/download/stable/#download-lin),
+* For Mac, install [Visual Studio for Mac](https://www.visualstudio.com/vs/visual-studio-mac/) (enable Mono and .NET during installation).
+* For Windows, install [Visual Studio](https://visualstudio.microsoft.com/vs/) (enable Mono and .NET during installation).
+
+For standalone command-line installations on Mac or Windows, see [monodevelop.com](https://www.monodevelop.com/download/).
 
 Currently supported versions of Mono: **5.4**, **5.16**
 
