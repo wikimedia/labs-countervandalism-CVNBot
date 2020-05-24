@@ -44,7 +44,7 @@ Currently supported versions of Mono: **5.4**, **5.16**
 Once mono is installed, build the project. The below uses Debug, for local development. (See [Installation](./docs/install.md) for how to install it in production):
 
 ```bash
-countervandalism/CVNBot/src/CVNBot:$ msbuild src/CVNBot.sln /p:Configuration=Debug
+countervandalism/CVNBot:$ msbuild src/CVNBot.sln /p:Configuration=Debug
 ```
 
 Once built, you can run it:

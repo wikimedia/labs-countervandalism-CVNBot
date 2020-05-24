@@ -8,6 +8,10 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <!-- [Restore pre-2017 behaviour] No NuGetpackaging -->
     <IsPackable>false</IsPackable>
+    <!-- MSBuild 16+ overwrite our exe.config by default, which means
+         no more console or syslog logging. Keep MWBuild <= 15 behaviour.
+         https://github.com/nunit/nunit-console/pull/587 -->
+    <GenerateSupportedRuntime>false</GenerateSupportedRuntime>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'Default' ">
     <StartAction>Project</StartAction>
@@ -35,7 +39,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Console.msgs">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="..\CVNBot-sample.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -44,13 +48,13 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)' == 'Debug' ">
     <Content Include="..\CVNBot.exe.debug.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>CVNBot.exe.config</Link>
     </Content>
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)' == 'Release' ">
     <Content Include="..\CVNBot.exe.release.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Link>CVNBot.exe.config</Link>
     </Content>
   </ItemGroup>
