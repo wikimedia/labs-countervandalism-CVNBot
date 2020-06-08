@@ -1,3 +1,16 @@
+4.0.0 / 2020-06-08
+==================
+
+CVNBot 4.0 requires Mono 6.8 or later.
+
+### Changed
+* build: Upgrade from .NET Framework 4.5 to 4.7.2. ([issue #13](https://github.com/countervandalism/CVNBot/issues/13))
+* build: Add support for Mono 6, MSBuild 16, and Visual Studio 2019.
+* build: Remove support for Mono 5.4 and 5.16. Mono 5.18+ might work, but is not supported.
+
+### Fixed
+* Project: Remove duplicate log message from `GetInterfaceMessages()`.
+
 3.1.0 / 2020-05-09
 ==================
 
