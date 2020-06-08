@@ -81,7 +81,8 @@ namespace CVNBot
         {
             StringWriter output = new StringWriter();
 
-            XmlTextWriter dump = new XmlTextWriter(output);
+            using (XmlTextWriter dump = new XmlTextWriter(output))
+            {
             dump.WriteStartElement("project");
 
             dump.WriteElementString("projectName", projectName);
@@ -106,7 +107,7 @@ namespace CVNBot
 
             dump.WriteEndElement();
             dump.Flush();
-
+            }
             return output.ToString();
         }
 
