@@ -1,5 +1,5 @@
 Copyright 2014-2018 rxy <github@rxy.jp>
-Copyright 2010-2018 Timo Tijhof <krinklemail@gmail.com>
+Copyright 2010-2020 Timo Tijhof <krinklemail@gmail.com>
 Copyright 2007-2018 Alex Zariv <alex@alexzariv.com>
 Copyright 2007-2010 Mike Lifeguard <lifeguard@toolserver.org>
 Copyright 2006-2009 Tangotango <tangotango.wp@gmail.com>
