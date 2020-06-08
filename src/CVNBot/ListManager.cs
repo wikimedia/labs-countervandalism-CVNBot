@@ -46,13 +46,15 @@ namespace CVNBot
             if (!alreadyExists)
             {
                 // The file didn't exist before, so initialize tables
-                IDbCommand cmd = dbcon.CreateCommand();
-                cmd.CommandText = "CREATE TABLE users ( name varchar(64), project varchar(32), type integer(2), adder varchar(64), reason varchar(80), expiry integer(32) )";
-                cmd.ExecuteNonQuery();
-                cmd.CommandText = "CREATE TABLE watchlist ( article varchar(64), project varchar(32), adder varchar(64), reason varchar(80), expiry integer(32) )";
-                cmd.ExecuteNonQuery();
-                cmd.CommandText = "CREATE TABLE items ( item varchar(80), itemtype integer(2), adder varchar(64), reason varchar(80), expiry integer(32) )";
-                cmd.ExecuteNonQuery();
+                using (IDbCommand cmd = dbcon.CreateCommand())
+                {
+                    cmd.CommandText = "CREATE TABLE users ( name varchar(64), project varchar(32), type integer(2), adder varchar(64), reason varchar(80), expiry integer(32) )";
+                    cmd.ExecuteNonQuery();
+                    cmd.CommandText = "CREATE TABLE watchlist ( article varchar(64), project varchar(32), adder varchar(64), reason varchar(80), expiry integer(32) )";
+                    cmd.ExecuteNonQuery();
+                    cmd.CommandText = "CREATE TABLE items ( item varchar(80), itemtype integer(2), adder varchar(64), reason varchar(80), expiry integer(32) )";
+                    cmd.ExecuteNonQuery();
+                }
             }
 
             // Start the expired item garbage collector
@@ -196,61 +198,63 @@ namespace CVNBot
 
         public string ShowUserOnList(string username, string project)
         {
-            IDbCommand cmd = dbcon.CreateCommand();
-
-			// First, check user list for this particular wiki
-            if (project != "")
+            using (IDbCommand cmd = dbcon.CreateCommand())
             {
-                cmd.CommandText = "SELECT type, adder, reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
-                    + "' AND project = '" + project + "' AND ((expiry > '"
-                    + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+
+                // First, check user list for this particular wiki
+                if (project != "")
+                {
+                    cmd.CommandText = "SELECT type, adder, reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
+                        + "' AND project = '" + project + "' AND ((expiry > '"
+                        + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+                    lock (dbtoken)
+                    {
+                        using (IDataReader idr = cmd.ExecuteReader())
+                            if (idr.Read())
+                            {
+                                // Is admin or bot on this project?
+                                if ((idr.GetInt32(0) == 2) || (idr.GetInt32(0) == 5))
+                                {
+                                    string res = Program.GetFormatMessage(16004, username, project, FriendlyList(idr.GetInt32(0))
+                                        , idr.GetString(1), ParseExpiryDate(idr.GetInt64(3)), idr.GetString(2));
+                                    return res;
+                                }
+                            }
+                    }
+                }
+
+                // Is user globally greylisted? (This takes precedence)
+                cmd.CommandText = "SELECT reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
+                    + "' AND project = '' AND type = '6' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
                 lock (dbtoken)
                 {
                     using (IDataReader idr = cmd.ExecuteReader())
-                    if (idr.Read())
-                    {
-                        // Is admin or bot on this project?
-                        if ((idr.GetInt32(0) == 2) || (idr.GetInt32(0) == 5))
+                        if (idr.Read())
                         {
-                            string res = Program.GetFormatMessage(16004, username, project, FriendlyList(idr.GetInt32(0))
-                                , idr.GetString(1), ParseExpiryDate(idr.GetInt64(3)), idr.GetString(2));
-                            return res;
+                            string result2 = Program.GetFormatMessage(16106, username
+                                , ParseExpiryDate(idr.GetInt64(1)), idr.GetString(0));
+                            return result2;
                         }
-                    }
                 }
-            }
 
-            // Is user globally greylisted? (This takes precedence)
-            cmd.CommandText = "SELECT reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
-                + "' AND project = '' AND type = '6' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
-            lock (dbtoken)
-            {
-                using (IDataReader idr = cmd.ExecuteReader())
-                if (idr.Read())
+                // Next, if we're still here, check if user is globally whitelisted or blacklisted
+                cmd.CommandText = "SELECT type, adder, reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
+                    + "' AND project = '' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+                lock (dbtoken)
                 {
-                    string result2 = Program.GetFormatMessage(16106, username
-                        , ParseExpiryDate(idr.GetInt64(1)), idr.GetString(0));
-                    return result2;
-                }
-            }
+                    using (IDataReader idr = cmd.ExecuteReader())
+                        if (idr.Read())
+                        {
+                            // Is on blacklist or whitelist?
+                            if ((idr.GetInt32(0) == 0) || (idr.GetInt32(0) == 1))
+                            {
+                                string result = Program.GetFormatMessage(16004, username, FriendlyProject(""), FriendlyList(idr.GetInt32(0))
+                                        , idr.GetString(1), ParseExpiryDate(idr.GetInt64(3)), idr.GetString(2));
+                                return result;
+                            }
+                        }
 
-            // Next, if we're still here, check if user is globally whitelisted or blacklisted
-            cmd.CommandText = "SELECT type, adder, reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
-                + "' AND project = '' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
-            lock (dbtoken)
-            {
-                using (IDataReader idr = cmd.ExecuteReader())
-                if (idr.Read())
-                {
-                    // Is on blacklist or whitelist?
-                    if ((idr.GetInt32(0) == 0) || (idr.GetInt32(0) == 1))
-                    {
-                        string result = Program.GetFormatMessage(16004, username, FriendlyProject(""), FriendlyList(idr.GetInt32(0))
-                                , idr.GetString(1), ParseExpiryDate(idr.GetInt64(3)), idr.GetString(2));
-                        return result;
-                    }
                 }
-
             }
 
             // Finally, if we're still here, user is either user or anon
@@ -300,44 +304,48 @@ namespace CVNBot
                 return "Error: Regex does not compile: " + e.Message;
             }
 
-            IDbCommand dbCmd = dbcon.CreateCommand();
-            // First, check if item is already on the same list
-            if (IsItemOnList(item, itemType))
+            using (IDbCommand dbCmd = dbcon.CreateCommand())
             {
-                // Item is already on the same list, need to update
-                dbCmd.CommandText = "UPDATE items SET adder='" + adder.Replace("'", "''") + "', reason='"
-                    + reason.Replace("'", "''") + "', expiry='" + GetExpiryDate(expiry) + "' WHERE item='" + item.Replace("'", "''")
-                    + "' AND itemtype='" + itemType.ToString() + "'";
+                // First, check if item is already on the same list
+                if (IsItemOnList(item, itemType))
+                {
+                    // Item is already on the same list, need to update
+                    dbCmd.CommandText = "UPDATE items SET adder='" + adder.Replace("'", "''") + "', reason='"
+                        + reason.Replace("'", "''") + "', expiry='" + GetExpiryDate(expiry) + "' WHERE item='" + item.Replace("'", "''")
+                        + "' AND itemtype='" + itemType.ToString() + "'";
+                    lock (dbtoken)
+                        dbCmd.ExecuteNonQuery();
+                    return Program.GetFormatMessage(16104, ShowItemOnList(item, itemType));
+                }
+
+                // Item is not on the list yet, can do simple insert
+                dbCmd.CommandText = "INSERT INTO items (item, itemtype, adder, reason, expiry) VALUES('" + item.Replace("'", "''")
+                    + "', '" + itemType.ToString() + "', '" + adder.Replace("'", "''") + "', '" + reason.Replace("'", "''")
+                    + "', '" + GetExpiryDate(expiry) + "')";
                 lock (dbtoken)
                     dbCmd.ExecuteNonQuery();
-                return Program.GetFormatMessage(16104, ShowItemOnList(item, itemType));
             }
-
-            // Item is not on the list yet, can do simple insert
-            dbCmd.CommandText = "INSERT INTO items (item, itemtype, adder, reason, expiry) VALUES('" + item.Replace("'", "''")
-                + "', '" + itemType.ToString() + "', '" + adder.Replace("'", "''") + "', '" + reason.Replace("'", "''")
-                + "', '" + GetExpiryDate(expiry) + "')";
-            lock (dbtoken)
-                dbCmd.ExecuteNonQuery();
             return Program.GetFormatMessage(16103, ShowItemOnList(item, itemType));
         }
 
         public string ShowItemOnList(string item, int itemType)
         {
-            IDbCommand cmd = dbcon.CreateCommand();
-            cmd.CommandText = "SELECT adder, reason, expiry FROM items WHERE item='" + item.Replace("'", "''")
-                + "' AND itemtype='" + itemType.ToString()
-                + "' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
-            lock (dbtoken)
+            using (IDbCommand cmd = dbcon.CreateCommand())
             {
-                using (IDataReader idr = cmd.ExecuteReader())
-                if (idr.Read())
+                cmd.CommandText = "SELECT adder, reason, expiry FROM items WHERE item='" + item.Replace("'", "''")
++ "' AND itemtype='" + itemType.ToString()
++ "' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+                lock (dbtoken)
                 {
-                    string result = Program.GetFormatMessage(16007, item, FriendlyList(itemType), idr.GetString(0),
-                        ParseExpiryDate(idr.GetInt64(2)), idr.GetString(1));
-                    return result;
+                    using (IDataReader idr = cmd.ExecuteReader())
+                        if (idr.Read())
+                        {
+                            string result = Program.GetFormatMessage(16007, item, FriendlyList(itemType), idr.GetString(0),
+                                ParseExpiryDate(idr.GetInt64(2)), idr.GetString(1));
+                            return result;
+                        }
+                    return Program.GetFormatMessage(16008, item, FriendlyList(itemType));
                 }
-                return Program.GetFormatMessage(16008, item, FriendlyList(itemType));
             }
         }
 
@@ -632,16 +640,18 @@ namespace CVNBot
 
             try
             {
-                IDbCommand cmd = dbcon.CreateCommand();
-                cmd.CommandText = "SELECT project, type, adder, reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
-                    + "' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0'))";
-                lock (dbtoken)
+                using (IDbCommand cmd = dbcon.CreateCommand())
                 {
-                    using (IDataReader idr = cmd.ExecuteReader())
-                    while (idr.Read())
+                    cmd.CommandText = "SELECT project, type, adder, reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
++ "' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0'))";
+                    lock (dbtoken)
                     {
-                        results.Add(Program.GetFormatMessage(16002, FriendlyProject(idr.GetString(0)), FriendlyList(idr.GetInt32(1))
-                            , idr.GetString(2), ParseExpiryDate(idr.GetInt64(4)), idr.GetString(3)));
+                        using (IDataReader idr = cmd.ExecuteReader())
+                            while (idr.Read())
+                            {
+                                results.Add(Program.GetFormatMessage(16002, FriendlyProject(idr.GetString(0)), FriendlyList(idr.GetInt32(1))
+                                    , idr.GetString(2), ParseExpiryDate(idr.GetInt64(4)), idr.GetString(3)));
+                            }
                     }
                 }
 
@@ -668,56 +678,57 @@ namespace CVNBot
             if (!Program.config.disableClassifyEditor)
             {
 
-                IDbCommand cmd = dbcon.CreateCommand();
-
-                if (project != "")
+                using (IDbCommand cmd = dbcon.CreateCommand())
                 {
-                    // First, check if user is an admin or bot on this particular wiki
-                    cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''") + "' AND project = '" + project
-                        + "' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+                    if (project != "")
+                    {
+                        // First, check if user is an admin or bot on this particular wiki
+                        cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''") + "' AND project = '" + project
+                            + "' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+                        lock (dbtoken)
+                        {
+                            using (IDataReader idr = cmd.ExecuteReader())
+                                if (idr.Read())
+                                {
+                                    switch (idr.GetInt32(0))
+                                    {
+                                        case 2:
+                                            return UserType.admin;
+                                        case 5:
+                                            return UserType.bot;
+                                    }
+                                }
+                        }
+                    }
+
+                    // Is user globally greylisted? (This takes precedence)
+                    cmd.CommandText = "SELECT reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
+                        + "' AND project = '' AND type = '6' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
                     lock (dbtoken)
                     {
-                        using (IDataReader idr = cmd.ExecuteReader())
-                        if (idr.Read())
-                        {
-                            switch (idr.GetInt32(0))
+                        using (IDataReader idr3 = cmd.ExecuteReader())
+                            if (idr3.Read())
                             {
-                                case 2:
-                                    return UserType.admin;
-                                case 5:
-                                    return UserType.bot;
+                                return UserType.greylisted;
                             }
-                        }
                     }
-                }
 
-                // Is user globally greylisted? (This takes precedence)
-                cmd.CommandText = "SELECT reason, expiry FROM users WHERE name = '" + username.Replace("'", "''")
-                    + "' AND project = '' AND type = '6' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
-                lock (dbtoken)
-                {
-                    using (IDataReader idr3 = cmd.ExecuteReader())
-                    if (idr3.Read())
+                    // Next, if we're still here, check if user is globally whitelisted or blacklisted
+                    cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''")
+                        + "' AND project = '' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
+                    lock (dbtoken)
                     {
-                        return UserType.greylisted;
-                    }
-                }
-
-                // Next, if we're still here, check if user is globally whitelisted or blacklisted
-                cmd.CommandText = "SELECT type FROM users WHERE name = '" + username.Replace("'", "''")
-                    + "' AND project = '' AND ((expiry > '" + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0')) LIMIT 1";
-                lock (dbtoken)
-                {
-                    using (IDataReader idr2 = cmd.ExecuteReader())
-                    if (idr2.Read())
-                    {
-                        switch (idr2.GetInt32(0))
-                        {
-                            case 0:
-                                return UserType.whitelisted;
-                            case 1:
-                                return UserType.blacklisted;
-                        }
+                        using (IDataReader idr2 = cmd.ExecuteReader())
+                            if (idr2.Read())
+                            {
+                                switch (idr2.GetInt32(0))
+                                {
+                                    case 0:
+                                        return UserType.whitelisted;
+                                    case 1:
+                                        return UserType.blacklisted;
+                                }
+                            }
                     }
                 }
             }
@@ -733,26 +744,27 @@ namespace CVNBot
         {
             ListMatch lm = new ListMatch();
             lm.matchedItem = ""; // Unused
-            IDbCommand cmd = dbcon.CreateCommand();
-
-            cmd.CommandText = "SELECT reason FROM watchlist WHERE article='" + title.Replace("'", "''")
-                + "' AND (project='" + project + "' OR project='') AND ((expiry > '"
-                + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0'))";
-            lock (dbtoken)
+            using (IDbCommand cmd = dbcon.CreateCommand())
             {
-                using (IDataReader idr = cmd.ExecuteReader())
+                cmd.CommandText = "SELECT reason FROM watchlist WHERE article='" + title.Replace("'", "''")
+                    + "' AND (project='" + project + "' OR project='') AND ((expiry > '"
+                    + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0'))";
+                lock (dbtoken)
                 {
-                    if (idr.Read())
+                    using (IDataReader idr = cmd.ExecuteReader())
                     {
-                        // Matched; is on watchlist
-                        lm.Success = true;
-                        lm.matchedReason = idr.GetString(0);
-                    }
-                    else
-                    {
-                        // Did not match anything
-                        lm.Success = false;
-                        lm.matchedReason = "";
+                        if (idr.Read())
+                        {
+                            // Matched; is on watchlist
+                            lm.Success = true;
+                            lm.matchedReason = idr.GetString(0);
+                        }
+                        else
+                        {
+                            // Did not match anything
+                            lm.Success = false;
+                            lm.matchedReason = "";
+                        }
                     }
                 }
             }
@@ -780,22 +792,23 @@ namespace CVNBot
         public ListMatch MatchesList(string title, int list)
         {
             ListMatch lm = new ListMatch();
-            IDbCommand cmd = dbcon.CreateCommand();
-
-            cmd.CommandText = "SELECT item, reason FROM items WHERE itemtype='" + list.ToString() + "' AND ((expiry > '"
-                + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0'))";
-            lock (dbtoken)
+            using (IDbCommand cmd = dbcon.CreateCommand())
             {
-                using (IDataReader idr = cmd.ExecuteReader())
-                while (idr.Read())
+                cmd.CommandText = "SELECT item, reason FROM items WHERE itemtype='" + list.ToString() + "' AND ((expiry > '"
+                    + DateTime.Now.Ticks.ToString() + "') OR (expiry = '0'))";
+                lock (dbtoken)
                 {
-                    if (MatchesPattern(title, idr.GetString(0)))
-                    {
-                        lm.Success = true;
-                        lm.matchedItem = idr.GetString(0);
-                        lm.matchedReason = idr.GetString(1);
-                        return lm;
-                    }
+                    using (IDataReader idr = cmd.ExecuteReader())
+                        while (idr.Read())
+                        {
+                            if (MatchesPattern(title, idr.GetString(0)))
+                            {
+                                lm.Success = true;
+                                lm.matchedItem = idr.GetString(0);
+                                lm.matchedReason = idr.GetString(1);
+                                return lm;
+                            }
+                        }
                 }
             }
 

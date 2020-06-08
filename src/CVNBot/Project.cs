@@ -81,31 +81,33 @@ namespace CVNBot
         {
             StringWriter output = new StringWriter();
 
-            XmlTextWriter dump = new XmlTextWriter(output);
-            dump.WriteStartElement("project");
+            using (XmlTextWriter dump = new XmlTextWriter(output))
+            {
+                dump.WriteStartElement("project");
 
-            dump.WriteElementString("projectName", projectName);
-            dump.WriteElementString("interwikiLink", interwikiLink);
-            dump.WriteElementString("rooturl", rooturl);
-            dump.WriteElementString("speciallog", regexDict["specialLogRegex"]);
-            dump.WriteElementString("namespaces", snamespaces.Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", ""));
+                dump.WriteElementString("projectName", projectName);
+                dump.WriteElementString("interwikiLink", interwikiLink);
+                dump.WriteElementString("rooturl", rooturl);
+                dump.WriteElementString("speciallog", regexDict["specialLogRegex"]);
+                dump.WriteElementString("namespaces", snamespaces.Replace("<?xml version=\"1.0\" encoding=\"utf-8\"?>", ""));
 
-            dump.WriteElementString("restoreRegex", regexDict["restoreRegex"]);
-            dump.WriteElementString("deleteRegex", regexDict["deleteRegex"]);
-            dump.WriteElementString("protectRegex", regexDict["protectRegex"]);
-            dump.WriteElementString("unprotectRegex", regexDict["unprotectRegex"]);
-            dump.WriteElementString("modifyprotectRegex", regexDict["modifyprotectRegex"]);
-            dump.WriteElementString("uploadRegex", regexDict["uploadRegex"]);
-            dump.WriteElementString("moveRegex", regexDict["moveRegex"]);
-            dump.WriteElementString("moveredirRegex", regexDict["moveredirRegex"]);
-            dump.WriteElementString("blockRegex", regexDict["blockRegex"]);
-            dump.WriteElementString("unblockRegex", regexDict["unblockRegex"]);
-            dump.WriteElementString("reblockRegex", regexDict["reblockRegex"]);
-            dump.WriteElementString("autosummBlank", regexDict["autosummBlank"]);
-            dump.WriteElementString("autosummReplace", regexDict["autosummReplace"]);
+                dump.WriteElementString("restoreRegex", regexDict["restoreRegex"]);
+                dump.WriteElementString("deleteRegex", regexDict["deleteRegex"]);
+                dump.WriteElementString("protectRegex", regexDict["protectRegex"]);
+                dump.WriteElementString("unprotectRegex", regexDict["unprotectRegex"]);
+                dump.WriteElementString("modifyprotectRegex", regexDict["modifyprotectRegex"]);
+                dump.WriteElementString("uploadRegex", regexDict["uploadRegex"]);
+                dump.WriteElementString("moveRegex", regexDict["moveRegex"]);
+                dump.WriteElementString("moveredirRegex", regexDict["moveredirRegex"]);
+                dump.WriteElementString("blockRegex", regexDict["blockRegex"]);
+                dump.WriteElementString("unblockRegex", regexDict["unblockRegex"]);
+                dump.WriteElementString("reblockRegex", regexDict["reblockRegex"]);
+                dump.WriteElementString("autosummBlank", regexDict["autosummBlank"]);
+                dump.WriteElementString("autosummReplace", regexDict["autosummReplace"]);
 
-            dump.WriteEndElement();
-            dump.Flush();
+                dump.WriteEndElement();
+                dump.Flush();
+            }
 
             return output.ToString();
         }
