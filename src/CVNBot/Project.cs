@@ -227,8 +227,6 @@ namespace CVNBot
 
         void GetInterfaceMessages(Dictionary<string, MessagesOption> Messages)
         {
-            logger.InfoFormat("Fetching InterfaceMessages from {0}", rooturl);
-
             string CombinedMessages = string.Join("|", Messages.Keys);
 
             string sMwMessages = CVNBotUtils.GetRawDocument(
