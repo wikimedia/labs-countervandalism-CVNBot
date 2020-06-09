@@ -1274,10 +1274,15 @@ namespace CVNBot
 
         public static void BotConfigMsg(string destChannel)
         {
+            // The only operational information provided here is the bot version.
+            // The settings printed to IRC are limited to feed settings that users
+            // can observe.
+            // Operational configuration for servers, files, and restarts is not
+            // interesting to users.
+
             string message = "runs CVNBot " + version + " in " + config.feedChannel + "; settings: ";
 
             FieldInfo[] fields = config.GetType().GetFields();
-            logger.Info("Bot config fields: " + fields.Length.ToString());
             foreach (FieldInfo field in fields)
             {
                 string name = field.Name;
@@ -1288,6 +1293,7 @@ namespace CVNBot
                     name.EndsWith("File") ||
                     name.StartsWith("restart")
                    ) {
+                    // SECURITY: Keep 'botpass' private.
                     continue;
                 }
                 string val = Convert.ToString(field.GetValue(config));
