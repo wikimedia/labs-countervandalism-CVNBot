@@ -20,17 +20,18 @@ namespace CVNBot
         void DumpToFile()
         {
             logger.Info("Saving configuration to " + fnProjectsXML);
-            StreamWriter sw = new StreamWriter(fnProjectsXML);
-            sw.WriteLine("<projects>");
-            foreach (DictionaryEntry dicent in this)
-            {
-                Project prj = (Project)dicent.Value;
-                // Get each Project's details and append it to the XML file
-                sw.WriteLine(prj.DumpProjectDetails());
-            }
-            sw.WriteLine("</projects>");
-            sw.Flush();
-            sw.Close();
+
+            using (StreamWriter sw = new StreamWriter(fnProjectsXML))
+            { 
+                sw.WriteLine("<projects>");
+                foreach (DictionaryEntry dicent in this)
+                {
+                    Project prj = (Project)dicent.Value;
+                    // Get each Project's details and append it to the XML file
+                    sw.WriteLine(prj.DumpProjectDetails());
+                }
+                sw.WriteLine("</projects>");
+            }   
         }
 
         /// <summary>

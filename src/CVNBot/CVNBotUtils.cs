@@ -122,18 +122,25 @@ namespace CVNBot
         /// <returns></returns>
         public static string GetRawDocument(string url)
         {
+            string output = string.Empty;
+
             try
             {
                 HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
                 req.UserAgent = "Mozilla/5.0 (en-US) CVNBot/1.0 (like SWMTBot) More info: https://github.com/countervandalism/CVNBot";
 
-                HttpWebResponse res = (HttpWebResponse)req.GetResponse();
+                using (HttpWebResponse res = (HttpWebResponse)req.GetResponse())
+                { 
 
-                Stream receiveStream = res.GetResponseStream();
-                StreamReader readStream = new StreamReader(receiveStream, Encoding.UTF8);
-                string output = readStream.ReadToEnd();
-                res.Close();
-                readStream.Close();
+                    Stream receiveStream = res.GetResponseStream();
+
+                    using (StreamReader readStream = new StreamReader(receiveStream, Encoding.UTF8))
+                    { 
+                        output = readStream.ReadToEnd();
+                    }
+
+                    res.Close();
+                }
                 return output;
             }
             catch (WebException e)
