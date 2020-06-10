@@ -20,26 +20,20 @@
     <ExternalConsole>false</ExternalConsole>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="log4net, Version=2.0.8, Culture=neutral">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\log4net.dll</HintPath>
-    </Reference>
-    <Reference Include="Meebey.SmartIrc4net, Version=1.1, Culture=neutral">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Meebey.SmartIrc4net.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Data.Sqlite" />
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
     <Reference Include="System.Web" />
-    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="log4net" Version="2.0.8" />
+    <PackageReference Include="Mono.Data.SQlite" Version="1.0.61" />
+    <PackageReference Include="SmartIrc4net" Version="1.1.0" />
+    <PackageReference Include="SQlite" Version="3.13.0" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Projects.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Console.msgs">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\CVNBot-sample.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
