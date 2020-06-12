@@ -221,13 +221,8 @@ namespace CVNBot
 
         static void Irc_OnConnectionError(object sender, EventArgs e)
         {
-            // Let's try to catch those strange disposal errors
-            // But only if it ain't a legitimate disconnection
-            if (rcirc.rcirc.AutoReconnect)
-            {
-                logger.Error("OnConnectionError in Program, restarting...");
-                Restart();
-            }
+            logger.Error("OnConnectionError in Program, restarting...");
+            Restart();
         }
 
         /// <summary>
@@ -1308,13 +1303,18 @@ namespace CVNBot
 
         }
 
+        /// <summary>
+        /// First call PartIRC() with a reason, before calling Exit().
+        /// Except:
+        /// - if there is a problem before the program was fully connected.
+        /// - if we know we have already left the channel.
+        /// - from inside Restart(), which is a wrapper for Exit().
+        /// </remarks>
         public static void Exit()
         {
             try
             {
-                // Delayed quitting after parting in PartIRC()
                 irc.Disconnect();
-                rcirc.rcirc.AutoReconnect = false;
                 rcirc.rcirc.Disconnect();
 
                 listman.CloseDBConnection();
@@ -1331,7 +1331,9 @@ namespace CVNBot
             }
         }
 
-
+        /// <summary>
+        /// Always call PartIRC() with a reason before calling Restart().
+        /// </summary>
         public static void Restart()
         {
             string cmd = config.restartCmd;
@@ -1343,7 +1345,6 @@ namespace CVNBot
 
         public static void PartIRC(string quitMessage)
         {
-            rcirc.rcirc.AutoReconnect = false;
             rcirc.rcirc.RfcQuit(quitMessage);
             irc.RfcPart(config.controlChannel, quitMessage);
             irc.RfcPart(config.feedChannel, quitMessage);
