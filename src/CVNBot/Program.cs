@@ -236,20 +236,20 @@ namespace CVNBot
             }
             catch
             {
-                // Logging failed; considerably serious
+                // Logging failed
                 Console.WriteLine("Caught unhandled exception, and logging failed: " + e.ExceptionObject);
+            }
 
-                try
-                {
-                    PartIRC("Caught unhandled exception and logging failed; restarting as a precaution");
-                    Restart();
-                }
-                catch
-                {
-                    // Restart failed
-                    Console.WriteLine("Restart failed; exiting with code 24.");
-                    System.Environment.Exit(24);
-                }
+            try
+            {
+                PartIRC("Caught unhandled exception");
+                Restart();
+            }
+            catch
+            {
+                // Restart failed
+                Console.WriteLine("Restart failed; exiting with code 24.");
+                System.Environment.Exit(24);
             }
         }
 
