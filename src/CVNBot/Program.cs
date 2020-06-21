@@ -300,13 +300,13 @@ namespace CVNBot
                             switch (list)
                             {
                                 case "WL":
-                                    listman.AddUserToList(item, "", ListManager.UserType.whitelisted, adder, reason, len);
+                                    listman.AddUserToList(item, "", UserType.whitelisted, adder, reason, len);
                                     break;
                                 case "BL":
-                                    listman.AddUserToList(item, "", ListManager.UserType.blacklisted, adder, reason, len);
+                                    listman.AddUserToList(item, "", UserType.blacklisted, adder, reason, len);
                                     break;
                                 case "GL":
-                                    listman.AddUserToList(item, "", ListManager.UserType.greylisted, adder, reason, len);
+                                    listman.AddUserToList(item, "", UserType.greylisted, adder, reason, len);
                                     break;
                                 case "BNU":
                                     listman.AddItemToList(item, 11, adder, reason, len);
@@ -327,13 +327,13 @@ namespace CVNBot
                             switch (list)
                             {
                                 case "WL":
-                                    listman.DelUserFromList(item, "", ListManager.UserType.whitelisted);
+                                    listman.DelUserFromList(item, "", UserType.whitelisted);
                                     break;
                                 case "BL":
-                                    listman.DelUserFromList(item, "", ListManager.UserType.blacklisted);
+                                    listman.DelUserFromList(item, "", UserType.blacklisted);
                                     break;
                                 case "GL":
-                                    listman.DelUserFromList(item, "", ListManager.UserType.greylisted);
+                                    listman.DelUserFromList(item, "", UserType.greylisted);
                                     break;
                                 case "BNU":
                                     listman.DelItemFromList(item, 11);
@@ -781,13 +781,16 @@ namespace CVNBot
         /// <param name="userOffset"></param>
         /// <param name="username"></param>
         /// <param name="reason"></param>
-        static void AddToGreylist(int userOffset, string username, string reason)
+        static void AddToGreylist(UserType userOffset, string username, string reason)
         {
-            //Only if blacklisted, anon, user, or already greylisted
-            if ((userOffset == 1) || (userOffset == 4) || (userOffset == 3) || (userOffset == 6))
+            // Only do greylisting if they are currently blacklisted, reguser, anon, or already greylisted.
+            // In other words, never greylist trusted users (bot, admin, whitelist).
+            if (userOffset == UserType.blacklisted || userOffset == UserType.user || userOffset == UserType.anon || userOffset == UserType.greylisted)
             {
-                listman.AddUserToList(username, "", ListManager.UserType.greylisted, "CVNBot", reason, 1);
-                Broadcast("GL", "ADD", username, 900, reason, "CVNBot"); //Greylist for 900 seconds = 15 mins
+                listman.AddUserToList(username, "", UserType.greylisted, "CVNBot", reason, 1);
+                // Greylist for 900 seconds = 15 mins
+                // TODO: Why is the broadcasted expiry different from local expiry (line above)
+                Broadcast("GL", "ADD", username, 900, reason, "CVNBot");
             }
         }
 
@@ -843,20 +846,20 @@ namespace CVNBot
 
             Hashtable attribs = new Hashtable();
             String message = "";
-            int userOffset = (int)(listman.ClassifyEditor(r.user, r.project));
+            UserType userOffset = listman.ClassifyEditor(r.user, r.project);
 
             // FIXME: If the current event is by a bot user and it blocks (eg. bot admin) and
             // bot edits are ignored (default) then the user will not be blacklisted
             // TODO: Add new userOffset for botadmin?
 
             // Feed filters -> Users
-            if (userOffset == 3)
+            if (userOffset == UserType.anon)
                 feedFilterThisUser = config.feedFilterUsersAnon;
 
-            if (userOffset == 4)
+            if (userOffset == UserType.user)
                 feedFilterThisUser = config.feedFilterUsersReg;
 
-            if (userOffset == 5)
+            if (userOffset == UserType.bot)
                 feedFilterThisUser = config.feedFilterUsersBot;
 
             if (feedFilterThisUser == 4)// 4 is "ignore"
@@ -889,9 +892,8 @@ namespace CVNBot
                     {
                         bool createSpecial = false;
 
-                        // New pages created by an admin or whitelisted user
-                        if ((userOffset == 2) || (userOffset == 0))
-                            // Ignore event
+                        if (userOffset == UserType.admin || userOffset == UserType.whitelisted)
+                            // Ignore new pages created by an admin or whitelisted user
                             return;
 
                         // Initialise the "sizeattrib" and "sizereset" attributes, which are used
@@ -902,20 +904,20 @@ namespace CVNBot
                             createSpecial = true;
                             attribs.Add("sizeattrib", GetMessage(100, ref attribs));
                             attribs.Add("sizereset", GetMessage(102, ref attribs));
-                            message = GetMessage(5010 + userOffset, ref attribs);
+                            message = GetMessage(5010 + (int)userOffset, ref attribs);
                         }
                         else if (r.szdiff <= config.newSmall)
                         {
                             createSpecial = true;
                             attribs.Add("sizeattrib", GetMessage(101, ref attribs));
                             attribs.Add("sizereset", GetMessage(103, ref attribs));
-                            message = GetMessage(5020 + userOffset, ref attribs);
+                            message = GetMessage(5020 + (int)userOffset, ref attribs);
                         }
                         else
                         {
                             attribs.Add("sizeattrib", "");
                             attribs.Add("sizereset", "");
-                            message = GetMessage(5000 + userOffset, ref attribs);
+                            message = GetMessage(5000 + (int)userOffset, ref attribs);
                         }
 
                         // The remaining checks go descending order of priority.
@@ -929,7 +931,7 @@ namespace CVNBot
                         if (wlm.Success)
                         {
                             // Matches watchlist (CVP)
-                            message = GetMessage(5030 + userOffset, ref attribs);
+                            message = GetMessage(5030 + (int)userOffset, ref attribs);
                             AddToGreylist(userOffset, r.user, Program.GetFormatMessage(16301, (String)attribs["article"]));
                             break;
                         }
@@ -940,7 +942,7 @@ namespace CVNBot
                         {
                             // Matches BNA
                             attribs.Add("watchword", eslm.matchedItem);
-                            message = GetMessage(5040 + userOffset, ref attribs);
+                            message = GetMessage(5040 + (int)userOffset, ref attribs);
                             AddToGreylist(userOffset, r.user, Program.GetFormatMessage(16300, (String)attribs["article"], eslm.matchedItem));
                             break;
                         }
@@ -951,7 +953,7 @@ namespace CVNBot
                         {
                             // Matches BES
                             attribs.Add("watchword", lm.matchedItem);
-                            message = GetMessage(95040 + userOffset, ref attribs);
+                            message = GetMessage(95040 + (int)userOffset, ref attribs);
                             AddToGreylist(userOffset, r.user, Program.GetFormatMessage(16300, (String)attribs["article"], lm.matchedItem));
                             break;
                         }
@@ -965,11 +967,11 @@ namespace CVNBot
                         // - Current usertype is configured to always report
                         //   (By default this is for anonymous users, via feedFilterUsersAnon=1,
                         //   but feedFilterUsersReg or feedFilterUsersBot could also be set to 1)
-                        if ((userOffset == 1) || (userOffset == 6) || (feedFilterThisUser == 1))
+                        if (userOffset == UserType.blacklisted || userOffset == UserType.greylisted || feedFilterThisUser == 1)
                             break;
 
-                        // Created by an unlisted reguser with non-special create size, ignore
-                        if ((userOffset == 4) && !createSpecial)
+                        if (userOffset == UserType.user && !createSpecial)
+                            // Ignore page creation by unlisted reguser with non-special create size
                             return;
 
                         // Else: Create had special size, so let it shown (default), don't return!
@@ -979,9 +981,8 @@ namespace CVNBot
                     {
                         bool editSpecial = false;
 
-                        // Edit by an admin or whitelisted user
-                        if ((userOffset == 2) || (userOffset == 0))
-                            // Ignore event
+                        if (userOffset == UserType.admin || userOffset == UserType.whitelisted)
+                            // Ignore edit by admin or whitelisted user
                             return;
 
                         // Initialise the "sizeattrib" and "sizereset" attributes, which are used
@@ -991,21 +992,21 @@ namespace CVNBot
                         {
                             attribs.Add("sizeattrib", GetMessage(100, ref attribs));
                             attribs.Add("sizereset", GetMessage(102, ref attribs));
-                            message = GetMessage(5110 + userOffset, ref attribs);
+                            message = GetMessage(5110 + (int)userOffset, ref attribs);
                             editSpecial = true;
                         }
                         else if (r.szdiff <= config.editBlank)
                         {
                             attribs.Add("sizeattrib", GetMessage(101, ref attribs));
                             attribs.Add("sizereset", GetMessage(103, ref attribs));
-                            message = GetMessage(5120 + userOffset, ref attribs);
+                            message = GetMessage(5120 + (int)userOffset, ref attribs);
                             editSpecial = true;
                         }
                         else
                         {
                             attribs.Add("sizeattrib", "");
                             attribs.Add("sizereset", "");
-                            message = GetMessage(5100 + userOffset, ref attribs);
+                            message = GetMessage(5100 + (int)userOffset, ref attribs);
                         }
 
                         // The remaining checks go descending order of priority.
@@ -1021,7 +1022,7 @@ namespace CVNBot
                         {
                             // Matches BES
                             attribs.Add("watchword", elm.matchedItem);
-                            message = GetMessage(95130 + userOffset, ref attribs);
+                            message = GetMessage(95130 + (int)userOffset, ref attribs);
                             AddToGreylist(userOffset, r.user, Program.GetFormatMessage(16310, r.comment, (String)attribs["article"]));
                             break;
                         }
@@ -1029,7 +1030,7 @@ namespace CVNBot
                         // Did the user user blank the page?
                         if (project.rautosummBlank.IsMatch(r.comment))
                         {
-                            message = GetMessage(96010 + userOffset, ref attribs);
+                            message = GetMessage(96010 + (int)userOffset, ref attribs);
                             AddToGreylist(userOffset, r.user, Program.GetFormatMessage(16311, (String)attribs["article"]));
                             break;
                         }
@@ -1041,12 +1042,12 @@ namespace CVNBot
                             try
                             {
                                 attribs.Add("profanity", rplm.Groups["item1"].Captures[0].Value);
-                                message = GetMessage(96020 + userOffset, ref attribs);
+                                message = GetMessage(96020 + (int)userOffset, ref attribs);
                             }
                             catch (ArgumentOutOfRangeException)
                             {
                                 // This wiki probably doesn't have a profanity attribute
-                                message = GetMessage(96030 + userOffset, ref attribs);
+                                message = GetMessage(96030 + (int)userOffset, ref attribs);
                             }
                             break;
                         }
@@ -1056,20 +1057,21 @@ namespace CVNBot
                         if (welm.Success)
                         {
                             // Matches watchlist (CVP)
-                            message = GetMessage(5130 + userOffset, ref attribs);
+                            message = GetMessage(5130 + (int)userOffset, ref attribs);
                             break;
                         }
 
-                        // If we're still here that means
+                        // If we're still here that means:
                         // - the edit didn't get ignored by adminlist or whitelist
                         // - the edit didn't match any watch patterns
-                        // Now, if any of the following is true, we must still report it.
+                        //
+                        // Now, if any of the following is true, we must still report it:
                         // - Edit by blacklisted user
                         // - Edit by greylisted user
                         // - Current usertype is configured to always report
                         //   (By default this is for anonymous users, via feedFilterUsersAnon=1,
                         //   but feedFilterUsersReg or feedFilterUsersBot could also be set to 1)
-                        if ((userOffset == 1) || (userOffset == 6) || (feedFilterThisUser == 1))
+                        if (userOffset == UserType.blacklisted || userOffset == UserType.greylisted || feedFilterThisUser == 1)
                             break;
 
                         // If nothing special about the edit, return to ignore
@@ -1078,8 +1080,8 @@ namespace CVNBot
                     }
                     break;
                 case RCEvent.EventType.move:
-                    // if moves are softhidden hide moves by admin, bot or whitelist
-                    if ((config.feedFilterEventMove == 2) && ((userOffset == 2) || (userOffset == 5) || (userOffset == 0)))
+                    // if moves are softhidden, then hide moves by admin, bot or whitelist
+                    if (config.feedFilterEventMove == 2 && (userOffset == UserType.admin || userOffset == UserType.bot || userOffset == UserType.whitelisted))
                     {
                         return;
                     }
@@ -1089,9 +1091,10 @@ namespace CVNBot
                     attribs.Add("cfromname", r.title);
                     attribs.Add("toname", project.interwikiLink + r.movedTo);
                     attribs.Add("ctoname", r.movedTo);
-                    attribs.Add("url", r.blockLength); //The blockLength field stores the moveFrom URL
+                    // The blockLength field stores the moveFrom URL
+                    attribs.Add("url", r.blockLength);
                     attribs.Add("reason", r.comment);
-                    message = GetMessage(5500 + userOffset, ref attribs);
+                    message = GetMessage(5500 + (int)userOffset, ref attribs);
                     break;
                 case RCEvent.EventType.block:
                     attribs.Add("blockname", project.interwikiLink + r.title);
@@ -1102,16 +1105,16 @@ namespace CVNBot
                     attribs.Add("length", r.blockLength);
                     attribs.Add("reason", r.comment);
                     message = GetMessage(5400, ref attribs);
-                    //If the blocked user (r.title) isn't botlisted, add to blacklist
-                    if (listman.ClassifyEditor(r.title.Split(new char[] { ':' }, 2)[1], r.project) != ListManager.UserType.bot)
+                    // If the blocked user (r.title) isn't botlisted, add to blacklist
+                    if (listman.ClassifyEditor(r.title.Split(new char[] { ':' }, 2)[1], r.project) != UserType.bot)
                     {
-                        //If this isn't an indefinite/infinite block, add to blacklist
+                        // If this isn't an indefinite/infinite block, add to blacklist
                         if ((r.blockLength.ToLower() != "indefinite") && (r.blockLength.ToLower() != "infinite"))
                         {                                                               // 2,678,400 seconds = 744 hours = 31 days
                             int listLen = Convert.ToInt32(CVNBotUtils.ParseDateTimeLength(r.blockLength, 2678400) * 2.5);
                             string blComment = "Autoblacklist: " + r.comment + " on " + r.project;
                             message += "\n" + listman.AddUserToList(r.title.Split(new char[] { ':' }, 2)[1], "" //Global bl
-                                , ListManager.UserType.blacklisted, r.user, blComment, listLen);
+                                , UserType.blacklisted, r.user, blComment, listLen);
                             Broadcast("BL", "ADD", r.title.Split(new char[] { ':' }, 2)[1], listLen, blComment, r.user);
                         }
                     }
@@ -1206,11 +1209,11 @@ namespace CVNBot
                         uMsg = 5610;
 
                     // If normal and uploaded by an admin, bot or whitelisted person always hide
-                    if ((uMsg == 5600) && ((userOffset == 2) || (userOffset == 5) || (userOffset == 0)))
+                    if (uMsg == 5600 && (userOffset == UserType.admin || userOffset == UserType.bot || userOffset == UserType.whitelisted))
                         return;
 
-                    // if normal and uploads are softhidden hide normal user and anon aswell
-                    if ((uMsg == 5600) && (config.feedFilterEventUpload == 2) && ((userOffset == 3) || (userOffset == 4)))
+                    // if normal and uploads are softhidden hide normal user and anon
+                    if (uMsg == 5600 && config.feedFilterEventUpload == 2 && (userOffset == UserType.anon || userOffset == UserType.user))
                         return;
 
                     // If our message is 95620, we might need to truncate r.comment
@@ -1226,7 +1229,7 @@ namespace CVNBot
                     attribs.Add("cuploaditem", r.title);
                     attribs.Add("reason", r.comment);
                     attribs.Add("url", CVNBotUtils.RootUrl(project.rooturl) + "wiki/" + CVNBotUtils.WikiEncode(r.title));
-                    message = GetMessage(userOffset + uMsg, ref attribs);
+                    message = GetMessage(uMsg + (int)userOffset, ref attribs);
                     break;
                 case RCEvent.EventType.protect:
                     attribs.Add("editor", project.interwikiLink + "User:" + r.user);
@@ -1234,7 +1237,7 @@ namespace CVNBot
                     attribs.Add("article", project.interwikiLink + r.title);
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
-                    //'url' in protect is broken, it also contains " [move=sysop] (indefinite)" etc.
+                    // 'url' in protect is broken, it also contains " [move=sysop] (indefinite)" etc.
                     //attribs.Add("url", CVNBotUtils.rootUrl(project.rooturl) + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = GetMessage(5900, ref attribs);
                     break;
@@ -1244,7 +1247,7 @@ namespace CVNBot
                     attribs.Add("article", project.interwikiLink + r.title);
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
-                    //'url' in unprotect is fine, it's just the pagetitle
+                    // 'url' in unprotect is fine, it's just the pagetitle
                     attribs.Add("url", CVNBotUtils.RootUrl(project.rooturl) + "wiki/" + CVNBotUtils.WikiEncode(r.title));
                     message = GetMessage(5901, ref attribs);
                     break;
@@ -1254,7 +1257,7 @@ namespace CVNBot
                     attribs.Add("article", project.interwikiLink + r.title);
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
-                    //'url' in modifyprotect is broken, it also contains " [move=sysop] (indefinite)" etc.
+                    // 'url' in modifyprotect is broken, it also contains " [move=sysop] (indefinite)" etc.
                     //attribs.Add("url", CVNBotUtils.rootUrl(project.rooturl) + "wiki/" + CVNBotUtils.wikiEncode(r.title));
                     message = GetMessage(5902, ref attribs);
                     break;

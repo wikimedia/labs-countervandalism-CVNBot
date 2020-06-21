@@ -18,10 +18,19 @@ namespace CVNBot
         public string matchedReason;
     }
 
+    public enum UserType
+    {
+        whitelisted = 0,
+        blacklisted = 1,
+        admin = 2,
+        anon = 3,
+        user = 4,
+        bot = 5,
+        greylisted = 6
+    }
+
     class ListManager
     {
-        public enum UserType { admin = 2, whitelisted = 0, blacklisted = 1, bot = 5, user = 4, anon = 3, greylisted = 6 }
-
         public IDbConnection dbcon;
         public string connectionString = "";
 
@@ -95,7 +104,7 @@ namespace CVNBot
         /// </summary>
         /// <param name="expiry">How many seconds in the future to set expiry to</param>
         /// <returns></returns>
-        static string GetExpiryDate(int expiry)
+        private static string GetExpiryDate(int expiry)
         {
             if (expiry == 0)
                 return "0";
@@ -107,7 +116,7 @@ namespace CVNBot
         /// </summary>
         /// <param name="expiry">When expiry is</param>
         /// <returns></returns>
-        static string ParseExpiryDate(long expiry)
+        private static string ParseExpiryDate(long expiry)
         {
             if (expiry == 0)
                 return (string)Program.msgs["20006"];
@@ -115,7 +124,7 @@ namespace CVNBot
             return dt.ToUniversalTime().ToString("HH:mm, d MMMM yyyy");
         }
 
-        static string FriendlyProject(string project)
+        private static string FriendlyProject(string project)
         {
             if (project == "")
                 return "global";
@@ -123,13 +132,13 @@ namespace CVNBot
             return project;
         }
 
-        static string FriendlyList(int listType)
+        private static string FriendlyList(int listType)
         {
             int msgCode = 17000 + listType;
             return (string)Program.msgs[msgCode.ToString()];
         }
 
-        static string FriendlyList(UserType ut)
+        private static string FriendlyList(UserType ut)
         {
             return FriendlyList((int)ut);
         }
