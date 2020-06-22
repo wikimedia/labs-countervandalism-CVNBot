@@ -77,7 +77,7 @@ namespace CVNBot
                         timcmd.Prepare();
                         total += timcmd.ExecuteNonQuery();
 
-                        //Clean out parameters list for the next statement
+                        // Clean out parameters list for the next statement
                         timcmd.Parameters.Clear();
                         timcmd.CommandText = "DELETE FROM watchlist WHERE ((expiry < @expiry) AND (expiry != '0'))";
                         timcmd.Parameters.Add(new SqliteParameter("@expiry", DateTime.Now.Ticks.ToString()));
