@@ -72,21 +72,21 @@ namespace CVNBot
                 {
                     lock (dbtoken)
                     {
-                        timcmd.CommandText = "DELETE FROM users WHERE((expiry < @UsersExpiryDateTime) AND (expiry != '0'))";
-                        timcmd.Parameters.Add(new SqliteParameter("@UsersExpiryDateTime", DateTime.Now.Ticks.ToString()));
+                        timcmd.CommandText = "DELETE FROM users WHERE((expiry < @expiry) AND (expiry != '0'))";
+                        timcmd.Parameters.Add(new SqliteParameter("@expiry", DateTime.Now.Ticks.ToString()));
                         timcmd.Prepare();
                         total += timcmd.ExecuteNonQuery();
 
                         //Clean out parameters list for the next statement
                         timcmd.Parameters.Clear();
-                        timcmd.CommandText = "DELETE FROM watchlist WHERE ((expiry < @WatchlistExpiryDateTime) AND (expiry != '0'))";
-                        timcmd.Parameters.Add(new SqliteParameter("@WatchlistExpiryDateTime", DateTime.Now.Ticks.ToString()));
+                        timcmd.CommandText = "DELETE FROM watchlist WHERE ((expiry < @expiry) AND (expiry != '0'))";
+                        timcmd.Parameters.Add(new SqliteParameter("@expiry", DateTime.Now.Ticks.ToString()));
                         timcmd.Prepare();
                         total += timcmd.ExecuteNonQuery();
 
                         timcmd.Parameters.Clear();
-                        timcmd.CommandText = "DELETE FROM items WHERE ((expiry < @ItemsExpiryDate) AND (expiry != '0'))";
-                        timcmd.Parameters.Add(new SqliteParameter("@ItemsExpiryDateTime", DateTime.Now.Ticks.ToString()));
+                        timcmd.CommandText = "DELETE FROM items WHERE ((expiry < @expiry) AND (expiry != '0'))";
+                        timcmd.Parameters.Add(new SqliteParameter("@expiry", DateTime.Now.Ticks.ToString()));
                         timcmd.Prepare();
                         total += timcmd.ExecuteNonQuery();
                     }
