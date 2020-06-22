@@ -155,7 +155,7 @@ namespace CVNBot
                 // Original type was same as new type; update list with new details
                 using (IDbCommand cmd = dbcon.CreateCommand())
                 {
-                    cmd.CommandText = "UPDATE users SET adder = @adder, reason = @reason, expiry = @expiry WHERE name = @name AND project = @project AND type = @originalType";
+                    cmd.CommandText = "UPDATE users SET adder = @adder, reason = @reason, expiry = @expiry WHERE name = @name AND project = @project AND type = @type";
                     cmd.Parameters.Add(new SqliteParameter("@adder", adder));
                     cmd.Parameters.Add(new SqliteParameter("@reason", reason));
                     cmd.Parameters.Add(new SqliteParameter("@expiry", GetExpiryDate(expiry)));
