@@ -229,8 +229,8 @@ namespace CVNBot
                 // First, check user list for this particular wiki
                 if (project != "")
                 {
-                    cmd.CommandText = "SELECT type, adder, reason, expiry FROM users WHERE name = @username AND project = @project AND ((expiry > @expiry) OR (expiry = '0')) LIMIT 1";
-                    cmd.Parameters.Add(new SqliteParameter("@username", username));
+                    cmd.CommandText = "SELECT type, adder, reason, expiry FROM users WHERE name = @name AND project = @project AND ((expiry > @expiry) OR (expiry = '0')) LIMIT 1";
+                    cmd.Parameters.Add(new SqliteParameter("@name", username));
                     cmd.Parameters.Add(new SqliteParameter("@project", project));
                     cmd.Parameters.Add(new SqliteParameter("@expiry", DateTime.Now.Ticks.ToString()));
                     cmd.Prepare();
@@ -253,8 +253,8 @@ namespace CVNBot
 
                 // Is user globally greylisted? (This takes precedence)
                 cmd.Parameters.Clear();
-                cmd.CommandText = "SELECT reason, expiry FROM users WHERE name = @username AND project = '' AND type = '6' AND ((expiry > @expiry) OR (expiry = '0')) LIMIT 1";
-                cmd.Parameters.Add(new SqliteParameter("@username", username));
+                cmd.CommandText = "SELECT reason, expiry FROM users WHERE name = @name AND project = '' AND type = '6' AND ((expiry > @expiry) OR (expiry = '0')) LIMIT 1";
+                cmd.Parameters.Add(new SqliteParameter("@name", username));
                 cmd.Parameters.Add(new SqliteParameter("@expiry", DateTime.Now.Ticks.ToString()));
                 cmd.Prepare();
                 lock (dbtoken)
@@ -270,8 +270,8 @@ namespace CVNBot
 
                 // Next, if we're still here, check if user is globally whitelisted or blacklisted
                 cmd.Parameters.Clear();
-                cmd.CommandText = "SELECT type, adder, reason, expiry FROM users WHERE name = @username AND project = @project AND ((expiry > '') OR (expiry = '0')) LIMIT 1";
-                cmd.Parameters.Add(new SqliteParameter("@username", username));
+                cmd.CommandText = "SELECT type, adder, reason, expiry FROM users WHERE name = @name AND project = @project AND ((expiry > @expiry) OR (expiry = '0')) LIMIT 1";
+                cmd.Parameters.Add(new SqliteParameter("@name", username));
                 cmd.Parameters.Add(new SqliteParameter("@project", string.Empty));
                 cmd.Parameters.Add(new SqliteParameter("@expiry", DateTime.Now.Ticks.ToString()));
                 cmd.Prepare();
@@ -380,7 +380,7 @@ namespace CVNBot
         {
             using (IDbCommand cmd = dbcon.CreateCommand())
             {
-                cmd.CommandText = "SELECT adder, reason, expiry FROM items WHERE item = @item AND itemtype = @itemtype AND ((expiry > '') OR (expiry = '0')) LIMIT 1";
+                cmd.CommandText = "SELECT adder, reason, expiry FROM items WHERE item = @item AND itemtype = @itemtype AND ((expiry > @expiry) OR (expiry = '0')) LIMIT 1";
                 cmd.Parameters.Add(new SqliteParameter("@item", item));
                 cmd.Parameters.Add(new SqliteParameter("@itemtype", itemType.ToString()));
                 cmd.Parameters.Add(new SqliteParameter("@expiry", DateTime.Now.Ticks.ToString()));
