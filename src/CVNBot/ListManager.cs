@@ -72,7 +72,7 @@ namespace CVNBot
                 {
                     lock (dbtoken)
                     {
-                        timcmd.CommandText = "DELETE FROM users WHERE((expiry < @expiry) AND (expiry != '0'))";
+                        timcmd.CommandText = "DELETE FROM users WHERE ((expiry < @expiry) AND (expiry != '0'))";
                         timcmd.Parameters.Add(new SqliteParameter("@expiry", DateTime.Now.Ticks.ToString()));
                         timcmd.Prepare();
                         total += timcmd.ExecuteNonQuery();
