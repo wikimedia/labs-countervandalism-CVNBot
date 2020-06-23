@@ -182,7 +182,7 @@ namespace CVNBot
                     cmd.CommandText = "INSERT INTO users (name, project, type, adder, reason, expiry) VALUES (@name,@project,@type,@adder,@reason,@expiry)";
                     cmd.Parameters.Add(new SqliteParameter("@name", name));
                     cmd.Parameters.Add(new SqliteParameter("@project", project));
-                    cmd.Parameters.Add(new SqliteParameter("@type", ((int)originalType).ToString()));
+                    cmd.Parameters.Add(new SqliteParameter("@type", ((int)type).ToString()));
                     cmd.Parameters.Add(new SqliteParameter("@adder", adder));
                     cmd.Parameters.Add(new SqliteParameter("@reason", reason));
                     cmd.Parameters.Add(new SqliteParameter("@expiry", GetExpiryDate(expiry)));
@@ -212,7 +212,7 @@ namespace CVNBot
                 cmd.CommandText = "DELETE FROM users WHERE name = @name AND project = @project AND type = @type";
                 cmd.Parameters.Add(new SqliteParameter("@name", name));
                 cmd.Parameters.Add(new SqliteParameter("@project", project));
-                cmd.Parameters.Add(new SqliteParameter("@type", ((int)originalType).ToString()));
+                cmd.Parameters.Add(new SqliteParameter("@type", ((int)uType).ToString()));
                 cmd.Prepare();
                 lock (dbtoken)
                     cmd.ExecuteNonQuery();
