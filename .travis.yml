@@ -1,17 +1,25 @@
 dist: bionic
+# https://docs.travis-ci.com/user/languages/csharp/
 language: csharp
-# Travis CI uses this repository:
-# http://download.mono-project.com/repo/ubuntu/dists/stable-bionic/snapshots/
-dotnet:
-  # - Visual Studio Community 2019 (VS 8.5) provides Mono 6.8.0 and MSBuild 16.5 (used by Krinkle)
-  #
-  # - Production (cvn.wmflabs.org) runs Debian 9 Stretch with Mono 6.8.0 and MSBuild 15.1
-  #   from <https://download.mono-project.com/repo/debian/dists/stable-stretch/snapshots/>.
-  #   See also https://github.com/countervandalism/infrastructure/blob/b33a9739e7/setup.yaml#L132
-  - '3.1'
-script:
-  - dotnet build src/CVNBot.sln -c Release
-  - dotnet build src/CVNBot.sln -c Debug
+jobs:
+  # Travis CI uses this repository for Mono releases:
+  # http://download.mono-project.com/repo/ubuntu/dists/stable-bionic/snapshots/
+  include:
+    # - Visual Studio Community 2019 (VS 8.5) provides Mono 6.8.0 and MSBuild 16.5 (used by Krinkle)
+    #
+    # - Production (cvn.wmflabs.org) runs Debian 9 Stretch with Mono 6.8.0 and MSBuild 15.1
+    #   from <https://download.mono-project.com/repo/debian/dists/stable-stretch/snapshots/>.
+    #   See also https://github.com/countervandalism/infrastructure/blob/b33a9739e7/setup.yaml#L132
+    - mono: '6.8.0'
+      script:
+        - msbuild src/CVNBot.sln /p:Configuration=Release
+        - msbuild src/CVNBot.sln /p:Configuration=Debug
+
+    - dotnet: '3.1'
+      mono: none
+      script:
+        - dotnet build src/CVNBot.sln -c Release
+        - dotnet build src/CVNBot.sln -c Debug
 notifications:
   irc:
     channels:
