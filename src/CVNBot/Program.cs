@@ -6,7 +6,6 @@ using System.Threading;
 using System.Text.RegularExpressions;
 using System.IO;
 using log4net;
-using System.Collections.Generic;
 using System.Reflection;
 
 // Logging:
