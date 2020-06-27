@@ -1,10 +1,9 @@
 using System;
 using System.Collections;
-using System.Text;
-using System.Net;
 using System.IO;
+using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
-using System.Web;
 
 namespace CVNBot
 {
@@ -179,7 +178,7 @@ namespace CVNBot
         /// <returns></returns>
         public static string WikiEncode(string input)
         {
-            return HttpUtility.UrlEncode(input.Replace(' ', '_')).Replace("(","%28").Replace(")","%29").Replace("!","%21");
+            return WebUtility.UrlEncode(input.Replace(' ', '_')).Replace("(","%28").Replace(")","%29").Replace("!","%21");
         }
 
         /// <summary>

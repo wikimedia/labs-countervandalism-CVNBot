@@ -1,11 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="restore;Clean;Build">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFrameworks>netcoreapp3.1;net472</TargetFrameworks>
     <PackageVersion>1.0.0.0</PackageVersion>
-    <!-- [Restore pre-2017 behaviour]
-         Output to "bin/Release", not "bin/Release/:TargetFramework". s-->
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <!-- [Restore pre-2017 behaviour] No NuGetpackaging -->
     <IsPackable>false</IsPackable>
     <!-- MSBuild 16+ overwrite our exe.config by default, which means
@@ -32,10 +29,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Mono.Data.Sqlite.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Web" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Projects.xml">
