@@ -5,6 +5,7 @@ using System.Net;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Web;
+using System.Linq;
 
 namespace CVNBot
 {
@@ -159,17 +160,37 @@ namespace CVNBot
         /// <returns></returns>
         public static string ReplaceStrMax(string input, char oldChar, char newChar, int maxChars)
         {
-            for (int i = 1; i <= maxChars; i++)
+            //Count the number of times oldChar occurs in input
+            int occurences = input.Count(c => c == oldChar);
+
+            if (occurences == 0)
+                return input;
+
+            else if (occurences <= maxChars)
+                return input.Replace(oldChar, newChar);
+
+            //there are far more occurences than the number we want to replace
+            StringBuilder result = new StringBuilder();
+            int counter = 1;
+
+            //for every character in the string, replace it with newChar untill you hit the limit.
+            //once the limit is hit, continue copying the rest of the chars as is.
+
+            foreach (char item in input)
             {
-				// Find first oldChar
-                int place = input.IndexOf(oldChar);
-                if (place == -1)
-                    // If not found then finish
-                    break;
-				// Replace first oldChar with newChar
-                input = input.Substring(0, place) + newChar.ToString() + input.Substring(place + 1);
+                if (item.Equals(oldChar) && counter <= maxChars)
+                {
+                    result.Append(newChar);
+                    counter++;
+                }
+                else
+                {
+                    result.Append(item);
+                }
+
             }
-            return input;
+
+            return result.ToString();
         }
 
         /// <summary>
