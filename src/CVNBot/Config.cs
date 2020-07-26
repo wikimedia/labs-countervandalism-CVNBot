@@ -62,9 +62,6 @@ namespace CVNBot
         // for cross-wiki vandalism detection. Originally written for the CVNBlackRock bot.
         public bool disableClassifyEditor;
 
-        // Use https as protocol in output feeds.
-        public bool forceHttps;
-
         /**
          * Feed filters
          *

@@ -14,7 +14,7 @@ namespace CVNBot
 
         public string projectName;
         public string interwikiLink;
-        public string rooturl; // Format: http://en.wikipedia.org/
+        public string rooturl; // Format: https://en.wikipedia.org/
 
         public Regex rrestoreRegex;
         public Regex rdeleteRegex;
@@ -143,8 +143,6 @@ namespace CVNBot
                     case "autosummReplace": regexDict["autosummReplace"] = value; break;
                 }
             }
-            // Overwrite in case non-HTTPS url is stored
-            rooturl = CVNBotUtils.RootUrl(rooturl);
             // Always get namespaces before generating regexen
             GetNamespaces(true);
             // Regenerate regexen

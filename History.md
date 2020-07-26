@@ -1,3 +1,11 @@
+Unreleased
+==================
+
+### Removed
+* Config: Remove the `forceHttps` option. If a wiki is available both
+  on HTTP and HTTPS and advertises HTTP urls as canonical in its RCFeed,
+  then CVNBot will always show those as-is in the feed channel.
+
 4.0.0 / 2020-06-08
 ==================
 

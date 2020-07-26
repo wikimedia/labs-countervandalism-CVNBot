@@ -181,18 +181,5 @@ namespace CVNBot
         {
             return HttpUtility.UrlEncode(input.Replace(' ', '_')).Replace("(","%28").Replace(")","%29").Replace("!","%21");
         }
-
-        /// <summary>
-        /// Use https as protocol in Output RCfeed.
-        /// </summary>
-        /// <param name="input"></param>
-        /// <returns></returns>
-        public static string RootUrl(string input)
-        {
-            if (Program.config.forceHttps)
-                return Regex.Replace(input, "^http:", "https:");
-
-            return input;
-        }
     }
 }
