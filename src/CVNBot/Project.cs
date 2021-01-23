@@ -49,10 +49,9 @@ namespace CVNBot
             rprotectRegex = new Regex(regexDict["protectRegex"]);
             runprotectRegex = new Regex(regexDict["unprotectRegex"]);
 
-            // modifyprotectRegex: Added in v1.20
-            // Fallback if missing from older project.
-            if (regexDict.ContainsKey("modifyprotectRegex"))
+            if (!regexDict.ContainsKey("modifyprotectRegex"))
             {
+                // Added in CVNBot 1.20, fallback if missing in older XML files.
                 regexDict["modifyprotectRegex"] = regexDict["protectRegex"];
                 logger.Warn("generateRegexen: modifyprotectRegex is missing. Please reload this wiki.");
             }
@@ -62,9 +61,8 @@ namespace CVNBot
             rmoveredirRegex = new Regex(regexDict["moveredirRegex"]);
             rblockRegex = new Regex(regexDict["blockRegex"]);
             runblockRegex = new Regex(regexDict["unblockRegex"]);
-            // modifyprotectRegex: Added in v1.22
-            // Fallback if missing from older project.
             if (!regexDict.ContainsKey("reblockRegex")) {
+                // Added in CVNBot 1.22, fallback if missing in older XML files.
                 regexDict["reblockRegex"] = "^$";
                 logger.Warn("generateRegexen: reblockRegex is missing. Please reload this wiki.");
             }
