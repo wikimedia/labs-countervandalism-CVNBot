@@ -9,12 +9,12 @@ Unreleased
 4.0.0 / 2020-06-08
 ==================
 
-CVNBot 4.0 requires Mono 6.8 or later.
+### Removed
+*  Remove support for Mono 5.4 and 5.16. CVNBot 4 supports Mono 6.8 or later. (Mono 5.18+ might work, but is not officially supported).
 
 ### Changed
 * build: Upgrade from .NET Framework 4.5 to 4.7.2. ([issue #13](https://github.com/countervandalism/CVNBot/issues/13))
 * build: Add support for Mono 6, MSBuild 16, and Visual Studio 2019.
-* build: Remove support for Mono 5.4 and 5.16. Mono 5.18+ might work, but is not supported.
 
 ### Fixed
 * Project: Remove duplicate log message from `GetInterfaceMessages()`.
@@ -30,10 +30,13 @@ CVNBot 4.0 requires Mono 6.8 or later.
 * Program: Fix `ReactorException: Duplicate 'watchword'` bug that could happen for
   upload events due to BES matching both `r.title` and `r.comment`. ([issue #59](https://github.com/countervandalism/CVNBot/issues/59))
 
-1.22.0 / 2019-07-31
+3.0.0 / 2019-07-31
 ==================
 
-CVNBot 1.22 now requires Mono 5 to run.
+_CVNBot 3.0 was originally tagged as _CVNBot 1.22._
+
+### Removed
+* Remove support for Mono 3 and 4. CVNBot 3 requires Mono 5 to run.
 
 ### Added
 * RCReader: Add support for block/reblock log events.
@@ -63,7 +66,6 @@ CVNBot 1.22 now requires Mono 5 to run.
   the log format being out of sync with the wiki software. ([issue #30](https://github.com/countervandalism/CVNBot/issues/30))
 
 ### Maintenance
-* build: CVNBot now requires Mono 5. Mono 3 and 4 are no longer supported.
 * build: Enable continuous integration via Travis CI.
 * build: Automatically copy CVNBot.exe.config to simplify installation.
 * build: Automatically copy CVNBot-sample.ini to simplify installation.
