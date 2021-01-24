@@ -1,0 +1,18 @@
+# This is a basic workflow to help you get started with Actions
+
+name: notify
+
+on:
+  - push
+
+jobs:
+  irc:
+    runs-on: ubuntu-latest
+    if: github.repository == 'countervandalism/CVNBot'
+    steps:
+    - name: Notify IRC
+      uses: rectalogic/notify-irc@v1
+      with:
+        channel: "#cvn-bots"
+        message: "${{ github.actor }} pushed to ${{ github.repository }}#${{ github.ref }} - ${{ github.event.compare }}"
+
