@@ -1,10 +1,14 @@
-Unreleased
+4.0.1 / 2021-01-25
 ==================
 
-### Removed
+### Changed
 * Config: Remove the `forceHttps` option. If a wiki is available both
   on HTTP and HTTPS and advertises HTTP urls as canonical in its RCFeed,
   then CVNBot will always show those as-is in the feed channel.
+
+### Fixed
+* Project: Fix bogus "modifyprotectRegex is missing" warning that was sent
+  when the key was not actually missing.
 
 4.0.0 / 2020-06-08
 ==================
