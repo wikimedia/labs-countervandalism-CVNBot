@@ -17,7 +17,7 @@ jobs:
       uses: rectalogic/notify-irc@v1
       if: github.event_name == 'push'
       with:
-        channel: "#cvn-bots"
+        channel: "#cvn-sandbox"
         nickname: GitHub
         message: "${{ github.actor }} pushed to ${{ github.repository }}@${{ env.TMP_REF }} - ${{ github.event.compare }}"
 
