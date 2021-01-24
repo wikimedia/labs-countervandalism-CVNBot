@@ -12,7 +12,9 @@ jobs:
     steps:
     - name: Notify IRC
       uses: rectalogic/notify-irc@v1
+      if: github.event_name == 'push'
       with:
         channel: "#cvn-bots"
-        message: "${{ github.actor }} pushed to ${{ github.repository }}#${{ github.ref }} - ${{ github.event.compare }}"
+        username: GitHub
+        message: "${{ github.actor }} pushed to ${{ github.repository }}#${GITHUB_REF#'refs/heads/'} - ${{ github.event.compare }}"
 
