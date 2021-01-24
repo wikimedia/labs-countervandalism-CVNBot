@@ -19,5 +19,5 @@ jobs:
       with:
         channel: "#cvn-bots"
         nickname: GitHub
-        message: "${{ github.actor }} pushed to ${{ github.repository }}#${{ env.TMP_REF }} - ${{ github.event.compare }}"
+        message: "${{ github.actor }} pushed to ${{ github.repository }}@${{ env.TMP_REF }} - ${{ github.event.compare }}"
 
