@@ -15,6 +15,6 @@ jobs:
       if: github.event_name == 'push'
       with:
         channel: "#cvn-bots"
-        username: GitHub
+        nickname: GitHub
         message: "${{ github.actor }} pushed to ${{ github.repository }}#${GITHUB_REF#'refs/heads/'} - ${{ github.event.compare }}"
 
