@@ -21,4 +21,3 @@ jobs:
         channel: "#countervandalism"
         nickname: GitHub
         message: "${{ github.actor }} pushed to ${{ github.repository }}@${{ env.TMP_REF }} - ${{ github.event.compare }}"
-

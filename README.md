@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/countervandalism/CVNBot.svg?branch=master)](https://travis-ci.com/countervandalism/CVNBot)
+[![Build Status](https://github.com/countervandalism/CVNBot/actions/workflows/CI.yaml/badge.svg)](https://github.com/countervandalism/CVNBot/actions/workflows/CI.yaml)
 
 CVNBot
 ==================================================
