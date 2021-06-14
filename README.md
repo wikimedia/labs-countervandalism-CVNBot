@@ -1,4 +1,4 @@
-[![Build Status](https://github.com/countervandalism/CVNBot/actions/workflows/CI.yml/badge.svg)](https://github.com/countervandalism/CVNBot/actions/workflows/CI.yaml)
+[![Build Status](https://github.com/countervandalism/CVNBot/actions/workflows/CI.yml/badge.svg)](https://github.com/countervandalism/CVNBot/actions/workflows/CI.yml)
 
 CVNBot
 ==================================================
