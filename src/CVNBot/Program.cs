@@ -146,7 +146,7 @@ namespace CVNBot
 
             listman.InitDBConnection(config.listsFile);
 
-            // Set up freenode IRC client
+            // Set up IRC client
             irc.Encoding = System.Text.Encoding.UTF8;
             irc.SendDelay = 300;
             irc.AutoReconnect = true;

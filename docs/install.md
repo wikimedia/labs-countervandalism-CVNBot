@@ -12,7 +12,7 @@
 1. Set permissions and ownership correctly. This step is after the copying of files because group ownership is usually not preserved when copying files.
    * For personal use, `chmod 644 *`, `chmod 600 CVNBot.ini`, and `chmod 755 CVNBot.exe`.
    * For Countervandalism Network:`chmod 664 *`, `chmod 660 CVNBot.ini`,  `chmod 755 CVNBot.exe`, and `chgrp cvn.cvnservice *`.
-1. You can now start the start the bot by running `mono CVNBot.exe` from your bot directory.<br/>The bot will join the specified `feedchannel` on `chat.freenode.net` (by default: `#cvn-sandbox`).
+1. You can now start the start the bot by running `mono CVNBot.exe` from your bot directory.<br/>The bot will join the specified `feedchannel` (by default: `#cvn-sandbox`).
 
 ## Upgrade
 

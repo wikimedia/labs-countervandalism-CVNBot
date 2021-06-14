@@ -63,7 +63,7 @@ tracker](https://github.com/countervandalism/CVNBot/issues)!
 Documentation, support and contact
 -----------
 * [Documentation (wiki)](https://github.com/countervandalism/CVNBot/wiki/Documentation)
-* <irc://irc.freenode.net/#countervandalism>
+* [`#countervandalism`](irc://irc.libera.chat/#countervandalism) on [Libera.Chat](https://libera.chat)
 * [cvn@lists.wikimedia.org](https://lists.wikimedia.org/mailman/listinfo/cvn) (Requires subscription before posting. [Subscribe here](https://lists.wikimedia.org/mailman/listinfo/cvn))
 
 

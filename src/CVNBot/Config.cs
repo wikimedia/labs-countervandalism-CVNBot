@@ -14,7 +14,7 @@ namespace CVNBot
          */
 
         // Host name
-        public string ircServerName = "chat.freenode.net";
+        public string ircServerName = "irc.libera.chat";
         // Channel name or "None"
         public string feedChannel = "#cvn-sandbox";
         // Channel name or "None"
