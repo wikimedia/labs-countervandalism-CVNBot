@@ -63,10 +63,10 @@ namespace CVNBot
                 config.botNick = rawConfig["botnick"];
             if (rawConfig.ContainsKey("botpass"))
                 config.botPass = rawConfig["botpass"];
-            if (rawConfig.ContainsKey("description"))
-                config.description = rawConfig["description"];
+            if (rawConfig.ContainsKey("botrealname"))
+                config.botRealName = rawConfig["botrealname"];
             if (rawConfig.ContainsKey("partmsg"))
-                config.description = rawConfig["partmsg"];
+                config.partMsg = rawConfig["partmsg"];
             // Server
             if (rawConfig.ContainsKey("ircserver"))
                 config.ircServerName = rawConfig["ircserver"];
@@ -170,7 +170,7 @@ namespace CVNBot
 
             try
             {
-                irc.Login(config.botNick, config.description + " " + version, 4, config.botNick, config.botPass);
+                irc.Login(config.botNick, config.botRealName + " " + version, 4, config.botNick, config.botPass);
 
                 string feedChannel = config.feedChannel;
                 string controlChannel = config.controlChannel;
@@ -468,7 +468,7 @@ namespace CVNBot
                         if (!HasPrivileges('@', ref e))
                             return;
                         logger.Info(e.Data.Nick + " ordered a quit");
-                        PartIRC(rawConfig["partmsg"]);
+                        PartIRC(config.partMsg);
                         Exit();
                         break;
                     case "restart":
@@ -1283,7 +1283,8 @@ namespace CVNBot
             {
                 string name = field.Name;
                 if (name.StartsWith("bot") ||
-                    name == "description" ||
+                    name == "realName" ||
+                    name == "partMsg" ||
                     name == "ircServerName" ||
                     name.EndsWith("Channel") ||
                     name.EndsWith("File") ||

@@ -6,8 +6,9 @@ namespace CVNBot
          * User
          */
         public string botNick = "CVNBot";
-        public string botPass = ""; // Optional
-        public string description = "CVNBot Version:"; // Optional
+        public string botPass = "";
+        public string botRealName = "CVNBot"; // gets concatenated with a space and Program.version
+        public string partMsg = "https://github.com/countervandalism/CVNBot";
 
         /**
          * Server
@@ -18,9 +19,9 @@ namespace CVNBot
         // Channel name or "None"
         public string feedChannel = "#cvn-sandbox";
         // Channel name or "None"
-        public string controlChannel = "None"; // Optional
+        public string controlChannel = "None";
         // Channel name or "None"
-        public string broadcastChannel = "None"; // Optional
+        public string broadcastChannel = "None";
 
         /**
          * Files
