@@ -1,3 +1,13 @@
+4.0.2 / 2021-06-20
+==================
+
+### Changed
+* Config: The default value for `ircserver` is now `irc.libera.chat`.
+
+### Fixed
+* Program: Fix login to use the value of `botrealname` instead of reusing
+  `partmsg` as the IRC realname of the bot. This bug was introduced in version 3.0.
+
 4.0.1 / 2021-01-25
 ==================
 
