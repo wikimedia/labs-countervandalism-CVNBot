@@ -1345,9 +1345,7 @@ namespace CVNBot
         public static void PartIRC(string quitMessage)
         {
             rcirc.rcirc.RfcQuit(quitMessage);
-            irc.RfcPart(config.controlChannel, quitMessage);
-            irc.RfcPart(config.feedChannel, quitMessage);
-            irc.RfcPart(config.broadcastChannel, quitMessage);
+            irc.RfcQuit(quitMessage);
             Thread.Sleep(1000);
         }
     }
