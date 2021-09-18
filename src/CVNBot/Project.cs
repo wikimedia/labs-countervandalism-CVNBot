@@ -205,17 +205,20 @@ namespace CVNBot
             Messages.Add("Uploadedimage", new MessagesOption(0, "uploadRegex", false));
             Messages.Add("1movedto2",new MessagesOption(2, "moveRegex", false));
             Messages.Add("1movedto2_redir", new MessagesOption(2, "moveredirRegex", false));
+
             // blockRegex is nonStrict because some wikis override the message without including $2 (block length).
             // RCReader will fall back to "24 hours" if this is the case.
             // Some newer messages (e.g. https://lmo.wikipedia.org/wiki/MediaWiki:Blocklogentry) have a third item,
             // $3 ("anononly,nocreate,autoblock"). This may conflict with $2 detection.
             // Trying (changed 2 -> 3) to see if length of time will be correctly detected using just this method:
             Messages.Add("Blocklogentry", new MessagesOption(3, "blockRegex", true));
+
             Messages.Add("Unblocklogentry", new MessagesOption(0, "unblockRegex", false));
             Messages.Add("Reblock-logentry", new MessagesOption(3, "reblockRegex", false));
             Messages.Add("Autosumm-blank", new MessagesOption(0, "autosummBlank", false));
-            // autosummReplace is nonStrict because some large wikis don't include the "profanity" in their
-            // messages (privacy measure?)
+
+            // autosummReplace is nonStrict because some wikis use translations overrides without
+            // a "$1" parameter for the content.
             Messages.Add("Autosumm-replace", new MessagesOption(1, "autosummReplace", true));
 
             GetInterfaceMessages(Messages);
