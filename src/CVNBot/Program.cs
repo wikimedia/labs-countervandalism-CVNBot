@@ -15,7 +15,7 @@ namespace CVNBot
 {
     class Program
     {
-        const string version = "4.0.0";
+        const string version = "4.0.2";
 
         public static IrcClient irc = new IrcClient();
         public static RCReader rcirc = new RCReader();
@@ -63,10 +63,10 @@ namespace CVNBot
                 config.botNick = rawConfig["botnick"];
             if (rawConfig.ContainsKey("botpass"))
                 config.botPass = rawConfig["botpass"];
-            if (rawConfig.ContainsKey("description"))
-                config.description = rawConfig["description"];
+            if (rawConfig.ContainsKey("botrealname"))
+                config.botRealName = rawConfig["botrealname"];
             if (rawConfig.ContainsKey("partmsg"))
-                config.description = rawConfig["partmsg"];
+                config.partMsg = rawConfig["partmsg"];
             // Server
             if (rawConfig.ContainsKey("ircserver"))
                 config.ircServerName = rawConfig["ircserver"];
@@ -99,7 +99,6 @@ namespace CVNBot
                 config.newSmall = Int32.Parse(rawConfig["newsmall"]);
             config.isCubbie = rawConfig.ContainsKey("IsCubbie");
             config.disableClassifyEditor = rawConfig.ContainsKey("disableClassifyEditor");
-            config.forceHttps = rawConfig.ContainsKey("forceHttps");
             if (rawConfig.ContainsKey("feedFilterUsersAnon"))
                 config.feedFilterUsersAnon = Int32.Parse(rawConfig["feedFilterUsersAnon"]);
             if (rawConfig.ContainsKey("feedFilterUsersReg"))
@@ -147,7 +146,7 @@ namespace CVNBot
 
             listman.InitDBConnection(config.listsFile);
 
-            // Set up freenode IRC client
+            // Set up IRC client
             irc.Encoding = System.Text.Encoding.UTF8;
             irc.SendDelay = 300;
             irc.AutoReconnect = true;
@@ -171,7 +170,7 @@ namespace CVNBot
 
             try
             {
-                irc.Login(config.botNick, config.description + " " + version, 4, config.botNick, config.botPass);
+                irc.Login(config.botNick, config.botRealName + " " + version, 4, config.botNick, config.botPass);
 
                 string feedChannel = config.feedChannel;
                 string controlChannel = config.controlChannel;
@@ -469,7 +468,7 @@ namespace CVNBot
                         if (!HasPrivileges('@', ref e))
                             return;
                         logger.Info(e.Data.Nick + " ordered a quit");
-                        PartIRC(rawConfig["partmsg"]);
+                        PartIRC(config.partMsg);
                         Exit();
                         break;
                     case "restart":
@@ -1095,7 +1094,7 @@ namespace CVNBot
                     attribs.Add("cblockname", r.title.Split(new char[] { ':' }, 2)[1]);
                     attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("talkurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.title.Split(new char[] { ':' }, 2)[1]));
+                    attribs.Add("talkurl", project.rooturl + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.title.Split(new char[] { ':' }, 2)[1]));
                     attribs.Add("length", r.blockLength);
                     attribs.Add("reason", r.comment);
                     message = GetMessage(5400, ref attribs);
@@ -1118,7 +1117,7 @@ namespace CVNBot
                     attribs.Add("cblockname", r.title.Split(new char[] { ':' }, 2)[1]);
                     attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("talkurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("talkurl", project.rooturl + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
                     attribs.Add("reason", r.comment);
                     message = GetMessage(5700, ref attribs);
                     break;
@@ -1127,16 +1126,16 @@ namespace CVNBot
                     attribs.Add("ceditor", r.user);
                     attribs.Add("article", project.interwikiLink + r.title);
                     attribs.Add("carticle", r.title);
-                    attribs.Add("url", CVNBotUtils.RootUrl(project.rooturl) + "wiki/" + CVNBotUtils.WikiEncode(r.title));
+                    attribs.Add("url", project.rooturl + "wiki/" + CVNBotUtils.WikiEncode(r.title));
                     attribs.Add("reason", r.comment);
                     message = GetMessage(05300, ref attribs);
                     break;
                 case RCEvent.EventType.newuser:
                     attribs.Add("editor", project.interwikiLink + "User:" + r.user);
                     attribs.Add("ceditor", r.user);
-                    attribs.Add("blockurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/Special:Block/" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("blockurl", project.rooturl + "wiki/Special:Block/" + CVNBotUtils.WikiEncode(r.user));
                     attribs.Add("caurl", "https://meta.wikimedia.org/wiki/Special:CentralAuth/" + CVNBotUtils.WikiEncode(r.user));
-                    attribs.Add("talkurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("talkurl", project.rooturl + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
                     ListMatch bnuMatch = listman.MatchesList(r.user, 11);
                     if (bnuMatch.Success && feedFilterThisEvent == 1)
                     {
@@ -1157,8 +1156,8 @@ namespace CVNBot
                     attribs.Add("ccreator", r.user);
                     attribs.Add("editor", project.interwikiLink + "User:" + r.title);
                     attribs.Add("ceditor", r.title);
-                    attribs.Add("blockurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/Special:Block/" + CVNBotUtils.WikiEncode(r.user));
-                    attribs.Add("talkurl", CVNBotUtils.RootUrl(project.rooturl) + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("blockurl", project.rooturl + "wiki/Special:Block/" + CVNBotUtils.WikiEncode(r.user));
+                    attribs.Add("talkurl", project.rooturl + "wiki/User_talk:" + CVNBotUtils.WikiEncode(r.user));
                     ListMatch bnuMatch2 = listman.MatchesList(r.user, 11);
                     if (bnuMatch2.Success)
                     {
@@ -1222,7 +1221,7 @@ namespace CVNBot
                     attribs.Add("uploaditem", project.interwikiLink + r.title);
                     attribs.Add("cuploaditem", r.title);
                     attribs.Add("reason", r.comment);
-                    attribs.Add("url", CVNBotUtils.RootUrl(project.rooturl) + "wiki/" + CVNBotUtils.WikiEncode(r.title));
+                    attribs.Add("url", project.rooturl + "wiki/" + CVNBotUtils.WikiEncode(r.title));
                     message = GetMessage(uMsg + (int)userOffset, ref attribs);
                     break;
                 case RCEvent.EventType.protect:
@@ -1242,7 +1241,7 @@ namespace CVNBot
                     attribs.Add("carticle", r.title);
                     attribs.Add("comment", r.comment);
                     // 'url' in unprotect is fine, it's just the pagetitle
-                    attribs.Add("url", CVNBotUtils.RootUrl(project.rooturl) + "wiki/" + CVNBotUtils.WikiEncode(r.title));
+                    attribs.Add("url", project.rooturl + "wiki/" + CVNBotUtils.WikiEncode(r.title));
                     message = GetMessage(5901, ref attribs);
                     break;
                 case RCEvent.EventType.modifyprotect:
@@ -1284,7 +1283,8 @@ namespace CVNBot
             {
                 string name = field.Name;
                 if (name.StartsWith("bot") ||
-                    name == "description" ||
+                    name == "realName" ||
+                    name == "partMsg" ||
                     name == "ircServerName" ||
                     name.EndsWith("Channel") ||
                     name.EndsWith("File") ||
@@ -1345,9 +1345,7 @@ namespace CVNBot
         public static void PartIRC(string quitMessage)
         {
             rcirc.rcirc.RfcQuit(quitMessage);
-            irc.RfcPart(config.controlChannel, quitMessage);
-            irc.RfcPart(config.feedChannel, quitMessage);
-            irc.RfcPart(config.broadcastChannel, quitMessage);
+            irc.RfcQuit(quitMessage);
             Thread.Sleep(1000);
         }
     }

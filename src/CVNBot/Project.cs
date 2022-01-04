@@ -14,7 +14,7 @@ namespace CVNBot
 
         public string projectName;
         public string interwikiLink;
-        public string rooturl; // Format: http://en.wikipedia.org/
+        public string rooturl; // Format: https://en.wikipedia.org/
 
         public Regex rrestoreRegex;
         public Regex rdeleteRegex;
@@ -49,10 +49,9 @@ namespace CVNBot
             rprotectRegex = new Regex(regexDict["protectRegex"]);
             runprotectRegex = new Regex(regexDict["unprotectRegex"]);
 
-            // modifyprotectRegex: Added in v1.20
-            // Fallback if missing from older project.
-            if (regexDict.ContainsKey("modifyprotectRegex"))
+            if (!regexDict.ContainsKey("modifyprotectRegex"))
             {
+                // Added in CVNBot 1.20, fallback if missing in older XML files.
                 regexDict["modifyprotectRegex"] = regexDict["protectRegex"];
                 logger.Warn("generateRegexen: modifyprotectRegex is missing. Please reload this wiki.");
             }
@@ -62,9 +61,8 @@ namespace CVNBot
             rmoveredirRegex = new Regex(regexDict["moveredirRegex"]);
             rblockRegex = new Regex(regexDict["blockRegex"]);
             runblockRegex = new Regex(regexDict["unblockRegex"]);
-            // modifyprotectRegex: Added in v1.22
-            // Fallback if missing from older project.
             if (!regexDict.ContainsKey("reblockRegex")) {
+                // Added in CVNBot 1.22, fallback if missing in older XML files.
                 regexDict["reblockRegex"] = "^$";
                 logger.Warn("generateRegexen: reblockRegex is missing. Please reload this wiki.");
             }
@@ -143,8 +141,6 @@ namespace CVNBot
                     case "autosummReplace": regexDict["autosummReplace"] = value; break;
                 }
             }
-            // Overwrite in case non-HTTPS url is stored
-            rooturl = CVNBotUtils.RootUrl(rooturl);
             // Always get namespaces before generating regexen
             GetNamespaces(true);
             // Regenerate regexen
@@ -209,17 +205,20 @@ namespace CVNBot
             Messages.Add("Uploadedimage", new MessagesOption(0, "uploadRegex", false));
             Messages.Add("1movedto2",new MessagesOption(2, "moveRegex", false));
             Messages.Add("1movedto2_redir", new MessagesOption(2, "moveredirRegex", false));
+
             // blockRegex is nonStrict because some wikis override the message without including $2 (block length).
             // RCReader will fall back to "24 hours" if this is the case.
             // Some newer messages (e.g. https://lmo.wikipedia.org/wiki/MediaWiki:Blocklogentry) have a third item,
             // $3 ("anononly,nocreate,autoblock"). This may conflict with $2 detection.
             // Trying (changed 2 -> 3) to see if length of time will be correctly detected using just this method:
             Messages.Add("Blocklogentry", new MessagesOption(3, "blockRegex", true));
+
             Messages.Add("Unblocklogentry", new MessagesOption(0, "unblockRegex", false));
             Messages.Add("Reblock-logentry", new MessagesOption(3, "reblockRegex", false));
             Messages.Add("Autosumm-blank", new MessagesOption(0, "autosummBlank", false));
-            // autosummReplace is nonStrict because some large wikis don't include the "profanity" in their
-            // messages (privacy measure?)
+
+            // autosummReplace is nonStrict because some wikis use translations overrides without
+            // a "$1" parameter for the content.
             Messages.Add("Autosumm-replace", new MessagesOption(1, "autosummReplace", true));
 
             GetInterfaceMessages(Messages);

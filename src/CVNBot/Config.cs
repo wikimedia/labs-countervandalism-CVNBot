@@ -6,21 +6,22 @@ namespace CVNBot
          * User
          */
         public string botNick = "CVNBot";
-        public string botPass = ""; // Optional
-        public string description = "CVNBot Version:"; // Optional
+        public string botPass = "";
+        public string botRealName = "CVNBot"; // gets concatenated with a space and Program.version
+        public string partMsg = "https://github.com/countervandalism/CVNBot";
 
         /**
          * Server
          */
 
         // Host name
-        public string ircServerName = "chat.freenode.net";
+        public string ircServerName = "irc.libera.chat";
         // Channel name or "None"
         public string feedChannel = "#cvn-sandbox";
         // Channel name or "None"
-        public string controlChannel = "None"; // Optional
+        public string controlChannel = "None";
         // Channel name or "None"
-        public string broadcastChannel = "None"; // Optional
+        public string broadcastChannel = "None";
 
         /**
          * Files
@@ -61,9 +62,6 @@ namespace CVNBot
         // of detecting block events from all wikis to then automatically broadcast to other bots
         // for cross-wiki vandalism detection. Originally written for the CVNBlackRock bot.
         public bool disableClassifyEditor;
-
-        // Use https as protocol in output feeds.
-        public bool forceHttps;
 
         /**
          * Feed filters

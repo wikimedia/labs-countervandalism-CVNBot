@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/countervandalism/CVNBot.svg?branch=master)](https://travis-ci.com/countervandalism/CVNBot)
+[![Build Status](https://github.com/countervandalism/CVNBot/actions/workflows/CI.yml/badge.svg)](https://github.com/countervandalism/CVNBot/actions/workflows/CI.yml)
 
 CVNBot
 ==================================================
@@ -63,7 +63,7 @@ tracker](https://github.com/countervandalism/CVNBot/issues)!
 Documentation, support and contact
 -----------
 * [Documentation (wiki)](https://github.com/countervandalism/CVNBot/wiki/Documentation)
-* <irc://irc.freenode.net/#countervandalism>
+* [`#countervandalism`](irc://irc.libera.chat/#countervandalism) on [Libera.Chat](https://libera.chat)
 * [cvn@lists.wikimedia.org](https://lists.wikimedia.org/mailman/listinfo/cvn) (Requires subscription before posting. [Subscribe here](https://lists.wikimedia.org/mailman/listinfo/cvn))
 
 

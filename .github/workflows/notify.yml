@@ -1,0 +1,23 @@
+name: notify
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  irc:
+    runs-on: ubuntu-latest
+    if: github.repository == 'countervandalism/CVNBot'
+    steps:
+    - name: Set env
+      # Strip leading prefix if ref is a simple branch
+      run: echo TMP_REF="${GITHUB_REF#'refs/heads/'}" >> $GITHUB_ENV
+    - name: Notify IRC
+      uses: rectalogic/notify-irc@v1
+      if: github.event_name == 'push'
+      with:
+        server: irc.libera.chat
+        channel: "#countervandalism"
+        nickname: GitHub
+        message: "${{ github.actor }} pushed to ${{ github.repository }}@${{ env.TMP_REF }} - ${{ github.event.compare }}"
