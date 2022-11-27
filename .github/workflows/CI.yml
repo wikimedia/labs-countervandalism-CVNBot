@@ -52,6 +52,10 @@ jobs:
           msbuild /version
       - run: msbuild src/CVNBot.sln /p:Configuration=Release
       - run: msbuild src/CVNBot.sln /p:Configuration=Debug
+      - uses: actions/upload-artifact@v3
+        with:
+          name: Release
+          path: src/CVNBot/bin/Release/
 
   macos:
     name: macOS
