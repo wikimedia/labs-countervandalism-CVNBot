@@ -236,5 +236,5 @@
 20002=Only the bad new username, bad new article title and bad edit summary lists can be tested
 20003=You need to specify a username
 20004=Cannot guess interwiki prefix. Please specify one (e.g., en:) in the last optional parameter.
-20005=Documentation: https://github.com/countervandalism/CVNBot/wiki/Documentation#wiki-commands
+20005=Documentation: https://meta.wikimedia.org/wiki/CVNBot#Commands
 20006=the end of time

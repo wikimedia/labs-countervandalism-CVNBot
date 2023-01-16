@@ -1,33 +1,18 @@
-[![Build Status](https://github.com/countervandalism/CVNBot/actions/workflows/CI.yml/badge.svg)](https://github.com/countervandalism/CVNBot/actions/workflows/CI.yml)
+# CVNBot
 
-CVNBot
-==================================================
+## Support
 
+* [Documentation: Bot commands](https://meta.wikimedia.org/wiki/CVNBot#Commands)
+* [`#countervandalism`](irc://irc.libera.chat/#countervandalism) on [Libera.Chat](https://libera.chat)
+* [Mailing list](https://lists.wikimedia.org/mailman/listinfo/cvn) (Subscribing before posting is required)
 
-Quick start
-----------
+## Contribute
 
-Clone the repo, `git clone git://github.com/countervandalism/CVNBot.git`, or
-[download the latest
-release](https://github.com/countervandalism/CVNBot/zipball/master).
+Found a bug? Please report it to our
+[issue tracker](https://phabricator.wikimedia.org/tag/cvnbot/).
 
+## Build
 
-Versioning
-----------
-
-We use the Semantic Versioning guidelines as much as possible.
-
-Releases will be numbered in the following format:
-
-`<major>.<minor>.<patch>`
-
-The `-alpha` suffix is used to indicate unreleased versions in development.
-
-For more information on SemVer, please visit https://semver.org/.
-
-
-Build
-----------
 The software is written in C# and originally created as a Visual Studio Project.
 We use `mono` to run the executable and `msbuild` to build the executable.
 
@@ -43,31 +28,23 @@ Currently supported versions of Mono: **6.8**
 
 Once mono is installed, build the project. The below uses Debug, for local development. (See [Installation](./docs/install.md) for how to install it in production):
 
-```bash
+```
 countervandalism/CVNBot:$ msbuild src/CVNBot.sln /p:Configuration=Debug
 ```
 
 Once built, you can run it:
-```bash
+
+```
 countervandalism/CVNBot/src/CVNBot/bin/Debug:$ mono CVNBot.exe
 ```
 
+## Versioning
 
-Bug tracker
------------
+We use the Semantic Versioning guidelines as much as possible.
+Releases will be numbered in the following format: `<major>.<minor>.<patch>`
 
-Found a bug? Please report it using our [issue
-tracker](https://github.com/countervandalism/CVNBot/issues)!
+For more information on SemVer, please visit https://semver.org/.
 
+## License
 
-Documentation, support and contact
------------
-* [Documentation (wiki)](https://github.com/countervandalism/CVNBot/wiki/Documentation)
-* [`#countervandalism`](irc://irc.libera.chat/#countervandalism) on [Libera.Chat](https://libera.chat)
-* [cvn@lists.wikimedia.org](https://lists.wikimedia.org/mailman/listinfo/cvn) (Requires subscription before posting. [Subscribe here](https://lists.wikimedia.org/mailman/listinfo/cvn))
-
-
-Copyright and license
----------------------
-
-See [LICENSE](https://raw.github.com/countervandalism/CVNBot/master/LICENSE.txt).
+See [LICENSE](./LICENSE.txt).
