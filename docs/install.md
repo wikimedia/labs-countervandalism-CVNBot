@@ -28,4 +28,4 @@
 1. Set permissions and ownership correctly. This step is after the copying of files because group ownership is usually not preserved when copying files.
    * For personal use, `chmod 644 *`, `chmod 600 CVNBot.ini`, and `chmod 755 CVNBot.exe`.
    * For Countervandalism Network:`chmod 664 *`, `chmod 660 CVNBot.ini`,  `chmod 755 CVNBot.exe`, and `chgrp cvn.cvnservice *`.
-1. Start the bot (or, let [stillalive](https://github.com/countervandalism/stillalive) start it).
+1. Start the bot (or, let [stillalive](https://gerrit.wikimedia.org/g/labs/countervandalism/stillalive/) start it).

@@ -8,7 +8,7 @@ namespace CVNBot
         public string botNick = "CVNBot";
         public string botPass = "";
         public string botRealName = "CVNBot"; // gets concatenated with a space and Program.version
-        public string partMsg = "https://github.com/countervandalism/CVNBot";
+        public string partMsg = "https://meta.wikimedia.org/wiki/CVNBot";
 
         /**
          * Server
