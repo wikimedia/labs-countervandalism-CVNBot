@@ -174,7 +174,15 @@ namespace CVNBot
 
                             // Example message as of 2017-10-13 on #en.wikipedia:
                             // > [[Special:Log/newusers]] create2  * Ujju.19788 *  created new account User:Upendhare
-                            if (fields[4].Contains("create2"))
+                            // Example message as of 2022-01-24 on #en.wikipedia:
+                            // > [[Special:Log/newusers]] byemail  * Mdaniels5757 *  created new account User:Hannahco12: Requested account
+                            //
+                            // Treat newusers/byemail the same as newusers/create2.
+                            // MediaWiki internally re-uses the "create2" message for "byemail" as well.
+                            // Ref mediawiki-core.git:/LogFormatter.php#getIRCActionText
+                            // Ref https://phabricator.wikimedia.org/T327126
+                            //
+                            if (fields[4].Contains("create2") || fields[4].Contains("byemail"))
                             {
                                 Match mc2 = project.rCreate2Regex.Match(rce.comment);
                                 if (mc2.Success)
