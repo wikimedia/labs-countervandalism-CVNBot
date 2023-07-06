@@ -1,3 +1,15 @@
+4.0.3 / 2023-07-06
+=================
+
+### Changed
+* Config: Update sample file with file layouts deployed on CVN servers
+* Git repository moved from GitHub to gerrit.wikimedia.org
+* Bug tracking moved to https://phabricator.wikimedia.org/tag/cvnbot/
+
+### Fixed
+* Project: Support newusers/byemail to be the same as newuser2 ([T327126](https://phabricator.wikimedia.org/T327126))
+* Project: Set missing `caurl` attribute for newuser2 events ([T327127](https://phabricator.wikimedia.org/T327127))
+
 4.0.2 / 2021-06-20
 ==================
 
