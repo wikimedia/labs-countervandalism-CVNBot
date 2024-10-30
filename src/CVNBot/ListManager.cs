@@ -36,6 +36,12 @@ namespace CVNBot
 
         static Regex ipv4 = new Regex(@"\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b");
         static Regex ipv6 = new Regex(@"\b(?:[0-9A-F]{1,4}:){7}[0-9A-F]{1,4}\b");
+
+        // Support detection of temp accounts
+        // https://phabricator.wikimedia.org/T378530
+        // https://gerrit.wikimedia.org/g/operations/mediawiki-config/+/d4afd6407a61cefb8a45817d5da9396f7e68178c/wmf-config/CommonSettings.php#4267
+        // https://meta.wikimedia.org/w/api.php?format=jsonfm&formatversion=2&action=query&meta=siteinfo&siprop=autocreatetempuser
+        static Regex tempAccount = new Regex(@"(?:~2.+)\b");
         static Regex rlistCmd = new Regex(@"^(?<cmd>add|del|show|test) +(?<item>.+?)(?: +p=(?<project>\S+?))?(?: +x=(?<len>\d{1,4}))?(?: +r=(?<reason>.+?))?$"
             , RegexOptions.IgnoreCase);
 
@@ -302,7 +308,11 @@ namespace CVNBot
             }
 
             // Finally, if we're still here, user is either user or anon
-            if ((ipv4.Match(username).Success) || (ipv6.Match(username).Success))
+            if (
+                    (ipv4.Match(username).Success)
+                    || (ipv6.Match(username).Success)
+                    || (tempAccount.Match(username).Success)
+                )
                 // Anon
                 return Program.GetFormatMessage(16005, username);
 
@@ -823,7 +833,11 @@ namespace CVNBot
             }
 
             // Finally, if we're still here, user is either user or anon
-            if ((ipv4.Match(username).Success) || (ipv6.Match(username).Success))
+            if (
+                    (ipv4.Match(username).Success)
+                    || (ipv6.Match(username).Success)
+                    || (tempAccount.Match(username).Success)
+                )
                 return UserType.anon;
 
             return UserType.user;
