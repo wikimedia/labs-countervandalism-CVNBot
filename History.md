@@ -1,5 +1,11 @@
+4.0.4 / 2024-11-22
+==================
+
+### Changed
+* ListManager: Detect temporary accounts and treat as IP/anons ([T378530](https://phabricator.wikimedia.org/T378530))
+
 4.0.3 / 2023-07-06
-=================
+==================
 
 ### Changed
 * Config: Update sample file with file layouts deployed on CVN servers
