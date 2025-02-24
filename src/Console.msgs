@@ -79,12 +79,12 @@
 05116=%c07Greylist%c14 [[${editor}]] %c07Possible gibberish?%c14 [[${article}]] ${sizeattrib}(${size})${sizereset}%c14 %c10Diff:%c12 ${url}%c14 "${reason}"
 
 05120=%c10Whitelist%c14 [[${editor}]] %c10Large removal%c14 [[${article}]] ${sizeattrib}(${size})${sizereset}%c14 %c10Diff:%c12 ${url}%c14 "${reason}"
-05121=%c04%bBlacklist%b [[${editor}]] %bLarge removal%b [[${article}]] ${sizeattrib}(${size})${sizereset} %c10Diff:%c12 ${url}%c14%c04"${reason}"
+05121=%c04%bBlacklist%b [[${editor}]] %bLarge removal%b [[${article}]] ${sizeattrib}(${size})${sizereset} %c10Diff:%c12 ${url}%c14%c04 "${reason}"
 05122=%c14Admin%c14 [[${editor}]] %c14Large removal%c14 [[${article}]] ${sizeattrib}(${size})${sizereset}%c14 %c10Diff:%c12 ${url}%c14reason "${reason}"
-05123=%c03%bIP%b [[${editor}]] %bLarge removal%b [[${article}]] ${sizeattrib}(${size})${sizereset} %c10Diff:%c12 ${url}%c14%c03"${reason}"
+05123=%c03%bIP%b [[${editor}]] %bLarge removal%b [[${article}]] ${sizeattrib}(${size})${sizereset} %c10Diff:%c12 ${url}%c14%c03 "${reason}"
 05124=%c13User%c14 [[${editor}]] %c13Large removal%c14 [[${article}]] ${sizeattrib}(${size})${sizereset}%c14 %c10Diff:%c12 ${url}%c14 "${reason}"
 05125=%c14Bot%c14 [[${editor}]] %c14Large removal%c14 [[${article}]] ${sizeattrib}(${size})${sizereset}%c14 %c10Diff:%c12 ${url}%c14reason "${reason}"
-05126=%c07Greylist%c14 [[${editor}]] %c07Large removal, blanking?%c14 [[${article}]] ${sizeattrib}(${size})${sizereset} %c10Diff:%c12 ${url}%c14%c04"${reason}"
+05126=%c07Greylist%c14 [[${editor}]] %c07Large removal, blanking?%c14 [[${article}]] ${sizeattrib}(${size})${sizereset} %c10Diff:%c12 ${url}%c14%c04 "${reason}"
 
 05130=%c10Whitelist%c14 [[${editor}]] %c10edited watched page%c14 [[${article}]] ${sizeattrib}(${size})${sizereset}%c14 %c10Diff:%c12 ${url}%c14 "${reason}"
 05131=%c04%bBlacklist%b%c14 [[${editor}]] %c04%bedited watched page%b%c14 [[${article}]] ${sizeattrib}(${size})${sizereset}%c14 %c10Diff:%c12 ${url}%c14 "${reason}"
