@@ -1,6 +1,11 @@
-# MSBuild
-/src/CVNBot/bin
-/src/CVNBot/obj
-# Visual Studio
-/src/.vs
-*.userprefs
+# CVNBot
+/CVNBot.ini
+/Console.msgs
+/Lists.sqlite
+/Projects.xml
+# Python
+/.tox/
+/.venv/
+/*.egg-info/
+*.pyc
+__pycache__

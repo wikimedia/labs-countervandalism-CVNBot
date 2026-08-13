@@ -11,32 +11,86 @@
 Found a bug? Please report it to our
 [issue tracker](https://phabricator.wikimedia.org/tag/cvnbot/).
 
-## Build
+## Requirements
 
-The software is written in C# and originally created as a Visual Studio Project.
-We use `mono` to run the executable and `msbuild` to build the executable.
+Python 3.8 or later. This project uses only the Python standard library and requires no third-party dependencies.
 
-Recommended installation methods:
+## Run
 
-* For Linux, install [`mono-complete`](https://packages.debian.org/search?keywords=mono-complete) from Debian, or [latest from mono-project.com](https://www.mono-project.com/download/stable/#download-lin),
-* For Mac, install [Visual Studio for Mac](https://www.visualstudio.com/vs/visual-studio-mac/) (enable Mono and .NET during installation).
-* For Windows, install [Visual Studio](https://visualstudio.microsoft.com/vs/) (enable Mono and .NET during installation).
+From anywhere:
 
-For standalone command-line installations on Mac or Windows, see [monodevelop.com](https://www.monodevelop.com/download/).
-
-Currently supported versions of Mono: **6.12**
-
-Once mono is installed, build the project. The below uses Debug, for local development. (See [Installation](./docs/install.md) for how to install it in production):
-
-```
-countervandalism/CVNBot:$ msbuild src/CVNBot.sln /p:Configuration=Debug
+```sh
+python3 /path/to/CVNBot/cvnbot --config /srv/MyBot/CVNBot.ini
 ```
 
-Once built, you can run it:
+During development, from your clone of the Git repository:
 
+```sh
+python3 -m cvnbot --config /srv/MyBot/CVNBot.ini
 ```
-countervandalism/CVNBot/src/CVNBot/bin/Debug:$ mono CVNBot.exe
+
+Or, after `pip install .`:
+
+```sh
+cvnbot --config /srv/MyBot/CVNBot.ini
 ```
+
+See [Installation](./docs/install.md) for a production setup.
+
+## Test
+
+Run the unit tests and the linter:
+
+```sh
+tox
+```
+
+Or, run only the unit tests:
+```sh
+python3 -m unittest
+```
+
+## Layout
+
+* The `python3 -m cvnbot` or `python3 -m /path/to/cvnbot` commands are handled by `__main__.py`,
+  which parses the CLI arguments and then delegates to `CVNBot.run` in `program.py`.
+* The **Main** thread (`program.py`) is where `CVNBot.run`
+  * .. starts the main IRC connection to Libera Chat.
+  * .. starts the RCReader thread.
+  * .. starts ListManager's database connection (open Lists.sqlite).
+  * .. listens for and responds to any IRC commands.
+* The **RCReader** thread (`rcreader.py`)
+  * .. starts a second IRC connection for RecentChanges from wikimedia.org.
+  * .. listens for messages and parse them into RecentChange events, for each one:
+    * filter based on feed settings (CVNBot.ini).
+    * filter based on database queries (ListManager, such as blacklist and watchlist).
+    * format event using messages from Console.msgs.
+    * send message to feed channel on Libera Chat, via the main IRC connection.
+* The **Tim** thread (`listmanager.py`)
+  * .. removes expired rows from the database every two hours.
+
+Notable classes:
+
+* `Messages`: This is formulates and formats messages spoken by the bot.
+  These are read from the `Console.msgs` file, and can be reloaded at runtime
+  via the `CVNBot msgs` command. The file is considered read-only, with changes
+  deployed via version control outside the bot runtime.
+
+  See also <https://gerrit.wikimedia.org/g/labs/countervandalism/cvn-infrastructure/+/HEAD/>.
+
+* `ProjectList`: The set of monitored wikis as persisted in `Projects.xml`.
+
+  For each wiki we store namespace names, and a copy of various MediaWiki interface
+  messages to help parse log events and automatic edit summaries from the
+  RecentChanges stream.
+
+  This XML file is writable at runtime via the `CVNBot load`, `CVNBot drop`, `CVNBot reload`,
+  and `CVNBot batchreload` commands.
+
+* `ListManager`: The CVNBot database contains usernames, page titles, and various patterns
+  that dictate which events from the RecentChanges stream to report to the CVN channel on IRC.
+
+  It is backed by the `Lists.sqlite` file.
 
 ## Versioning
 

@@ -5,7 +5,10 @@
 # %cnn[,nn] = mIRC colour nn,nn
 # %b = Toggle bolding
 #
-# 0 = Reporting (largely compatible with CVUBot) / 9 = CVNBot-only reporting / 1 = Formatted / 2 = Interface
+# 0 = Reporting of RC events to IRC, for Messages.subst (inherited from CVUBot)
+# 9 = Reporting of RC events to IRC, for Messages.subst (CVNBot-only)
+# 1 = Formatted via Messages.format
+# 2 = Misc messages for bot command responses (not RC reporting)
 00000=2.03
 
 00020=Anonymous user
@@ -219,7 +222,7 @@
 16400=Project {0} is already registered
 16401=Project {0} is not currently registered
 
-# Friendly lists (170xx is reserved)
+# Human-friendly list names (170xx is reserved)
 17000=whitelist
 17001=blacklist
 17002=admin list
@@ -230,7 +233,7 @@
 17012=bad new article title list
 17020=bad edit summary list
 
-# Random messages
+# Misc messages
 20000=I'm sorry, I can't understand your command :'(
 20001=There are no global admins/bots. Specify a project with the p= parameter.
 20002=Only the bad new username, bad new article title and bad edit summary lists can be tested

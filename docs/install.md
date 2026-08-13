@@ -2,30 +2,35 @@
 
 ## Installation
 
-1. Compile the code by running the following command:
+1. Create a directory for your new bot.
+2. Create a `CVNBot.ini` file in this directory.
+   It is recommended to start with a copy of `CVNBot-sample.ini`
+   and change at least `botnick`.
 
-   `msbuild src/CVNBot.sln /p:Configuration=Release`
+   For CVN production, always enable `logsyslog=1` because the bot will run as
+   a background process managed by stillalive with standard output disabled.
 
-   This command creates `CVNBot.exe` and other files in the output directory at `src/CVNBot/bin/Release`.
-1. Create a directory for your bot, and move the contents of `src/CVNBot/bin/Release` to it.
-1. Edit `CVNBot.ini`: Set at least `botnick`.
-1. Set permissions and ownership correctly. This step is after the copying of files because group ownership is usually not preserved when copying files.
-   * For personal use, `chmod 644 *`, `chmod 600 CVNBot.ini`, and `chmod 755 CVNBot.exe`.
-   * For Countervandalism Network:`chmod 664 *`, `chmod 660 CVNBot.ini`,  `chmod 755 CVNBot.exe`, and `chgrp cvn.cvnservice *`.
-1. You can now start the start the bot by running `mono CVNBot.exe` from your bot directory.<br/>The bot will join the specified `feedchannel` (by default: `#cvn-sandbox`).
+3. Set permissions and ownership correctly.
+   For personal use:
+   ```sh
+   chmod 600 CVNBot.ini
+   ```
+   Or, for CVN production:
+   ```sh
+   chmod 664 * && chmod 660 CVNBot.ini
+   ```
+
+When you [run the bot](../README.md#run), it will automatically create `Projects.xml`
+and `Lists.sqlite` files at either your specified location, or the default locations
+relative to your CVNBot.ini file.
 
 ## Upgrade
 
-1. Compile the code by running the following command:
+1. Make sure the bot is not currently running (e.g. `Botname quit` on IRC, or check `ps aux`).
+2. Run `git pull` in `/srv/cvn/git/CVNBot` or wherever you have it cloned.
+   No build or compile step is required.
 
-   `msbuild src/CVNBot.sln /p:Configuration=Release`
+   (If you chose to install the command globally via pip, you'll need to re-run `pip install --force .` from the CVNBot directory to update that install.)
 
-   This command creates `CVNBot.exe` and other files in the output directory at `src/CVNBot/bin/Release`.
-1. Enter `src/CVNBot/bin/Release`.
-1. Remove `Projects.xml` and `CVNBot.ini` (to avoid accidentally overwriting your existing ones, later)
-1. Make sure the bot is not currently running (e.g. `Botname quit` on IRC, and check output of `ps aux`).
-1. Copy all remaining files in `src/CVNBot/bin/Release` to your existing bot directory. For example: `src/CVNBot/bin/Release$ cp * /srv/cvn/services/cvnbot/CVNBotXYZ/`
-1. Set permissions and ownership correctly. This step is after the copying of files because group ownership is usually not preserved when copying files.
-   * For personal use, `chmod 644 *`, `chmod 600 CVNBot.ini`, and `chmod 755 CVNBot.exe`.
-   * For Countervandalism Network:`chmod 664 *`, `chmod 660 CVNBot.ini`,  `chmod 755 CVNBot.exe`, and `chgrp cvn.cvnservice *`.
-1. Start the bot (or, let [stillalive](https://gerrit.wikimedia.org/g/labs/countervandalism/stillalive/) start it).
+3. Start the bot.
+   Or, let [stillalive](https://gerrit.wikimedia.org/g/labs/countervandalism/stillalive/) start it.

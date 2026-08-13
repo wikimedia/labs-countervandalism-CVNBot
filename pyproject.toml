@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cvnbot"
+version = "0.0.0"
+readme = "README.md"
+requires-python = ">=3.9"
+# No third-party dependencies: everything is in the standard library.
+dependencies = []
+
+[project.scripts]
+cvnbot = "cvnbot.__main__:main"
+
+[tool.setuptools]
+packages = ["cvnbot"]
+
+[tool.setuptools.package-data]
+cvnbot = ["Console.msgs"]
+
+[project.optional-dependencies]
+lint = [
+  "flake8==7.1.1",
+]
