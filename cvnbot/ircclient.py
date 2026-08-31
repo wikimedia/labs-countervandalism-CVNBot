@@ -111,7 +111,8 @@ class IrcClient:
         self.name = name
         self.encoding = "utf-8"
         # Seconds to wait between two outgoing messages
-        self.send_delay = 0.3
+        # https://libera.chat/guides/faq#are-bots-allowed
+        self.send_delay = 0.4
         self.auto_reconnect = auto_reconnect
         self.auto_rejoin = auto_rejoin
         self.max_reconnect_attempts = 5
