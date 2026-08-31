@@ -60,6 +60,19 @@ class CVNBot:
         setup_logger(self.config)
         logger.info("Loaded main configuration from %s", self.config_filename)
 
+        # Start global catcher right after setting up syslog
+        # Any failure after this will auto restart.
+        # We have a 10s delay to avoid hot bootloops.
+        # If you see an error locally, Ctrl-C within 10s to avoid replacement with
+        # a new background process.
+        # If you're moving this, we must not move this below init_db_connection,
+        # because that's when we first start other threads, and failures there
+        # should always stop the main thread.
+        sys.excepthook = self._on_application_unhandled_error
+        threading.excepthook = lambda args: self._on_application_unhandled_error(
+            args.exc_type, args.exc_value, args.exc_traceback
+        )
+
         self.bot_cmd = re.compile(
             "^"
             + re.escape(self.config.bot_nick)
@@ -73,17 +86,6 @@ class CVNBot:
         # Read projects
         self.prjlist.fn_projects_xml = self.config.projects_file
         self.prjlist.load_from_file()
-
-        # Start global catcher, which means if we fail after this, we will auto restart.
-        # Not earlier so that we avoid a bootloop with rapidly changing process IDs.
-        # We have a 10s delay but it is still annoying to Ctrl-C within 10s during development,
-        # before spawning a new process.
-        # Not later, because we start other threads below, and failures there should always
-        # stop the main thread.
-        sys.excepthook = self._on_application_unhandled_error
-        threading.excepthook = lambda args: self._on_application_unhandled_error(
-            args.exc_type, args.exc_value, args.exc_traceback
-        )
 
         self.listman.init_db_connection(self.config.lists_file)
 
