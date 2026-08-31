@@ -299,7 +299,7 @@ class CVNBot:
         "batchreload",
     ])
 
-    def _on_channel_message(self, client, event):
+    def _on_channel_message(self, client, event, recv_ts_ns=None):
         # Prevent empty messages from crashing the bot
         if not event.message:
             return
@@ -331,11 +331,23 @@ class CVNBot:
             self.restart()
 
         elif command == "status":
-            ago = (datetime.datetime.now() - self.rcreader.last_message).total_seconds()
+            ago_handled = (datetime.datetime.now(tz=datetime.timezone.utc) - self.rcreader.last_handled).total_seconds()
+            if self.rcreader.last_recv_ns:
+                last_recv_dt = datetime.datetime.fromtimestamp(
+                    self.rcreader.last_recv_ns / 1_000_000_000,
+                    tz=datetime.timezone.utc
+                )
+                ago_recv = (datetime.datetime.now(tz=datetime.timezone.utc) - last_recv_dt).total_seconds()
+                delay = round(ago_recv - ago_handled, 3)
+                msg = ("Last message on RCReader handled {0} seconds ago, received {1} seconds ago. "
+                       "The processing delay was {2} seconds.").format(ago_handled, ago_recv, delay)
+            else:
+                msg = "Last message on RCReader handled {0} seconds ago".format(ago_handled)
+
             self.send_message(
                 SendType.MESSAGE,
                 channel,
-                "Last message was received on RCReader {0} seconds ago".format(ago),
+                msg,
                 Priority.HIGH,
             )
 

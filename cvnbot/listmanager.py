@@ -200,10 +200,11 @@ class ListManager:
     def is_anon(username):
         """Whether a username looks like an IP address or a temporary account."""
 
+        # Optimization: Try temp_account first because IPs are no longer used on WMF wikis.
         return bool(
-            ListManager.ipv4.fullmatch(username)
+            ListManager.temp_account.search(username)
+            or ListManager.ipv4.fullmatch(username)
             or ListManager.ipv6.fullmatch(username)
-            or ListManager.temp_account.search(username)
         )
 
     # -- Users ------------------------------------------------------------
@@ -341,49 +342,43 @@ class ListManager:
         if not self.bot.config.disable_classify_editor:
             now = utils.ticks_now()
 
-            if project != "":
-                # First, check if user is an admin or bot on this particular wiki
-                row = self._query_one(
-                    """
-                    SELECT type FROM users
-                    WHERE name = ? AND project = ?
-                    AND ((expiry > ?) OR (expiry = '0'))
-                    LIMIT 1
-                    """,
-                    (username, project, now),
-                )
-                if row is not None:
-                    utype = UserType(row[0])
-                    if utype == UserType.admin or utype == UserType.bot:
-                        return utype
+            # Optimization: Fetch in a batch instead of three separate inline queries
+            rows = self._query_all(
+                """
+                SELECT project, type
+                FROM users
+                WHERE name = ?
+                  AND (project = ? OR project = '')
+                  AND (expiry > ? OR expiry = '0')
+                """,
+                (username, project, now),
+            )
+
+            local_utype = None
+            global_greylisted = None
+            global_utype = None
+
+            for row_project, row_utype in rows:
+                utype = UserType(row_utype)
+                if row_project != "":
+                    local_utype = utype
+                else:
+                    if utype == UserType.greylisted:
+                        global_greylisted = utype
+                    else:
+                        global_utype = utype
+
+            # First, check if user is an admin or bot on this particular wiki
+            if project != "" and local_utype == UserType.admin or local_utype == UserType.bot:
+                return local_utype
 
             # Is user globally greylisted? (This takes precedence)
-            row = self._query_one(
-                """
-                SELECT reason, expiry FROM users
-                WHERE name = ? AND project = ? AND type = ?
-                AND ((expiry > ?) OR (expiry = '0'))
-                LIMIT 1
-                """,
-                (username, "", int(UserType.greylisted), now),
-            )
-            if row is not None:
+            if global_greylisted:
                 return UserType.greylisted
 
             # Next, check if user is globally whitelisted or blacklisted
-            row = self._query_one(
-                """
-                SELECT type FROM users
-                WHERE name = ? AND project = ?
-                AND ((expiry > ?) OR (expiry = '0'))
-                LIMIT 1
-                """,
-                (username, "", now),
-            )
-            if row is not None:
-                utype = UserType(row[0])
-                if utype == UserType.whitelisted or utype == UserType.blacklisted:
-                    return utype
+            if global_utype == UserType.whitelisted or global_utype == UserType.blacklisted:
+                return global_utype
 
         # Finally, if we're still here, user is either user or anon
         if self.is_anon(username):

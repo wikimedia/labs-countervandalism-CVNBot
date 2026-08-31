@@ -21,6 +21,7 @@ import heapq
 import itertools
 import logging
 import socket
+import struct
 import threading
 import time
 
@@ -101,6 +102,8 @@ class ChannelUser:
 class IrcClient:
     """A blocking IRC client, driven by listen()."""
 
+    SO_TIMESTAMPNS = 35
+
     def __init__(self, name="irc",
                  auto_reconnect=False,
                  auto_rejoin=False
@@ -165,6 +168,11 @@ class IrcClient:
             raise IrcConnectionError(
                 f"Could not connect to {self._server}:{self._port}: {e}"
             )
+
+        try:
+            self._socket.setsockopt(socket.SOL_SOCKET, self.SO_TIMESTAMPNS, 1)
+        except OSError as e:
+            logger.info("Could not enable SO_TIMESTAMPNS: %s", e)
 
         self._socket.settimeout(None)
         self._buffer = b""
@@ -286,8 +294,8 @@ class IrcClient:
         """Read and dispatch messages until the connection is over."""
         while True:
             try:
-                for line in self._read_lines():
-                    self._handle_line(line)
+                for line, recv_ts_ns in self._read_lines():
+                    self._handle_line(line, recv_ts_ns)
             except OSError as e:
                 if self._quitting:
                     return
@@ -304,16 +312,22 @@ class IrcClient:
             sock = self._socket
             if sock is None:
                 return
-            data = sock.recv(4096)
+            data, ancdata, flags, addr = sock.recvmsg(4096, 1024)
             if not data:
                 raise OSError("Connection closed by peer")
+            recv_ts_ns = None
+            for cmsg_level, cmsg_type, cmsg_data in ancdata:
+                if cmsg_level == socket.SOL_SOCKET and cmsg_type == self.SO_TIMESTAMPNS:
+                    sec, nsec = struct.unpack("qq", cmsg_data[:16])
+                    recv_ts_ns = sec * 1_000_000_000 + nsec
+                    break
 
             self._buffer += data
             while b"\n" in self._buffer:
                 raw, self._buffer = self._buffer.split(b"\n", 1)
                 line = raw.rstrip(b"\r").decode(self.encoding, errors="replace")
                 if line:
-                    yield line
+                    yield line, recv_ts_ns
 
     def _reconnect(self):
         if not self.auto_reconnect:
@@ -335,7 +349,7 @@ class IrcClient:
             return True
         return False
 
-    def _handle_line(self, line):
+    def _handle_line(self, line, recv_ts_ns=None):
         message = IrcMessage(line)
         command = message.command
         logger.debug("IRC received: %s", line)
@@ -346,7 +360,7 @@ class IrcClient:
 
         if command == "PRIVMSG":
             if message.channel:
-                self._fire(self.on_channel_message, self, message)
+                self._fire(self.on_channel_message, self, message, recv_ts_ns)
             return
 
         if command == "NOTICE":

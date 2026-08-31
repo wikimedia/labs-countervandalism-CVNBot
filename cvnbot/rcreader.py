@@ -63,7 +63,8 @@ class RCReader:
                                auto_reconnect=True,
                                auto_rejoin=True,
                                )
-        self.last_message = datetime.datetime.now()
+        self.last_recv_ns = None
+        self.last_handled = datetime.datetime.now(tz=datetime.timezone.utc)
 
     def initiate_connection(self):
         """Connect, join every monitored wiki's channel, and read forever."""
@@ -95,8 +96,9 @@ class RCReader:
     def _on_connected(self, client):
         logger.info("Connected to %s", self.SERVER_NAME)
 
-    def _on_channel_message(self, client, event):
-        self.last_message = datetime.datetime.now()
+    def _on_channel_message(self, client, event, recv_ts_ns=None):
+        self.last_recv_ns = recv_ts_ns
+        self.last_handled = datetime.datetime.now(tz=datetime.timezone.utc)
 
         rce = self.parse_message(event.channel, event.message)
         if rce is None:
