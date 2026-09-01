@@ -132,8 +132,7 @@ class IrcClient:
         self._joined = []
         self._send_queue = _PriorityQueue()
         self._sender_thread = None
-        self._connected = threading.Event()
-        # Set once the server has welcomed us; nothing may be sent before that
+        # Clear this flag once the server has welcomed us; nothing may be sent before that
         self._registered = threading.Event()
         self._welcomed_once = False
         self._quitting = False
@@ -163,6 +162,8 @@ class IrcClient:
             self._sender_thread.start()
 
     def _open_socket(self):
+        self._registered.clear()
+
         try:
             self._socket = socket.create_connection((self._server, self._port), 30)
         except OSError as e:
@@ -176,8 +177,6 @@ class IrcClient:
             logger.info("Could not enable SO_TIMESTAMPNS: %s", e)
 
         self._buffer = b""
-        self._registered.clear()
-        self._connected.set()
 
     def login(self, nick, realname, usermode=0, username=None, password=""):
         self.nickname = nick
@@ -208,12 +207,8 @@ class IrcClient:
         # Server:
         #   libera.chat CAP YourName ACK :sasl
 
-    def is_connected(self):
-        return self._connected.is_set()
-
     def disconnect(self):
         self._quitting = True
-        self._connected.clear()
         self._registered.clear()
         sock, self._socket = self._socket, None
         if sock is not None:
@@ -302,7 +297,7 @@ class IrcClient:
                 logger.warning("Connection lost: %s", e)
             if self._quitting:
                 return
-            self._connected.clear()
+            self._registered.clear()
             if not self._reconnect():
                 self._fire(self.on_connection_error, self)
                 return
