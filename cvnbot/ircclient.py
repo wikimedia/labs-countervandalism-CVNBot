@@ -175,7 +175,6 @@ class IrcClient:
         except OSError as e:
             logger.info("Could not enable SO_TIMESTAMPNS: %s", e)
 
-        self._socket.settimeout(None)
         self._buffer = b""
         self._registered.clear()
         self._connected.set()
