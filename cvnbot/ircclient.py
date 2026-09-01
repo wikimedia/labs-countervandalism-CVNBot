@@ -165,7 +165,7 @@ class IrcClient:
         self._registered.clear()
 
         try:
-            self._socket = socket.create_connection((self._server, self._port), 30)
+            self._socket = socket.create_connection((self._server, self._port), timeout=30)
         except OSError as e:
             raise IrcConnectionError(
                 f"Could not connect to {self._server}:{self._port}: {e}"
@@ -176,6 +176,13 @@ class IrcClient:
         except OSError as e:
             logger.info("Could not enable SO_TIMESTAMPNS: %s", e)
 
+        # Wikimedia ircstream disconnects after 180s with a PING every 45s
+        # https://github.com/paravoid/ircstream/blob/v1.0.1/ircstream/ircserver.py#L259
+        #
+        # Libera disconnects after 240s with a PING every 120s
+        # https://github.com/solanum-ircd/solanum/blob/30f74b2cfa70aff2bad65c8afc62956d95699639/include/defaults.h#L63
+        # https://github.com/solanum-ircd/solanum/blob/30f74b2cfa70aff2bad65c8afc62956d95699639/ircd/client.c#L389
+        self._socket.settimeout(200)
         self._buffer = b""
 
     def login(self, nick, realname, usermode=0, username=None, password=""):
