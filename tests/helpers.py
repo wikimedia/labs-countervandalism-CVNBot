@@ -16,18 +16,7 @@ EXAMPLE_PROJECT_XML = r"""
 <interwikiLink>en:</interwikiLink>
 <rooturl>https://en.wikipedia.org/</rooturl>
 <speciallog>Special:.+?/(.+)</speciallog>
-<namespaces>&lt;?xml version="1.0"?&gt;&lt;api&gt;&lt;query&gt;&lt;namespaces&gt;
-&lt;ns id="-2"&gt;Media&lt;/ns&gt;
-&lt;ns id="-1"&gt;Special&lt;/ns&gt;
-&lt;ns id="0" /&gt;
-&lt;ns id="1"&gt;Talk&lt;/ns&gt;
-&lt;ns id="2"&gt;User&lt;/ns&gt;
-&lt;ns id="3"&gt;User talk&lt;/ns&gt;
-&lt;ns id="4"&gt;Wikipedia&lt;/ns&gt;
-&lt;ns id="6"&gt;File&lt;/ns&gt;
-&lt;ns id="10"&gt;Template&lt;/ns&gt;
-&lt;ns id="14"&gt;Category&lt;/ns&gt;
-&lt;/namespaces&gt;&lt;/query&gt;&lt;/api&gt;</namespaces>
+<namespaces>&lt;namespaces&gt;&lt;ns id="-2"&gt;Media&lt;/ns&gt;&lt;ns id="-1"&gt;Special&lt;/ns&gt;&lt;ns id="0" /&gt;&lt;ns id="1"&gt;Talk&lt;/ns&gt;&lt;ns id="2"&gt;User&lt;/ns&gt;&lt;ns id="3"&gt;User talk&lt;/ns&gt;&lt;ns id="4"&gt;Wikipedia&lt;/ns&gt;&lt;ns id="6"&gt;File&lt;/ns&gt;&lt;ns id="10"&gt;Template&lt;/ns&gt;&lt;ns id="14"&gt;Category&lt;/ns&gt;&lt;/namespaces&gt;</namespaces>
 <restoreRegex>^restored "\[\[(?&lt;item1&gt;.+?)\]\]"(?:: (?&lt;comment&gt;.*?))?$</restoreRegex>
 <deleteRegex>^deleted "\[\[(?&lt;item1&gt;.+?)\]\]"(?:: (?&lt;comment&gt;.*?))?$</deleteRegex>
 <protectRegex>^protected "\[\[(?&lt;item1&gt;.+?)\]\]"(?:: (?&lt;comment&gt;.*?))?$</protectRegex>

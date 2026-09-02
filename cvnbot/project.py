@@ -1,5 +1,7 @@
 import logging
 import re
+import xml.etree.ElementTree as ElementTree
+
 from xml.sax.saxutils import escape
 
 from . import utils
@@ -40,10 +42,9 @@ class Project:
         self.project_name = ""
         self.interwiki_link = ""
         self.rooturl = ""  # Format: https://en.wikipedia.org/
-        self.snamespaces = ""
         self.regex_dict = {}
 
-        # Parsed from snamepaces via get_namespaces()
+        # Parsed via parse_namespaces()
         self.namespaces = {}
         # Parsed from regex_dict via generate_regexen()
         self.rrestore_regex = None
@@ -118,9 +119,14 @@ class Project:
         element("interwikiLink", self.interwiki_link)
         element("rooturl", self.rooturl)
         element("speciallog", self.regex_dict["specialLogRegex"])
+
+        namespaces_node = ElementTree.Element("namespaces")
+        for key, value in self.namespaces.items():
+            ns = ElementTree.SubElement(namespaces_node, "ns", id=key)
+            ns.text = value
         element(
             "namespaces",
-            self.snamespaces.replace('<?xml version="1.0" encoding="utf-8"?>', ""),
+            ElementTree.tostring(namespaces_node, encoding="unicode"),
         )
         for name in self.REGEX_DICT_KEYS:
             element(name, self.regex_dict[name])
@@ -146,31 +152,33 @@ class Project:
             elif child.tag == "speciallog":
                 self.regex_dict["specialLogRegex"] = value
             elif child.tag == "namespaces":
-                self.snamespaces = value
+                # Parse namespaces before generating regexen
+                self.namespaces = Project.parse_namespaces(value)
             elif child.tag in self.REGEX_DICT_KEYS:
                 self.regex_dict[child.tag] = value
 
-        # Always get namespaces before generating regexen
-        self.get_namespaces(snamespaces_already_set=True)
-        # Regenerate regexen
         self.generate_regexen()
+
+    @staticmethod
+    def parse_namespaces(snamespaces):
+        namespaces = {}
+        namespaces_node = utils.parse_xml(snamespaces, "namespaces")
+        if namespaces_node is None:
+            raise Exception("No namespaces found")
+        for child in namespaces_node:
+            namespaces[child.get("id")] = child.text or ""
+        return namespaces
 
     # -- Fetching from the wiki -------------------------------------------
 
-    def get_namespaces(self, snamespaces_already_set):
-        if not snamespaces_already_set:
-            logger.info("Fetching namespaces from %s", self.rooturl)
-            self.snamespaces = utils.get_raw_document(
-                self.rooturl
-                + "w/api.php?format=xml&action=query&meta=siteinfo&siprop=namespaces"
-            )
+    def get_namespaces(self):
+        logger.info("Fetching namespaces from %s", self.rooturl)
+        snamespaces = utils.get_raw_document(
+            self.rooturl
+            + "w/api.php?format=xml&action=query&meta=siteinfo&siprop=namespaces"
+        )
 
-        self.namespaces = {}
-        namespaces_node = utils.parse_xml(self.snamespaces, "namespaces")
-        if namespaces_node is None:
-            raise Exception("No namespaces found for " + self.rooturl)
-        for child in namespaces_node:
-            self.namespaces[child.get("id")] = child.text or ""
+        self.namespaces = Project.parse_namespaces(snamespaces)
 
     def retrieve_wiki_details(self):
         """
@@ -179,7 +187,7 @@ class Project:
         """
 
         # Find out what the localized Special: (ID -1) namespace is, and create a regex
-        self.get_namespaces(snamespaces_already_set=False)
+        self.get_namespaces()
 
         logger.info("Fetching interface messages from %s", self.rooturl)
 

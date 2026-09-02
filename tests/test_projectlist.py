@@ -5,7 +5,7 @@ from unittest import mock
 
 from cvnbot.projectlist import ProjectList
 
-from .helpers import destroy_bot, make_bot, make_project
+from .helpers import EXAMPLE_PROJECT_XML, destroy_bot, make_bot, make_project
 
 
 class ProjectListTest(unittest.TestCase):
@@ -50,6 +50,9 @@ class ProjectListTest(unittest.TestCase):
 
 class ProjectListFileTest(unittest.TestCase):
     def setUp(self):
+        # For test_dump_and_load_roundtrip_serialize
+        self.maxDiff = None
+
         self.bot = make_bot(with_project=False)
         self.prjlist = self.bot.prjlist
         handle, self.path = tempfile.mkstemp(suffix=".xml")
@@ -72,7 +75,6 @@ class ProjectListFileTest(unittest.TestCase):
     @staticmethod
     def _fake_retrieve(project):
         template = make_project(project.project_name, project.interwiki_link)
-        project.snamespaces = template.snamespaces
         project.namespaces = template.namespaces
         project.regex_dict = template.regex_dict
 
@@ -83,7 +85,7 @@ class ProjectListFileTest(unittest.TestCase):
         with open(self.path, 'r') as f:
             self.assertEqual('<projects>\n</projects>\n', f.read())
 
-    def test_dump_and_load_roundtrip(self):
+    def test_dump_and_load_roundtrip_data(self):
         self.prjlist.projects["en.wikipedia"] = make_project("en.wikipedia", "en:")
         self.prjlist.projects["de.wikipedia"] = make_project("de.wikipedia", "de:")
         self.prjlist.dump_to_file()
@@ -98,6 +100,18 @@ class ProjectListFileTest(unittest.TestCase):
             restored["en.wikipedia"].regex_dict,
             self.prjlist["en.wikipedia"].regex_dict,
         )
+
+    def test_dump_and_load_roundtrip_serialize(self):
+        self.prjlist.projects["en.wikipedia"] = make_project("en.wikipedia", "en:")
+        self.prjlist.dump_to_file()
+
+        with open(self.path, 'r') as f:
+            expected = '<projects>%s</projects>' % EXAMPLE_PROJECT_XML
+            actual = f.read()
+            self.assertEqual(
+                expected.strip().replace("><", ">\n<"),
+                actual.strip().replace("><", ">\n<")
+            )
 
     def add(self, name, interwiki=""):
         self.prjlist.add_new_project(name, interwiki)
