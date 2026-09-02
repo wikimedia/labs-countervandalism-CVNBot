@@ -81,27 +81,25 @@ class ListManagerUsersTest(ListManagerTestCase):
         self.assertIn("Added", result)
         self.assertEqual(self.listman.classify_editor("Tango", "en.wikipedia"), UserType.admin)
 
-    # T327129: Order should not matter
-    def test_add_whitelisted_and_admin_conflict(self):
+    def test_add_whitelisted_and_admin(self):
         self.listman.add_user_to_list(
             "Tango", "", UserType.whitelisted, "op", "Trusted", 0
         )
         result = self.listman.add_user_to_list(
             "Tango", "en.wikipedia", UserType.admin, "op", "Vandal", 0
         )
-        self.assertIn("cannot add", result)
-        self.assertEqual(self.listman.classify_editor("Tango", "en.wikipedia"), UserType.whitelisted)
+        self.assertIn("Added", result)
+        self.assertEqual(self.listman.classify_editor("Tango", "en.wikipedia"), UserType.admin)
 
-    # T327129: Order should not matter
-    def test_add_whitelisted_and_bot_conflict(self):
+    def test_add_whitelisted_and_bot(self):
         self.listman.add_user_to_list(
             "Tango", "", UserType.whitelisted, "op", "Trusted", 0
         )
         result = self.listman.add_user_to_list(
             "Tango", "en.wikipedia", UserType.bot, "op", "Vandal", 0
         )
-        self.assertIn("cannot add", result)
-        self.assertEqual(self.listman.classify_editor("Tango", "en.wikipedia"), UserType.whitelisted)
+        self.assertIn("Added", result)
+        self.assertEqual(self.listman.classify_editor("Tango", "en.wikipedia"), UserType.bot)
 
     def test_add_whitelisted_and_blacklisted_conflict(self):
         self.listman.add_user_to_list(

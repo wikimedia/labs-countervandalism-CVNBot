@@ -225,13 +225,17 @@ class ListManager:
             # Updated
             return self.bot.msgs.format(16104, self.show_user_on_list(name, project))
 
-        # Allow adding greylisted users to the blacklist
-        # If adding to greylist, we can accept a new entry, as they may overlap
         if (
-            original_type == UserType.anon
-            or original_type == UserType.user
+            # Unlisted
+            original_type == UserType.anon or original_type == UserType.user
+            # Allow temporary greylisting concurrent with any type
+            # This takes precedence in show_user_on_list and classify_editor
             or utype == UserType.greylisted
+            # Allow adding greylisted users to the blacklist (escalate without needing to wait)
             or (original_type == UserType.greylisted and utype == UserType.blacklisted)
+            # Allow local admin/bot listing even if already on global whitelist (T327129)
+            # This takes precedence in show_user_on_list and classify_editor
+            or (original_type == UserType.whitelisted and utype in (UserType.admin, UserType.bot) and project != "")
         ):
             # User was originally unlisted or on a non-conflicting list
             self._execute(
