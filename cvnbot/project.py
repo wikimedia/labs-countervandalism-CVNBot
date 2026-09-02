@@ -98,9 +98,7 @@ class Project:
         self.rautosumm_blank = utils.compile_dotnet(self.regex_dict["autosummBlank"])
         self.rautosumm_replace = utils.compile_dotnet(self.regex_dict["autosummReplace"])
 
-        self.regex_dict["specialLogRegex"] = self.namespaces["-1"] + r":.+?/(.+)"
-        self.rspecial_log_regex = utils.compile_dotnet(self.regex_dict["specialLogRegex"])
-
+        self.rspecial_log_regex = re.compile(self.namespaces["-1"] + r":.+?/(.+)")
         self.rcreate2_regex = re.compile(self.namespaces["2"] + r":([^:]+)")
 
     # -- Persistence ------------------------------------------------------
@@ -118,7 +116,6 @@ class Project:
         element("projectName", self.project_name)
         element("interwikiLink", self.interwiki_link)
         element("rooturl", self.rooturl)
-        element("speciallog", self.regex_dict["specialLogRegex"])
 
         namespaces_node = ElementTree.Element("namespaces")
         for key, value in self.namespaces.items():
@@ -149,8 +146,6 @@ class Project:
                 self.interwiki_link = value
             if child.tag == "rooturl":
                 self.rooturl = value
-            elif child.tag == "speciallog":
-                self.regex_dict["specialLogRegex"] = value
             elif child.tag == "namespaces":
                 # Parse namespaces before generating regexen
                 self.namespaces = Project.parse_namespaces(value)
