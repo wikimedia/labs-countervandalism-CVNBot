@@ -70,7 +70,40 @@ class ListManagerUsersTest(ListManagerTestCase):
         self.assertIn("whitelist", result)
         self.assertIn("Trusted", result)
 
-    def test_add_conflict(self):
+    def test_add_admin_and_whitelisted(self):
+        result = self.listman.add_user_to_list(
+            "Tango", "en.wikipedia", UserType.admin, "op", "Vandal", 0
+        )
+        self.assertIn("Added", result)
+        result = self.listman.add_user_to_list(
+            "Tango", "", UserType.whitelisted, "op", "Trusted", 0
+        )
+        self.assertIn("Added", result)
+        self.assertEqual(self.listman.classify_editor("Tango", "en.wikipedia"), UserType.admin)
+
+    # T327129: Order should not matter
+    def test_add_whitelisted_and_admin_conflict(self):
+        self.listman.add_user_to_list(
+            "Tango", "", UserType.whitelisted, "op", "Trusted", 0
+        )
+        result = self.listman.add_user_to_list(
+            "Tango", "en.wikipedia", UserType.admin, "op", "Vandal", 0
+        )
+        self.assertIn("cannot add", result)
+        self.assertEqual(self.listman.classify_editor("Tango", "en.wikipedia"), UserType.whitelisted)
+
+    # T327129: Order should not matter
+    def test_add_whitelisted_and_bot_conflict(self):
+        self.listman.add_user_to_list(
+            "Tango", "", UserType.whitelisted, "op", "Trusted", 0
+        )
+        result = self.listman.add_user_to_list(
+            "Tango", "en.wikipedia", UserType.bot, "op", "Vandal", 0
+        )
+        self.assertIn("cannot add", result)
+        self.assertEqual(self.listman.classify_editor("Tango", "en.wikipedia"), UserType.whitelisted)
+
+    def test_add_whitelisted_and_blacklisted_conflict(self):
         self.listman.add_user_to_list(
             "Tango", "", UserType.whitelisted, "op", "Trusted", 0
         )
@@ -79,15 +112,6 @@ class ListManagerUsersTest(ListManagerTestCase):
         )
         self.assertIn("cannot add", result)
         self.assertEqual(self.listman.classify_editor("Tango", ""), UserType.whitelisted)
-
-    def test_add_update(self):
-        self.listman.add_user_to_list("Tango", "", UserType.blacklisted, "op", "One", 0)
-        result = self.listman.add_user_to_list(
-            "Tango", "", UserType.blacklisted, "op", "Two", 0
-        )
-        self.assertIn("Tango", result)
-        self.assertIn("Two", result)
-        self.assertNotIn("One", result)
 
     def test_add_blacklisted_and_greylisted(self):
         self.listman.add_user_to_list(
@@ -98,7 +122,7 @@ class ListManagerUsersTest(ListManagerTestCase):
             "Tango", "", UserType.blacklisted, "op", "vandal", 0
         )
         # Greylist takes precedence while it is still active
-        self.assertEqual(self.listman.classify_editor("Tango", ""), UserType.greylisted)
+        self.assertEqual(self.listman.classify_editor("Tango", "en.wikipedia"), UserType.greylisted)
 
     def test_add_local_admin_beats_global_lists(self):
         self.listman.add_user_to_list(
@@ -112,6 +136,15 @@ class ListManagerUsersTest(ListManagerTestCase):
         )
         self.assertEqual(self.listman.classify_editor("Tango", "en.wikipedia"), UserType.admin)
         self.assertEqual(self.listman.classify_editor("Tango", ""), UserType.whitelisted)
+
+    def test_add_update(self):
+        self.listman.add_user_to_list("Tango", "", UserType.blacklisted, "op", "One", 0)
+        result = self.listman.add_user_to_list(
+            "Tango", "", UserType.blacklisted, "op", "Two", 0
+        )
+        self.assertIn("Tango", result)
+        self.assertIn("Two", result)
+        self.assertNotIn("One", result)
 
     def test_delete(self):
         self.listman.add_user_to_list("Tango", "", UserType.blacklisted, "op", "x", 0)
