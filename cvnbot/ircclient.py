@@ -238,11 +238,24 @@ class IrcClient:
         for chunk in self._split_for_wire(message, len(command.format(destination, ""))):
             self._send_queue.put(priority, command.format(destination, chunk))
 
-    def rfc_join(self, channel):
-        self._send_queue.put(Priority.HIGH, "JOIN {0}".format(channel))
+    def rfc_join(self, *channels):
+        if not channels:
+            return
+        MSG_MAXLEN = 500
+        COMMAND = "JOIN {0}"
+        batches = [[]]
+        for channel in channels:
+            if len(COMMAND.format(",".join(batches[-1] + [channel]))) > MSG_MAXLEN:
+                batches.append([channel])
+            else:
+                batches[-1].append(channel)
+        for batch in batches:
+            self._send_queue.put(Priority.HIGH, COMMAND.format(",".join(batch)))
+
         with self._channels_lock:
-            if channel not in self._joined:
-                self._joined.append(channel)
+            for channel in channels:
+                if channel not in self._joined:
+                    self._joined.append(channel)
 
     def rfc_part(self, channel, reason=""):
         self._send_queue.put(Priority.HIGH, "PART {0} :{1}".format(channel, reason))
@@ -402,8 +415,7 @@ class IrcClient:
             if rejoin:
                 with self._channels_lock:
                     channels = list(self._joined)
-                for channel in channels:
-                    self._send_queue.put(Priority.HIGH, "JOIN {0}".format(channel))
+                self.rfc_join(*channels)
             return
 
         if command == "433":

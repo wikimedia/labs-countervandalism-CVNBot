@@ -116,14 +116,13 @@ class IntegrationTest(unittest.TestCase):
             'CAP LS 302',
             'NICK TestBot',
             'USER TestBot 4 * :CVNBot 0.0',
-            'JOIN #cvn-sandbox',
-            'JOIN #cvn-bots'], self.server.lines)
+            'JOIN #cvn-sandbox,#cvn-bots'], self.server.lines)
 
     def test_database_is_created(self):
         self.assertTrue(os.path.exists(os.path.join(self.workdir, "Lists.sqlite")))
 
     def test_command_from_an_op_is_answered(self):
-        self.assertTrue(self.server.wait_for(lambda l: l == "JOIN #cvn-bots"))
+        self.assertTrue(self.server.wait_for(lambda l: l.startswith("JOIN #cvn-sandbox")))
         self.server.send(":srv 353 TestBot = #cvn-bots :@boss TestBot")
         self.command("bl add Vandal x=1 r=bad")
         self.assertTrue(
@@ -135,7 +134,7 @@ class IntegrationTest(unittest.TestCase):
                       [l for l in self.server.lines if l.startswith("PRIVMSG #cvn-bots :")][0])
 
     def test_command_from_an_unvoiced_user_is_refused(self):
-        self.assertTrue(self.server.wait_for(lambda l: l == "JOIN #cvn-bots"))
+        self.assertTrue(self.server.wait_for(lambda l: l.startswith("JOIN #cvn-sandbox")))
         self.server.send(":srv 353 TestBot = #cvn-bots :boss TestBot")
         self.command("list")
         self.assertTrue(

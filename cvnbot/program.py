@@ -111,6 +111,7 @@ class CVNBot:
                 self.config.bot_pass,
             )
 
+            channels = []
             for label, channel in (
                 ("feed", self.config.feed_channel),
                 ("control", self.config.control_channel),
@@ -118,7 +119,8 @@ class CVNBot:
             ):
                 if channel != "None":
                     logger.info("Joining %s channel: %s", label, channel)
-                    self.irc.rfc_join(channel)
+                    channels.append(channel)
+            self.irc.rfc_join(*channels)
 
             # Now connect the RCReader to channels
             threading.Thread(

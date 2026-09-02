@@ -85,8 +85,7 @@ class RCReader:
         self.rcirc.login(self.bot.config.bot_nick, "CVNBot", 4, "CVNBot")
 
         logger.info("Joining %d channels", len(self.bot.prjlist))
-        for project_name in self.bot.prjlist.keys():
-            self.rcirc.rfc_join("#" + project_name)
+        self.rcirc.rfc_join(*["#" + project_name for project_name in self.bot.prjlist.keys()])
 
         # Enter loop
         self.rcirc.listen()
