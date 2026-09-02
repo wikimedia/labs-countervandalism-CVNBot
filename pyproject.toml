@@ -23,3 +23,6 @@ cvnbot = ["Console.msgs"]
 lint = [
   "flake8==7.1.1",
 ]
+cover = [
+  "coverage==7.16.0",
+]
