@@ -25,6 +25,19 @@ class GenerateRegexTest(unittest.TestCase):
         self.assertEqual(match.group("item2"), "pencil box")
         self.assertEqual(match.group("comment"), "What if")
 
+    def test_generate_repeat_params(self):
+        project = Project()
+        tmp = project.generate_regex(
+            "pulp-fiction",
+            "Say what $2! I $1 you, I $1 dare you.",
+            2,
+            True
+        )
+        match = compile_dotnet(tmp).search("Say what again! I dare you, I double dare you.")
+        self.assertEqual(match.group("item1"), "dare")
+        self.assertEqual(match.group("item2"), "again")
+        self.assertEqual(match.group("comment"), None)
+
     def test_missing_parameter_non_strict(self):
         project = Project()
         project.generate_regex("Blocklogentry", "blocked someone", 3, True)

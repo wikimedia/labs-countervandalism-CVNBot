@@ -250,9 +250,9 @@ class Project:
         for char in self.RE_CHARS:
             message = message.replace(char, "\\" + char)
 
-        message = message.replace("$1", "(?<item1>.+?)")
-        message = message.replace("$2", "(?<item2>.+?)")
-        message = message.replace("$3", "(?<item3>.+?)")
+        message = message.replace("$1", "(?<item1>.+?)", 1)
+        message = message.replace("$2", "(?<item2>.+?)", 1)
+        message = message.replace("$3", "(?<item3>.+?)", 1)
         message = message.replace("$1", "(?:.+?)")
         message = message.replace("$2", "(?:.+?)")
         message = message.replace("$3", "(?:.+?)")
@@ -262,9 +262,13 @@ class Project:
 
         # Dirty code: Block log exceptions!
         if message_title == "Blocklogentry":
-            message = message.replace("(?<item3>.+?)", "\\((?<item3>.+?)\\)")
             message = message.replace(
-                "(?<item2>.+?)(?:: (?<comment>.*?))?$", "(?<item2>.+?)$"
+                "(?<item3>.+?)",
+                "\\((?<item3>.+?)\\)"
+            )
+            message = message.replace(
+                "(?<item2>.+?)(?:: (?<comment>.*?))?$",
+                "(?<item2>.+?)$"
             )
 
         try:
