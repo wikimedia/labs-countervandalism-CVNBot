@@ -39,18 +39,6 @@ class Config:
     # If true, overrides feedfilters to only show uploads and ignore other RC events
     is_cubbie: bool = False
 
-    # Whether to entirely disable the database. This means requesting a usertype
-    # will always return 3 (anon) or 4 (user) based on a static regex.
-    # This speeds up the flow incredibly (especially when using SQLite) and makes it possible
-    # to load many (or even, all) of the Wikimedia wikis without producing an ever-growing backlog
-    # of change events faster than we can process them.
-    # Disabling the database means the actual output in the feedchannel will not be useful (all edits go through,
-    # no bot, user, or whitelist detection).
-    # Recommended to be used in combination with high(est) feedFilter settings for the purposes
-    # of detecting block events from all wikis to then automatically broadcast to other bots
-    # for cross-wiki vandalism detection. Originally written for the CVNBlackRock bot.
-    disable_classify_editor: bool = False
-
     # Feed filters
     #
     # These settings allow filtering of user types and event types
@@ -137,7 +125,6 @@ INI_KEYS = {
     "newbig": ("new_big", int, True),
     "newsmall": ("new_small", int, True),
     "IsCubbie": ("is_cubbie", bool, True),
-    "disableClassifyEditor": ("disable_classify_editor", bool, True),
     "feedFilterUsersAnon": ("feed_filter_users_anon", int, True),
     "feedFilterUsersReg": ("feed_filter_users_reg", int, True),
     "feedFilterUsersBot": ("feed_filter_users_bot", int, True),

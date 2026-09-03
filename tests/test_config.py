@@ -54,7 +54,7 @@ class ConfigTest(unittest.TestCase):
         self.assertEqual(config.broadcast_channel, "None")
         self.assertEqual(config.edit_blank, -500)
         self.assertEqual(config.irc_server_port, 6667)
-        self.assertFalse(config.disable_classify_editor)
+        self.assertFalse(config.log_syslog)
 
     def test_ignore_comments(self):
         raw = config_module.read_raw_config(self.path)

@@ -58,12 +58,6 @@ class ListManagerUsersTest(ListManagerTestCase):
         self.listman._execute("UPDATE users SET expiry = 1")
         self.assertEqual(self.listman.classify_editor("Tango", ""), UserType.user)
 
-    def test_classify_editor_disabled(self):
-        self.listman.add_user_to_list("Tango", "", UserType.blacklisted, "op", "Vandal", 0)
-        self.bot.config.disable_classify_editor = True
-        self.assertEqual(self.listman.classify_editor("Tango", ""), UserType.user)
-        self.assertEqual(self.listman.classify_editor("10.0.0.1", ""), UserType.anon)
-
     def test_add_blacklisted(self):
         self.listman.add_user_to_list("Tango", "", UserType.blacklisted, "op", "Vandal", 3600)
         self.assertEqual(self.listman.classify_editor("Tango", ""), UserType.blacklisted)

@@ -339,46 +339,45 @@ class ListManager:
         Returns:
             UserType
         """
-        if not self.bot.config.disable_classify_editor:
-            now = utils.ticks_now()
+        now = utils.ticks_now()
 
-            # Optimization: Fetch in a batch instead of three separate inline queries
-            rows = self._query_all(
-                """
-                SELECT project, type
-                FROM users
-                WHERE name = ?
-                  AND (project = ? OR project = '')
-                  AND (expiry > ? OR expiry = '0')
-                """,
-                (username, project, now),
-            )
+        # Optimization: Fetch in a batch instead of three separate inline queries
+        rows = self._query_all(
+            """
+            SELECT project, type
+            FROM users
+            WHERE name = ?
+              AND (project = ? OR project = '')
+              AND (expiry > ? OR expiry = '0')
+            """,
+            (username, project, now),
+        )
 
-            local_utype = None
-            global_greylisted = None
-            global_utype = None
+        local_utype = None
+        global_greylisted = None
+        global_utype = None
 
-            for row_project, row_utype in rows:
-                utype = UserType(row_utype)
-                if row_project != "":
-                    local_utype = utype
+        for row_project, row_utype in rows:
+            utype = UserType(row_utype)
+            if row_project != "":
+                local_utype = utype
+            else:
+                if utype == UserType.greylisted:
+                    global_greylisted = utype
                 else:
-                    if utype == UserType.greylisted:
-                        global_greylisted = utype
-                    else:
-                        global_utype = utype
+                    global_utype = utype
 
-            # First, check if user is an admin or bot on this particular wiki
-            if project != "" and local_utype == UserType.admin or local_utype == UserType.bot:
-                return local_utype
+        # First, check if user is an admin or bot on this particular wiki
+        if project != "" and local_utype == UserType.admin or local_utype == UserType.bot:
+            return local_utype
 
-            # Is user globally greylisted? (This takes precedence)
-            if global_greylisted:
-                return UserType.greylisted
+        # Is user globally greylisted? (This takes precedence)
+        if global_greylisted:
+            return UserType.greylisted
 
-            # Next, check if user is globally whitelisted or blacklisted
-            if global_utype == UserType.whitelisted or global_utype == UserType.blacklisted:
-                return global_utype
+        # Next, check if user is globally whitelisted or blacklisted
+        if global_utype == UserType.whitelisted or global_utype == UserType.blacklisted:
+            return global_utype
 
         # Finally, if we're still here, user is either user or anon
         if self.is_anon(username):
