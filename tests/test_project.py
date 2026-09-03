@@ -14,7 +14,7 @@ class GenerateRegexTest(unittest.TestCase):
             "didnot",
             "I did not $1 the yellow $2",
             2,
-            True
+            False
         )
         match = compile_dotnet(tmp).search("I did not touch the yellow pencil")
         self.assertEqual(match.group("item1"), "touch")
@@ -31,7 +31,7 @@ class GenerateRegexTest(unittest.TestCase):
             "pulp-fiction",
             "Say what $2! I $1 you, I $1 dare you.",
             2,
-            True
+            False
         )
         match = compile_dotnet(tmp).search("Say what again! I dare you, I double dare you.")
         self.assertEqual(match.group("item1"), "dare")
@@ -40,11 +40,11 @@ class GenerateRegexTest(unittest.TestCase):
 
     def test_missing_parameter_non_strict(self):
         project = Project()
-        project.generate_regex("Blocklogentry", "blocked someone", 3, True)
+        project.generate_regex("Blocklogentry", "blocked someone", 3, False)
 
     def test_generate_and_match_strict(self):
         project = Project()
-        tmp = project.generate_regex("Deletedarticle", "deleted (a.b) [[$1]]", 1, False)
+        tmp = project.generate_regex("Deletedarticle", "deleted (a.b) [[$1]]", 1)
         self.assertEqual(
             r"^deleted \(a\.b\) \[\[(?<item1>.+?)\]\](?:: (?<comment>.*?))?$",
             tmp
@@ -56,7 +56,7 @@ class GenerateRegexTest(unittest.TestCase):
     def test_missing_required_parameter_strict(self):
         project = Project()
         with self.assertRaises(Exception):
-            project.generate_regex("Deletedarticle", "deleted a page", 1, False)
+            project.generate_regex("Deletedarticle", "deleted a page", 1)
 
     def test_helpers_example(self):
         project = make_project()

@@ -191,18 +191,18 @@ class Project:
         self.generate_regexen()
 
     def get_interface_messages(self):
-        # Interface message name -> (number of required parameters, regex_dict key, non-strict)
+        # Interface message name -> (number of required parameters, regex_dict key, strict=True)
         INTERFACE_MESSAGES = {
-            "Undeletedarticle": (1, "restoreRegex", False),
-            "Deletedarticle": (1, "deleteRegex", False),
-            "Protectedarticle": (1, "protectRegex", False),
-            "Unprotectedarticle": (1, "unprotectRegex", False),
-            "Modifiedarticleprotection": (1, "modifyprotectRegex", True),
-            "Uploadedimage": (0, "uploadRegex", False),
-            "1movedto2": (2, "moveRegex", False),
-            "1movedto2_redir": (2, "moveredirRegex", False),
+            "Undeletedarticle": (1, "restoreRegex", True),
+            "Deletedarticle": (1, "deleteRegex", True),
+            "Protectedarticle": (1, "protectRegex", True),
+            "Unprotectedarticle": (1, "unprotectRegex", True),
+            "Modifiedarticleprotection": (1, "modifyprotectRegex", False),
+            "Uploadedimage": (0, "uploadRegex", True),
+            "1movedto2": (2, "moveRegex", True),
+            "1movedto2_redir": (2, "moveredirRegex", True),
 
-            # blockRegex is nonStrict because some wikis override the message without
+            # blockRegex is non-strict because some wikis override the message without
             # including $2 (block length).
             # RCReader will fall back to "24 hours" if this is the case.
             # Some newer messages e.g. https://lmo.wikipedia.org/wiki/MediaWiki:Blocklogentry
@@ -211,15 +211,15 @@ class Project:
             #
             # Trying (changed 2 -> 3) to see if length of time will be correctly detected
             # using just this method:
-            "Blocklogentry": (3, "blockRegex", True),
+            "Blocklogentry": (3, "blockRegex", False),
 
-            "Unblocklogentry": (0, "unblockRegex", False),
-            "Reblock-logentry": (3, "reblockRegex", False),
-            "Autosumm-blank": (0, "autosummBlank", False),
+            "Unblocklogentry": (0, "unblockRegex", True),
+            "Reblock-logentry": (3, "reblockRegex", True),
+            "Autosumm-blank": (0, "autosummBlank", True),
 
-            # autosummReplace is nonStrict because some wikis use translation overrides
+            # autosummReplace is non-strict because some wikis use translation overrides
             # without a "$1" parameter for the content.
-            "Autosumm-replace": (1, "autosummReplace", True),
+            "Autosumm-replace": (1, "autosummReplace", False),
         }
         raw = utils.get_raw_document(
             self.rooturl
@@ -233,12 +233,12 @@ class Project:
             raise Exception("No interface messages found for " + self.rooturl)
         for child in allmessages_node:
             name = child.get("name")
-            required, dest_regex, non_strict = INTERFACE_MESSAGES[name]
+            required, dest_regex, strict = INTERFACE_MESSAGES[name]
             self.regex_dict[dest_regex] = self.generate_regex(
-                name, child.text or "", required, non_strict
+                name, child.text or "", required, strict
             )
 
-    def generate_regex(self, message_title, message, req_count, non_strict):
+    def generate_regex(self, message_title, message, req_count, strict=True):
         """Turn an interface message into a regex that matches itself."""
 
         # Now gently coax that into a regex
@@ -275,7 +275,7 @@ class Project:
                 )
             )
 
-        if req_count >= 1 and not non_strict:
+        if strict and req_count >= 1:
             if "(?<item1>.+?)" not in message:
                 raise Exception(
                     "Regex {0} requires one or more items but item1 not found in {1}".format(
