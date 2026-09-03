@@ -22,7 +22,7 @@ logger = logging.getLogger("CVNBot.Program")
 class CVNBot:
     """The CVNBot program."""
 
-    VERSION = "5.0.0-alpha.6"
+    VERSION = "5.0.0"
 
     # Maximum length of a single line sent to IRC
     CHUNK_SIZE = 400

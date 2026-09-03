@@ -13,7 +13,7 @@ Found a bug? Please report it to our
 
 ## Requirements
 
-Python 3.8 or later. This project uses only the Python standard library and requires no third-party dependencies.
+Python 3.9 or later. This project uses only the Python standard library and requires no third-party dependencies.
 
 ## Run
 

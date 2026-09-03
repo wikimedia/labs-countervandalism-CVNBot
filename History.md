@@ -1,3 +1,60 @@
+5.0.0 / 2026-09-01
+==================
+
+This release includes a rewrite from .NET to Python 3 to reduce complexity of server upgrades, simplify local development, and CI testing without custom setup ([T327136](https://phabricator.wikimedia.org/T327136), [change 1143806](https://gerrit.wikimedia.org/r/c/labs/countervandalism/CVNBot/+/1143806)). CVNBot is now a standalone script that works out-of-the-box on any Python 3.9+ runtime, which is ubiquitous and simple to install on Linux or macOS. No build, compile, or installation step of any kind; and no other packages or dependent processes need to be installed or configured.
+
+CVNBot 5 is backwards-compatible and can run any existing bot directory with unchanged `CVNBot.ini`, `Lists.sqlite`, `Projects.xml`, and `Console.msgs` files. It accepts the same IRC commands, and produces identical IRC output (apart from intentional bug fixes listed below). This includes compatibility with .NET-style regexes as BNU/BNA/BES patterns stored in Lists.sqlite.
+
+A new feature is that CVNBot no longer requires its code to be in your bot directories. You can download the software in a directory separate from the bot data, and run it from anywhere by setting `--config` to where your `CVNBot.ini` file is. Previously, file references in CVNBot.ini were resolved relative to the current working directory, which meant you had to `cd` to the bot directory and run `mono CVNBot.exe` from there so that settings like `lists=./Lists.sqlite` work correctly. You can continue to do this if you want, but you can now also run it from anywhere else! This lets you run multiple bots from a single copy of the code, or a single global or shared binary ([T327131](https://phabricator.wikimedia.org/T327131)). The current working directory is no longer used for anything, except to resolve the path to CVNBot.ini if you set `--config` to a relative path.
+
+Once you have upgraded to CVNBot 5, you can safely delete any files other than `CVNBot.ini`, `Lists.sqlite`, `Projects.xml`, and `Console.msgs` from your bot directories.
+
+This release consumes about **50% less RAM** and **30% less CPU** ([T327136#12284001](https://phabricator.wikimedia.org/T327136#12284001)). It now runs fast enough to allow Wikidata to be monitored in real-time. Previously the Wikidata instance often lagged by several hours due to its event queue growing quicker than it could process.
+
+### Changed
+
+* Rewrite CVNBot in Python. ([T327136](https://phabricator.wikimedia.org/T327136))
+
+  Instead of `cd /path/to/git/CVNBot/src/CVNBot/bin/Release; mono CVNBot.exe` or `cd /path/to/MyBot; mono CVNBot.exe` you should now run the program as follows:
+
+  ```sh
+  python3 /path/to/git/CVNBot/cvnbot --config /path/to/MyBot/CVNBot.ini
+  ```
+
+### Removed
+
+* Config: The `disableClassifyEditor` setting was removed.
+
+* Config: The `restartcmd` and `restartcmd` settings are no longer used.
+
+  These settings haven't been used by CVN in production since 2014. We do launch bots via `nohup` but this is done by [stillalive](https://gerrit.wikimedia.org/g/labs/countervandalism/stillalive/). Alternatively one can use systemd.
+
+* `CVNBot.exe.config`: This file is no longer used.
+
+  This was specific to .NET and log4net. CVNBot 5 defaults to log level INFO and stdout. You can enable syslog or change the log level via the `logsyslog=1` and `loglevel` settings in CVNBot.ini.
+
+### Added
+
+* CLI: Add `--config` option. ([T327131](https://phabricator.wikimedia.org/T327131))
+* Config: Resolve file references relative to CVNBot.ini. ([T327131](https://phabricator.wikimedia.org/T327131))
+* Config: Add `ircport` setting. Defaults to 6667, same as before.
+* Config: Add `loglevel` setting. Defaults to INFO.
+* Config: Add `logsyslog` setting. Defaults to False.
+* Config: The `messages` setting is now optional. It defaults to a Console.msgs file bundled with CVNBot.
+* Config: The `lists` setting is now optional. It defaults to `./Lists.sqlite` relative to your CVNBot.ini. As before, it is automatically created on first launch if absent.
+* Config: The `projects` setting is now optional. It defaults to `./Projects.xml` relative to your CVNBot.ini.
+* Config: The Projects.xml file is now automatically created on first launch if absent. You no longer have to copy a skeleton Projects.xml file from the CVNBot repository to each new bot directory.
+* IrcClient: Add IRCv3 SASL support for more reliable connections. This should reduce stalled or failed connection attempts e.g. `ERROR IRC: Nick/channel is temporarily unavailable`. SASL is automatically negotiated when available, such as with Libera Chat.
+
+### Fixed
+
+* Program: Fix "msgs" command to perform validation and logging when reloading Console.msgs. Previously the file was only validated on startup..
+* Program: Fix BNU bypass of newusers/create2 events, because they matched only against the "creator" name (r.user) instead of also the created "editor" account (r.title).
+* IrcClient: Increase send delay between messages from 0.3s to 0.4s to reduce chances of an [Excess Flood error on Libera Chat](https://libera.chat/guides/faq#are-bots-allowed).
+* IrcClient: Faster RCReader startup by batching IRC joins.
+* ListManager: Fix incorrect classification of `X~200` as a temp user, due to a missing start anchor in the `temp_account` regex.
+* ListManager: Faster classify_editor by consolidating 3 SQL queries into 1, which allows CVNBot to keep up with Wikidata in `#cvn-wikidata`. For the past few years, it often lagged by several hours and eventually became silent and needed a manual reboot due to being too slow and backlog of several seconds every minute minute, amounting to several hours after a few days. ([change 1332795](https://gerrit.wikimedia.org/r/c/labs/countervandalism/CVNBot/+/1332795/))
+
 4.0.4 / 2024-11-22
 ==================
 
@@ -30,7 +87,7 @@
 ==================
 
 ### Changed
-* Config: Remove the `forceHttps` option. If a wiki is available both
+* Config: Remove the `forceHttps` setting. If a wiki is available both
   on HTTP and HTTPS and advertises HTTP urls as canonical in its RCFeed,
   then CVNBot will always show those as-is in the feed channel.
 
@@ -56,7 +113,6 @@
 
 ### Changed
 * ListManager: Increase default blacklist expiry from 31 days to 90 days. ([pull #56](https://github.com/countervandalism/CVNBot/pull/56))
-
 
 ### Fixed
 * Program: Fix `ReactorException: Duplicate 'watchword'` bug that could happen for
@@ -116,32 +172,32 @@ _CVNBot 3.0 was originally tagged as _CVNBot 1.22._
 * RCReader: Don't strip "/w/index.php" from urls.
 * ListManager: Support IPv6 to detect anonymous users.
 * Program: Add "caurl" message attribute. (CentralAuth link)
-* Config: New "forceHttps" option to use HTTPS as protocol in the RCFeed.
+* Config: New "forceHttps" setting to use HTTPS as protocol in the RCFeed.
 * Project: Enforce HTTPS for rooturl.
 * All: Resolved compiler warnings for unused variables.
 
 1.20.0 / 2012-07-13
 ==================
-* Trim whitespace around parameter when dealing with ListManager. Fixes #1.
+* Trim whitespace around parameter when dealing with ListManager. ([issue #1](https://github.com/wikimedia/CVNBot/issues/1))
 * New feed filters added: feedFilterUsersAnon, feedFilterUsersReg
   feedFilterUsersBot, feedFilterEventMinorEdit, feedFilterEventEdit,
   feedFilterEventNewpage, feedFilterEventMove, feedFilterEventDelete,
   feedFilterEventNewuser, feedFilterEventUpload and feedFilterEventProtect.
   These can be set in SWMTBot.ini to 1, 2, 3 or 4.
-  Check the bug ticket and code comments for more info. Fixes #2.
-* New option to prevent dbconnection in ListManager.ClassifyEditor can now be
-  done by adding setting disableClassifyEditor in SWMTBot.ini. Fixes #3.
+  Check the bug ticket and code comments for more info. [issue #2](https://github.com/wikimedia/CVNBot/issues/2))
+* New setting to prevent dbconnection in ListManager.ClassifyEditor can now be
+  done by adding setting disableClassifyEditor in SWMTBot.ini. [issue #3](https://github.com/wikimedia/CVNBot/issues/3))
 * New command "config" for getting the customizable .ini settings optional
   parameter 'all' to broadcast it (like "count" does by default) causing all
-  other bots in the same channel to also show their configs. Fixes #4.
+  other bots in the same channel to also show their configs. [issue #4](https://github.com/wikimedia/CVNBot/issues/4))
 * "the end of time" is now controlled by Console.msgs to allow translation.
 * newuser/newuser2 event gets a 'talkurl' attribute.
 * Delete event gets a 'url' attribute.
 * Actions now have a clean-attribute without prefixes ('c' + attrname) besides
   the regular one, for more flexibility in the layout of the messages
-  So [[${editor}]] renders "[[xx:User:Foo]]") and ${ceditor} renders "Foo".
-* Add 'talkurl' attribute for block and unblock event. Fixes #5.
-* Implement log type 'protect', 'unprotect' and 'modifyprotect'. Fixes #6.
+  So `[[${editor}]]` renders `[[xx:User:Foo]]` and `${ceditor}` renders `Foo`.
+* Add 'talkurl' attribute for block and unblock event. [issue #5](https://github.com/wikimedia/CVNBot/issues/5))
+* Implement log type 'protect', 'unprotect' and 'modifyprotect'. [issue #6](https://github.com/wikimedia/CVNBot/issues/6))
 * Added `SWMTBot.exe.config` to the repository. For some reason it was on the
   botserver but never made it here. This file is required to get the output of
   log4net (in the terminal or a log file).
@@ -160,8 +216,8 @@ _CVNBot 3.0 was originally tagged as _CVNBot 1.22._
   as an empty switchcase in `RCReader->rcirc_OnChannelMessage` to clear out
   some unnecessary WARNs in the logs about "unhandled log types".
 * Pagetitles containing a slash were not reported and cause a WARN in log.
-  Fixes #7.
-* nsEnglish[4] and nsEnglish[5] have been changed from "Wikipedia" to "Project"
+  ([issue #7](https://github.com/wikimedia/CVNBot/issues/7))
+* `nsEnglish[4]` and `nsEnglish[5]` have been changed from "Wikipedia" to "Project"
   to fix the bug where one could watchlist project-ns page of a non-WP project,
   but when an edit occurs, the generated pagetitle (and url) gets the wrong
   namespace and thus resulted in a broken (404 error) link.
@@ -196,8 +252,8 @@ _CVNBot 3.0 was originally tagged as _CVNBot 1.22._
 
 1.16.0 - 1.17.1
 ==================
-* Auto-download lists now searches for a <ul> instead of an <ol> on
-  [[Special:Listusers]] following the change in MediaWiki.
+* Auto-download lists now searches for a `<ul>` instead of an `<ol>` on
+  `[[Special:Listusers]]` following the change in MediaWiki.
 * If a local admin blocks a user, then the name of the wiki will be recorded
   in the blacklist reason.
 * Unmatched log types now return more debug data via the Distributed Debugging
