@@ -168,9 +168,50 @@ class SendTest(unittest.TestCase):
         self.lines = []
         self.client._send_queue.put = lambda p, line: self.lines.append((p, line))
 
-    def test_privmsg(self):
+    def test_privmsg_hello(self):
         self.client.send_message(SendType.MESSAGE, "#chan", "hello")
         self.assertEqual(self.lines[0][1], "PRIVMSG #chan :hello")
+
+    def test_privmsg_empty_string_is_ignored(self):
+        self.client.send_message(SendType.MESSAGE, "#chan", "")
+        self.assertEqual(self.lines, [])
+
+    def test_privmsg_whitespace_is_ignored(self):
+        self.client.send_message(SendType.MESSAGE, "#chan", "  ")
+        self.assertEqual(self.lines, [])
+
+    def test_privmsg_long_messages_are_split(self):
+        self.client.send_message(SendType.MESSAGE, "#chan", "x" * 900)
+        self.assertEqual(self.lines, [
+            (Priority.LOW, "PRIVMSG #chan :" + ("x" * 485)),
+            (Priority.LOW, "PRIVMSG #chan :" + ("x" * 415)),
+        ])
+
+    def test_privmsg_long_message_trailing_space_is_ignored(self):
+        self.client.send_message(SendType.MESSAGE, "#chan", ("x" * 484) + "   ")
+        self.assertEqual(self.lines, [
+            (Priority.LOW, "PRIVMSG #chan :" + ("x" * 484) + " "),
+            (Priority.LOW, "PRIVMSG #chan :  "),
+        ])
+
+    def test_privmsg_multiline_message(self):
+        self.client.send_message(SendType.MESSAGE, "#chan", "foo\nbar")
+        self.assertEqual(self.lines, [
+            (Priority.LOW, "PRIVMSG #chan :foo"),
+            (Priority.LOW, "PRIVMSG #chan :bar"),
+        ])
+
+    def test_privmsg_empty_lines_are_ignored(self):
+        self.client.send_message(SendType.MESSAGE, "#chan", "foo\n \nbar")
+        self.assertEqual(self.lines, [
+            (Priority.LOW, "PRIVMSG #chan :foo"),
+            (Priority.LOW, "PRIVMSG #chan :bar"),
+        ])
+
+    def test_split_does_not_break_multibyte_characters(self):
+        chunks = self.client._split_for_wire("é" * 400, 20)
+        self.assertGreater(len(chunks), 1)
+        self.assertEqual("".join(chunks), "é" * 400)
 
     def test_action(self):
         self.client.send_message(SendType.ACTION, "#chan", "waves")
@@ -179,17 +220,6 @@ class SendTest(unittest.TestCase):
     def test_notice(self):
         self.client.send_message(SendType.NOTICE, "#chan", "psst", Priority.HIGH)
         self.assertEqual(self.lines[0], (Priority.HIGH, "NOTICE #chan :psst"))
-
-    def test_long_messages_are_split(self):
-        self.client.send_message(SendType.MESSAGE, "#chan", "x" * 900)
-        self.assertEqual(len(self.lines), 2)
-        for _, line in self.lines:
-            self.assertLessEqual(len(line.encode("utf-8")), 510)
-
-    def test_split_does_not_break_multibyte_characters(self):
-        chunks = self.client._split_for_wire("é" * 400, 20)
-        self.assertGreater(len(chunks), 1)
-        self.assertEqual("".join(chunks), "é" * 400)
 
 
 if __name__ == "__main__":

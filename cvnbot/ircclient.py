@@ -275,14 +275,18 @@ class IrcClient:
         chunks = []
         current = ""
         current_len = 0
-        for char in message:
-            char_len = len(char.encode(self.encoding, errors="replace"))
-            if current_len + char_len > limit:
-                chunks.append(current)
-                current, current_len = "", 0
-            current += char
-            current_len += char_len
-        chunks.append(current)
+        for line in message.split("\n"):
+            if not line.strip():
+                continue
+            for char in line:
+                char_len = len(char.encode(self.encoding, errors="replace"))
+                if current_len + char_len > limit:
+                    chunks.append(current)
+                    current, current_len = "", 0
+                current += char
+                current_len += char_len
+            chunks.append(current)
+            current, current_len = "", 0
         return chunks
 
     def _sender_loop(self):

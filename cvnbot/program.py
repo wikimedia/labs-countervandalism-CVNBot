@@ -492,7 +492,7 @@ class CVNBot:
             for project_name in self.prjlist.keys():
                 result += project_name + " "
             result += "(Total: {0} wikis)".format(len(self.prjlist))
-            self.send_message_multi(SendType.MESSAGE, channel, result, Priority.HIGH)
+            self.send_message(SendType.MESSAGE, channel, result, Priority.HIGH)
 
         elif command == "batchgetusers":
             threading.Thread(
@@ -529,7 +529,7 @@ class CVNBot:
             )
 
         elif command == "intel":
-            self.send_message_multi(
+            self.send_message(
                 SendType.MESSAGE,
                 channel,
                 self.listman.global_intel(extra_params),
@@ -555,21 +555,12 @@ class CVNBot:
     # -- Sending ----------------------------------------------------------
 
     def send_message(self, send_type, destination, message, priority=Priority.LOW):
-        """Route all send_message call through this to use the send queue."""
+        """
+        Route all send_message calls through here.
+
+        This is automatically split by line break and length if too long.
+        """
         self.irc.send_message(send_type, destination, message, priority)
-
-    def send_message_multi(self, send_type, destination, message, priority=Priority.LOW):
-        """Split a message by line breaks and length if too long for send_message."""
-        if message == "":
-            return
-
-        # Allow multiline
-        for line in message.split("\n"):
-            # Split messages that are too long
-            for chunk in utils.string_split(line, self.CHUNK_SIZE):
-                # Ignore lines that contain only "" or "
-                if chunk.strip() not in ('""', '"'):
-                    self.send_message(send_type, destination, chunk, priority)
 
     def broadcast(self, list_name, action, item, expiry, reason, adder):
         if self.config.broadcast_channel == "None":
@@ -619,7 +610,7 @@ class CVNBot:
             self.VERSION, self.config.feed_channel, settings
         )
 
-        self.send_message_multi(SendType.ACTION, dest_channel, message, Priority.HIGH)
+        self.send_message(SendType.ACTION, dest_channel, message, Priority.HIGH)
 
     # -- Reacting to the RC feed ------------------------------------------
 
@@ -721,15 +712,15 @@ class CVNBot:
         }
         handler = handlers.get(r.eventtype)
         if handler is None:
-            message = ""
-        else:
-            message = handler(
-                r, project, attribs, user_offset, feed_filter_this_event,
-                feed_filter_this_user,
-            )
-            if message is None:
-                # Ignore
-                return
+            # Ignore
+            return
+        message = handler(
+            r, project, attribs, user_offset, feed_filter_this_event,
+            feed_filter_this_user,
+        )
+        if message is None:
+            # Ignore
+            return
 
         if feed_filter_this_event == 3 or feed_filter_this_user == 3:
             # Autolistings have been done throughout react_to_rc_event().
@@ -737,7 +728,7 @@ class CVNBot:
             # Ignore
             return
 
-        self.send_message_multi(
+        self.send_message(
             SendType.MESSAGE, self.config.feed_channel, message, Priority.LOW
         )
 

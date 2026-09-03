@@ -5,20 +5,6 @@ import unittest
 from cvnbot import utils
 
 
-class StringSplitTest(unittest.TestCase):
-    def test_short_input_is_one_chunk(self):
-        self.assertEqual(utils.string_split("hello", 10), ["hello"])
-
-    def test_exact_multiple(self):
-        self.assertEqual(utils.string_split("abcdef", 3), ["abc", "def"])
-
-    def test_remainder(self):
-        self.assertEqual(utils.string_split("abcdefg", 3), ["abc", "def", "g"])
-
-    def test_empty(self):
-        self.assertEqual(utils.string_split("", 3), [""])
-
-
 class ParseDateTimeLengthTest(unittest.TestCase):
     def test_indefinite(self):
         self.assertEqual(utils.parse_datetime_length("indefinite", 99), 0)

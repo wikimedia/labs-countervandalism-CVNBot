@@ -1,7 +1,7 @@
 import re
 import unittest
 
-from cvnbot.ircclient import ChannelUser, IrcMessage, SendType
+from cvnbot.ircclient import ChannelUser, IrcMessage
 from cvnbot.listmanager import UserType
 from cvnbot.rcreader import EventType, RCEvent
 
@@ -529,24 +529,6 @@ class BroadcastTest(BotTestCase):
 
     def test_invalid_format_is_ignored(self):
         self.notice("hello world")
-
-
-class SendMessageMultiTest(BotTestCase):
-    def test_split_on_newlines(self):
-        self.bot.send_message_multi(SendType.MESSAGE, FEED, "one\ntwo")
-        self.assertEqual(self.feed, ["one", "two"])
-
-    def test_split_long_lines(self):
-        self.bot.send_message_multi(SendType.MESSAGE, FEED, "x" * 1000)
-        self.assertEqual(len(self.feed), 3)
-
-    def test_skip_empty_and_quote_only_lines(self):
-        self.bot.send_message_multi(SendType.MESSAGE, FEED, 'real\n""\n"')
-        self.assertEqual(self.feed, ["real"])
-
-    def test_empty_message_sends_nothing(self):
-        self.bot.send_message_multi(SendType.MESSAGE, FEED, "")
-        self.assertEqual(self.feed, [])
 
 
 if __name__ == "__main__":

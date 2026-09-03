@@ -19,13 +19,6 @@ _r_find_values = re.compile(
 )
 
 
-def string_split(text, chunk_len):
-    """Split a string into chunks of at most chunk_len characters."""
-    if len(text) <= chunk_len:
-        return [text]
-    return [text[i:i + chunk_len] for i in range(0, len(text), chunk_len)]
-
-
 def parse_datetime_length(text, default_len):
     """
     Like PHP's strtotime() function, attempts to parse a GNU date/time into number of seconds.
