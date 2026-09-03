@@ -166,60 +166,50 @@ class Project:
 
     # -- Fetching from the wiki -------------------------------------------
 
-    def get_namespaces(self):
+    def retrieve_wiki_details(self):
+        """
+        Raises:
+            Exception: if MediaWiki API request fails for siteinfo or interface messages.
+        """
+
+        self._fetch_namespaces()
+        self._fetch_interface_messages()
+        self.generate_regexen()
+
+    def _fetch_namespaces(self):
         logger.info("Fetching namespaces from %s", self.rooturl)
         snamespaces = utils.get_raw_document(
             self.rooturl
             + "w/api.php?format=xml&action=query&meta=siteinfo&siprop=namespaces"
         )
-
         self.namespaces = Project.parse_namespaces(snamespaces)
 
-    def retrieve_wiki_details(self):
-        """
-        Raises:
-            Exception: if MediaWiki API request for namespaces fails.
-        """
-
-        # Find out what the localized Special: (ID -1) namespace is, and create a regex
-        self.get_namespaces()
-
+    def _fetch_interface_messages(self):
         logger.info("Fetching interface messages from %s", self.rooturl)
-
-        self.get_interface_messages()
-
-        self.generate_regexen()
-
-    def get_interface_messages(self):
         # Interface message name -> (number of required parameters, regex_dict key, strict=True)
         INTERFACE_MESSAGES = {
-            "Undeletedarticle": (1, "restoreRegex", True),
-            "Deletedarticle": (1, "deleteRegex", True),
-            "Protectedarticle": (1, "protectRegex", True),
-            "Unprotectedarticle": (1, "unprotectRegex", True),
-            "Modifiedarticleprotection": (1, "modifyprotectRegex", False),
-            "Uploadedimage": (0, "uploadRegex", True),
+            "undeletedarticle": (1, "restoreRegex", True),
+            "deletedarticle": (1, "deleteRegex", True),
+            "protectedarticle": (1, "protectRegex", True),
+            "unprotectedarticle": (1, "unprotectRegex", True),
+            "modifiedarticleprotection": (1, "modifyprotectRegex", False),
+            "uploadedimage": (0, "uploadRegex", True),
             "1movedto2": (2, "moveRegex", True),
             "1movedto2_redir": (2, "moveredirRegex", True),
 
-            # blockRegex is non-strict because some wikis override the message without
-            # including $2 (block length).
-            # RCReader will fall back to "24 hours" if this is the case.
+            # blockRegex is non-strict because some wikis override this message
+            # without including "$2" (block length). RCReader defaults to "24 hours" in this case.
             # Some newer messages e.g. https://lmo.wikipedia.org/wiki/MediaWiki:Blocklogentry
-            # have a third item $3 ("anononly,nocreate,autoblock"). This may conflict with
-            # $2 detection.
-            #
-            # Trying (changed 2 -> 3) to see if length of time will be correctly detected
-            # using just this method:
-            "Blocklogentry": (3, "blockRegex", False),
+            # have a third item $3 ("anononly,nocreate,autoblock").
+            "blocklogentry": (3, "blockRegex", False),
 
-            "Unblocklogentry": (0, "unblockRegex", True),
-            "Reblock-logentry": (3, "reblockRegex", True),
-            "Autosumm-blank": (0, "autosummBlank", True),
+            "unblocklogentry": (0, "unblockRegex", True),
+            "reblock-logentry": (3, "reblockRegex", True),
+            "autosumm-blank": (0, "autosummBlank", True),
 
-            # autosummReplace is non-strict because some wikis use translation overrides
-            # without a "$1" parameter for the content.
-            "Autosumm-replace": (1, "autosummReplace", False),
+            # autosummReplace is non-strict because some wikis override this message
+            # without including "$1" (truncated sample of removed content).
+            "autosumm-replace": (1, "autosummReplace", False),
         }
         raw = utils.get_raw_document(
             self.rooturl
@@ -256,7 +246,7 @@ class Project:
         message = "^" + message + r"(?:: (?<comment>.*?))?$"
 
         # Dirty code: Block log exceptions!
-        if message_title == "Blocklogentry":
+        if message_title == "blocklogentry":
             message = message.replace(
                 "(?<item3>.+?)",
                 "\\((?<item3>.+?)\\)"
