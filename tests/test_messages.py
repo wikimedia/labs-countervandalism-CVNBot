@@ -21,6 +21,11 @@ class MessagesTest(unittest.TestCase):
 
     def test_read_comments_and_blank_lines_ignored(self):
         self.assertNotIn("", self.msgs)
+
+    def test_read_set(self):
+        self.assertEqual(self.msgs["17010"], "watchlist")
+
+    def test_contains(self):
         for key in ("00000", "20005", "17010"):
             self.assertIn(key, self.msgs)
 
@@ -35,13 +40,15 @@ class MessagesTest(unittest.TestCase):
         self.assertEqual(len(self.msgs), 2)
         self.assertEqual(self.msgs["12345"], "hello")
 
-    def test_read_missing_file(self):
+    def test_read_missing_file_preserves_previous_messages(self):
         logging.disable(logging.ERROR)
         try:
             self.assertFalse(self.msgs.read("/nonexistent/Console.msgs"))
-            self.assertEqual(len(self.msgs), 0)
+            self.assertGreater(len(self.msgs), 100)
         finally:
             logging.disable(logging.WARNING)
+
+        self.assertEqual(self.msgs["17010"], "watchlist")
 
     def test_get_subst(self):
         message = self.msgs.subst(5003, {

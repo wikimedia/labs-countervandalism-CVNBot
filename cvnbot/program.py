@@ -365,10 +365,15 @@ class CVNBot:
 
         elif command == "msgs":
             # Reload messages file
-            self.msgs.read(self.config.messages_file)
-            self.send_message(
-                SendType.MESSAGE, channel, "Re-read messages from %s" % self.config.messages_file, Priority.HIGH
-            )
+            result = self.msgs.read(self.config.messages_file)
+            if result:
+                self.send_message(
+                    SendType.MESSAGE, channel, "Re-read messages from %s" % self.config.messages_file, Priority.HIGH
+                )
+            else:
+                self.send_message(
+                    SendType.MESSAGE, channel, "Failed to read messages from %s" % self.config.messages_file, Priority.HIGH
+                )
 
         elif command == "reload":
             # Re-download project details from the wiki

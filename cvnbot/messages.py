@@ -29,9 +29,9 @@ class Messages:
     def read(self, filename):
         """Read messages from filename, replacing any previously read ones."""
         logger.info("Loading messages from %s", filename)
-        self._messages.clear()
         try:
             with open(filename, "r", encoding="utf-8") as handle:
+                self._messages.clear()
                 for line in handle:
                     line = line.rstrip("\r\n")
                     if line.startswith("#") or line == "":
