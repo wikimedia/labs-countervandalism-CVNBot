@@ -50,6 +50,7 @@ This release consumes about **50% less RAM** and **30% less CPU** ([T327136#1228
 
 * Program: Fix "msgs" command to perform validation and logging when reloading Console.msgs. Previously the file was only validated on startup..
 * Program: Fix BNU bypass of newusers/create2 events, because they matched only against the "creator" name (r.user) instead of also the created "editor" account (r.title).
+* RCReader: Fix URLs to not escape namespace colons in page titles, so https://az.wikipedia.org/wiki/Kateqoriya:Tisl_FK_oyun%C3%A7ular%C4%B1 instead of https://az.wikipedia.org/wiki/Kateqoriya%3aTisl_FK_oyun%c3%a7ular%c4%b1.
 * IrcClient: Increase send delay between messages from 0.3s to 0.4s to reduce chances of an [Excess Flood error on Libera Chat](https://libera.chat/guides/faq#are-bots-allowed).
 * IrcClient: Faster RCReader startup by batching IRC joins.
 * ListManager: Fix incorrect classification of `X~200` as a temp user, due to a missing start anchor in the `temp_account` regex.
