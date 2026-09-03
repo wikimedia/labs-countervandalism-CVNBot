@@ -387,6 +387,7 @@ class CVNBot:
                 return
             try:
                 self.prjlist[cmd_params[0]].retrieve_wiki_details()
+                self.prjlist.dump_to_file()
                 self.send_message(
                     SendType.MESSAGE,
                     channel,
