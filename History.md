@@ -9,7 +9,7 @@ A new feature is that CVNBot no longer requires its code to be in your bot direc
 
 Once you have upgraded to CVNBot 5, you can safely delete any files other than `CVNBot.ini`, `Lists.sqlite`, `Projects.xml`, and `Console.msgs` from your bot directories.
 
-This release consumes about **50% less RAM** and **30% less CPU** ([T327136#12284001](https://phabricator.wikimedia.org/T327136#12284001)). It now runs fast enough to allow Wikidata to be monitored in real-time. Previously the Wikidata instance often lagged by several hours due to its event queue growing quicker than it could process.
+This release consumes about **50% less RAM** and **30% less CPU** ([T327136#12284001](https://phabricator.wikimedia.org/T327136#12284001)). It now runs fast enough to allow Wikidata to be monitored in real-time. Previously the Wikidata instance often lagged by several hours due to its event queue growing quicker than it could process ([T327135](https://phabricator.wikimedia.org/T327135)).
 
 ### Changed
 
