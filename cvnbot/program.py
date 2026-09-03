@@ -1127,13 +1127,10 @@ class CVNBot:
         attribs["article"] = project.interwiki_link + r.title
         attribs["carticle"] = r.title
         attribs["comment"] = r.comment
-        # TODO: Enable url after rce.title is fixed for 'protect' and 'modifyprotect' events
-        # attribs["url"] = project.rooturl + "wiki/" + utils.wiki_encode(r.title)
+        attribs["url"] = project.rooturl + "wiki/" + utils.wiki_encode(r.title)
         if r.eventtype == EventType.protect:
             return self.msgs.subst(5900, attribs)
         if r.eventtype == EventType.unprotect:
-            # 'url' in unprotect is fine, it's just the pagetitle
-            attribs["url"] = project.rooturl + "wiki/" + utils.wiki_encode(r.title)
             return self.msgs.subst(5901, attribs)
         if r.eventtype == EventType.modifyprotect:
             return self.msgs.subst(5902, attribs)

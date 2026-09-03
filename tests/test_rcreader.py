@@ -213,7 +213,7 @@ class LogEventTest(RCReaderTest):
         )
 
     def test_protect_simpified_no_comment(self):
-        # Simplified, not how MediaWiki actually emits this, given the introduction of restrictions addendum
+        # Simplified, lacking extra restrictions/expiry data in the $1 parameter.
         rce = self.parse(
             "Special:Log/protect", "protect", "", "Admin", "", 'protected "[[Sandbox]]"',
         )
@@ -221,21 +221,21 @@ class LogEventTest(RCReaderTest):
         self.assertEqual(rce.title, "Sandbox")
         self.assertEqual(rce.comment, "")
 
+    def test_protect_real_ltr_comment(self):
         rce = self.parse(
             "Special:Log/protect", "protect", "", "Admin", "", 'protected "[[Module:Message box/tmbox.css \u200E[edit=sysop] (indefinite)\u200E[move=sysop] (indefinite)]]": Highly visible template',
         )
         self.assertEqual(rce.eventtype, EventType.protect)
-        self.assertEqual(rce.title, "Module:Message box/tmbox.css \u200E[edit=sysop] (indefinite)\u200E[move=sysop] (indefinite)")
+        self.assertEqual(rce.title, "Module:Message box/tmbox.css")
         self.assertEqual(rce.comment, "Highly visible template")
 
-    def test_protect_real_ltr_comment(self):
+    def test_protect_real_rtl_no_comment(self):
         rce = self.parse(
-            "Special:Log/protect", "protect", "", "Admin", "", 'protected "[[Sandbox]]": vandalism',
+            "Special:Log/protect", "protect", "", "Admin", "", 'protected "[[ויקיפדיה:ארגז חול \u200F[edit=autoconfirmed] (פגה ב־05:43, 25 באוגוסט 2026 (UTC))\u200F[move=autoconfirmed] (פגה ב־05:43, 25 באוגוסט 2026 (UTC))]]"',
         )
         self.assertEqual(rce.eventtype, EventType.protect)
-        # TODO: Enable after restriction addendum if supported
-        # self.assertEqual(rce.title, "Sandbox")
-        self.assertEqual(rce.comment, "vandalism")
+        self.assertEqual(rce.title, "ויקיפדיה:ארגז חול")
+        self.assertEqual(rce.comment, "")
 
     def test_protect_real_rtl_comment(self):
         self.bot.prjlist.projects["he.wikipedia"] = make_project("he.wikipedia", "he:")
@@ -246,8 +246,7 @@ class LogEventTest(RCReaderTest):
             channel="#he.wikipedia"
         )
         self.assertEqual(rce.eventtype, EventType.protect)
-        # TODO: Enable after restriction addendum if supported
-        # self.assertEqual(rce.title, "Sandbox")
+        self.assertEqual(rce.title, "ויקיפדיה:ארגז חול")
         self.assertEqual(rce.comment, "some reason")
 
     def test_protect_unprotect(self):

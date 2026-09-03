@@ -306,16 +306,6 @@ class RCReader:
     # Sample from #he.wikipedia in August 2026:
     # [[מיוחד:Log/protect]] protect  * Krinkle *  protected "[[ויקיפדיה:ארגז חול ‏[edit=autoconfirmed] (פגה ב־05:43, 25 באוגוסט 2026 (UTC))‏[move=autoconfirmed] (פגה ב־05:43, 25 באוגוסט 2026 (UTC))]]"
     def _parse_protect(self, rce, project, message):
-        # TODO: Fix rce.title for protect and modifyprotect events
-        # This wrongly contains "[move=sysop] (indefinite)" etc.
-        # In mediawiki-core/LogFormatter.php#getIRCActionText it uses 'protectedarticle'
-        # ('protected "[[$1]]"') with `$target . ' ' . $parameters['4::description']` as parameter.
-        #
-        # The good news is that mediawiki-core/ProtectLogFormatter.php prepends
-        # the restrictions addendum with Language::getDirMark, i.e. 0x200e (U+200E LEFT-TO-RIGHT MARK)
-        # or 0x200f (U+200F RIGHT-TO-LEFT MARK).
-        #
-        # See test_rcreader.py#test_protect_real_ltr_comment
         for regex, eventtype in (
             (project.rprotect_regex, EventType.protect),
             (project.rmodifyprotect_regex, EventType.modifyprotect),
@@ -324,7 +314,18 @@ class RCReader:
             match = regex.search(rce.comment)
             if match:
                 rce.eventtype = eventtype
-                rce.title = project.translate_namespace(match.group("item1"))
+
+                # For legacy reasons, MediaWiki also transports "restrictions" and "expiry" data as
+                # part of the $1 title parameter in the "protectedarticle" (protect/protect) and
+                # "modifiedarticleprotection" (protect/modify) messages. This was frozen in 2012
+                # in T36508 (SVN r112561, Git commit 3cb731351e), and can be found in
+                # mediawiki/LogFormatter.php#getIRCActionText.
+                #
+                # Fortunately, mediawiki-core/ProtectLogFormatter.php prepends this data with
+                # mediawiki/Language.php#getDirMark which is either 0x200e (U+200E LEFT-TO-RIGHT MARK)
+                # or 0x200f (U+200F RIGHT-TO-LEFT MARK).
+                item1 = match.group("item1").split("\u200E", 1)[0].split("\u200F", 1)[0].strip()
+                rce.title = project.translate_namespace(item1)
                 # This project regex might not have a "comment" match group
                 rce.comment = match.groupdict(default="").get("comment", "")
                 return True

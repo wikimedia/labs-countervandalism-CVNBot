@@ -344,6 +344,16 @@ class ReactToLogEventTest(BotTestCase):
         )
         self.assertIn("deleted", self.react(event)[0].lower())
 
+    def test_protect_is_reported(self):
+        event = RCEvent(
+            eventtype=EventType.protect,
+            project="en.wikipedia",
+            title="Spam",
+            user="Admin",
+            comment="vandalism",
+        )
+        self.assertIn("protected", self.react(event)[0].lower())
+
     def test_unhandled_event_type_sends_nothing(self):
         event = RCEvent(
             eventtype=EventType.restore,
