@@ -45,6 +45,9 @@ class FakeIrc:
     def send_message(self, send_type, destination, message, priority=None):
         self.sent.append((send_type, destination, message))
 
+    def send_queue_length(self):
+        return len(self.sent)
+
     def rfc_join(self, channel):
         self.joined.append(channel)
 

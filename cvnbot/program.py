@@ -335,18 +335,20 @@ class CVNBot:
             self.restart()
 
         elif command == "status":
-            ago_handled = (datetime.datetime.now(tz=datetime.timezone.utc) - self.rcreader.last_handled).total_seconds()
+            ago_handled = round((datetime.datetime.now(tz=datetime.timezone.utc) - self.rcreader.last_handled).total_seconds(), 3)
             if self.rcreader.last_recv_ns:
                 last_recv_dt = datetime.datetime.fromtimestamp(
                     self.rcreader.last_recv_ns / 1_000_000_000,
                     tz=datetime.timezone.utc
                 )
-                ago_recv = (datetime.datetime.now(tz=datetime.timezone.utc) - last_recv_dt).total_seconds()
+                ago_recv = round((datetime.datetime.now(tz=datetime.timezone.utc) - last_recv_dt).total_seconds(), 3)
                 delay = round(ago_recv - ago_handled, 3)
-                msg = ("Last message on RCReader handled {0} seconds ago, received {1} seconds ago. "
-                       "The processing delay was {2} seconds.").format(ago_handled, ago_recv, delay)
+                msg = f"Last message on RCReader handled {ago_handled}s ago, received {ago_recv}s ago. The processing delay was {delay}s."
             else:
-                msg = "Last message on RCReader handled {0} seconds ago".format(ago_handled)
+                msg = f"Last message on RCReader handled {ago_handled}s ago."
+
+            send_queue_length = self.irc.send_queue_length()
+            msg += f" Send queue contains {send_queue_length} {'message' if send_queue_length == 1 else 'messages'}."
 
             self.send_message(
                 SendType.MESSAGE,

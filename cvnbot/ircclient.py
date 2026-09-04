@@ -236,6 +236,9 @@ class IrcClient:
         for chunk in self._split_for_wire(message, len(command.format(destination, ""))):
             self._send_queue.put(priority, command.format(destination, chunk))
 
+    def send_queue_length(self):
+        return self._send_queue.len()
+
     def rfc_join(self, *channels):
         if not channels:
             return
@@ -544,6 +547,10 @@ class _PriorityQueue:
             while not self._heap:
                 self._condition.wait()
             return heapq.heappop(self._heap)[2]
+
+    def len(self):
+        with self._condition:
+            return len(self._heap)
 
 
 __all__ = [
