@@ -36,9 +36,7 @@ class SendType(enum.Enum):
 
 class Priority(enum.IntEnum):
     LOW = 0
-    MEDIUM = 1
     HIGH = 2
-    CRITICAL = 3
 
 
 class IrcConnectionError(Exception):

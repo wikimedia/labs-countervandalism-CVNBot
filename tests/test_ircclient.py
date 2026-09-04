@@ -1,3 +1,4 @@
+import heapq
 import logging
 import unittest
 
@@ -6,7 +7,6 @@ from cvnbot.ircclient import (
     IrcMessage,
     Priority,
     SendType,
-    _PriorityQueue,
 )
 
 
@@ -41,21 +41,6 @@ class IrcMessageTest(unittest.TestCase):
         message = IrcMessage("ERROR :Closing Link: nick (Excess Flood)")
         self.assertEqual(message.command, "ERROR")
         self.assertIn("Excess Flood", message.message)
-
-
-class PriorityQueueTest(unittest.TestCase):
-    def test_higher_priority_first(self):
-        queue = _PriorityQueue()
-        queue.put(Priority.LOW, "low")
-        queue.put(Priority.HIGH, "high")
-        queue.put(Priority.MEDIUM, "medium")
-        self.assertEqual([queue.get() for _ in range(3)], ["high", "medium", "low"])
-
-    def test_fifo_within_priority(self):
-        queue = _PriorityQueue()
-        for i in range(3):
-            queue.put(Priority.LOW, str(i))
-        self.assertEqual([queue.get() for _ in range(3)], ["0", "1", "2"])
 
 
 class ChannelTrackingTest(unittest.TestCase):
@@ -165,12 +150,31 @@ class DispatchTest(unittest.TestCase):
 class SendTest(unittest.TestCase):
     def setUp(self):
         self.client = IrcClient()
-        self.lines = []
-        self.client._send_queue.put = lambda p, line: self.lines.append((p, line))
+
+    @property
+    def lines(self):
+        ret = []
+        while self.client._send_queue._heap:
+            ret.append(heapq.heappop(self.client._send_queue._heap)[2])
+        return ret
+
+    def test_fifo_and_priority(self):
+        self.client.send_message(SendType.MESSAGE, "#chan", "B3", Priority.LOW)
+        self.client.send_message(SendType.MESSAGE, "#chan", "A3", Priority.HIGH)
+        self.client.send_message(SendType.MESSAGE, "#chan", "B1", Priority.LOW)
+        self.client.send_message(SendType.MESSAGE, "#chan", "A1", Priority.HIGH)
+        self.client.send_message(SendType.MESSAGE, "#chan", "B2", Priority.LOW)
+        self.client.send_message(SendType.MESSAGE, "#chan", "A2", Priority.HIGH)
+        self.assertEqual(self.lines, ["PRIVMSG #chan :A3",
+                                      "PRIVMSG #chan :A1",
+                                      "PRIVMSG #chan :A2",
+                                      "PRIVMSG #chan :B3",
+                                      "PRIVMSG #chan :B1",
+                                      "PRIVMSG #chan :B2"])
 
     def test_privmsg_hello(self):
         self.client.send_message(SendType.MESSAGE, "#chan", "hello")
-        self.assertEqual(self.lines[0][1], "PRIVMSG #chan :hello")
+        self.assertEqual(self.lines[0], "PRIVMSG #chan :hello")
 
     def test_privmsg_empty_string_is_ignored(self):
         self.client.send_message(SendType.MESSAGE, "#chan", "")
@@ -183,29 +187,29 @@ class SendTest(unittest.TestCase):
     def test_privmsg_long_messages_are_split(self):
         self.client.send_message(SendType.MESSAGE, "#chan", "x" * 900)
         self.assertEqual(self.lines, [
-            (Priority.LOW, "PRIVMSG #chan :" + ("x" * 485)),
-            (Priority.LOW, "PRIVMSG #chan :" + ("x" * 415)),
+            "PRIVMSG #chan :" + ("x" * 485),
+            "PRIVMSG #chan :" + ("x" * 415),
         ])
 
     def test_privmsg_long_message_trailing_space_is_ignored(self):
         self.client.send_message(SendType.MESSAGE, "#chan", ("x" * 484) + "   ")
         self.assertEqual(self.lines, [
-            (Priority.LOW, "PRIVMSG #chan :" + ("x" * 484) + " "),
-            (Priority.LOW, "PRIVMSG #chan :  "),
+            "PRIVMSG #chan :" + ("x" * 484) + " ",
+            "PRIVMSG #chan :  ",
         ])
 
     def test_privmsg_multiline_message(self):
         self.client.send_message(SendType.MESSAGE, "#chan", "foo\nbar")
         self.assertEqual(self.lines, [
-            (Priority.LOW, "PRIVMSG #chan :foo"),
-            (Priority.LOW, "PRIVMSG #chan :bar"),
+            "PRIVMSG #chan :foo",
+            "PRIVMSG #chan :bar",
         ])
 
     def test_privmsg_empty_lines_are_ignored(self):
         self.client.send_message(SendType.MESSAGE, "#chan", "foo\n \nbar")
         self.assertEqual(self.lines, [
-            (Priority.LOW, "PRIVMSG #chan :foo"),
-            (Priority.LOW, "PRIVMSG #chan :bar"),
+            "PRIVMSG #chan :foo",
+            "PRIVMSG #chan :bar",
         ])
 
     def test_split_does_not_break_multibyte_characters(self):
@@ -215,11 +219,11 @@ class SendTest(unittest.TestCase):
 
     def test_action(self):
         self.client.send_message(SendType.ACTION, "#chan", "waves")
-        self.assertEqual(self.lines[0][1], "PRIVMSG #chan :\x01ACTION waves\x01")
+        self.assertEqual(self.lines[0], "PRIVMSG #chan :\x01ACTION waves\x01")
 
     def test_notice(self):
         self.client.send_message(SendType.NOTICE, "#chan", "psst", Priority.HIGH)
-        self.assertEqual(self.lines[0], (Priority.HIGH, "NOTICE #chan :psst"))
+        self.assertEqual(self.lines[0], "NOTICE #chan :psst")
 
 
 if __name__ == "__main__":
