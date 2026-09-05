@@ -180,7 +180,7 @@ class IrcClient:
         # Libera disconnects after 240s with a PING every 120s
         # https://github.com/solanum-ircd/solanum/blob/30f74b2cfa70aff2bad65c8afc62956d95699639/include/defaults.h#L63
         # https://github.com/solanum-ircd/solanum/blob/30f74b2cfa70aff2bad65c8afc62956d95699639/ircd/client.c#L389
-        self._socket.settimeout(200)
+        self._socket.settimeout(250)
         self._buffer = b""
 
     def login(self, nick, realname, usermode=0, username=None, password=""):
