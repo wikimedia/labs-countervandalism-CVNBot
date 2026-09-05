@@ -177,10 +177,13 @@ class IrcClient:
         # Wikimedia ircstream disconnects after 180s with a PING every 45s
         # https://github.com/paravoid/ircstream/blob/v1.0.1/ircstream/ircserver.py#L259
         #
-        # Libera disconnects after 240s with a PING every 120s
+        # Libera disconnects after 240s with a PING after 120s of inactivity
         # https://github.com/solanum-ircd/solanum/blob/30f74b2cfa70aff2bad65c8afc62956d95699639/include/defaults.h#L63
         # https://github.com/solanum-ircd/solanum/blob/30f74b2cfa70aff2bad65c8afc62956d95699639/ircd/client.c#L389
-        self._socket.settimeout(250)
+        #
+        # Historically, CVNBot has used 600s via SmartIrc4net
+        # https://github.com/meebey/SmartIrc4net/blob/1.1/src/IrcConnection/IrcConnection.cs#L79
+        self._socket.settimeout(600)
         self._buffer = b""
 
     def login(self, nick, realname, usermode=0, username=None, password=""):
